@@ -1,9 +1,39 @@
 {
-	"extends": "@sindresorhus/tsconfig",
-	"compilerOptions": {
-		"moduleResolution": "node16",
-		"module": "Node16",
-		"outDir": "dist"
-	},
-	"include": ["src"]
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "outDir": "dist",
+    // "rootDir": ".",
+    "baseUrl": ".",
+
+    // JSX Support
+    "jsx": "react",
+    "jsxFactory": "React.createElement",
+    "jsxFragmentFactory": "React.Fragment",
+
+    // Type Checking
+    "strict": true,
+    "strictNullChecks": true,
+    "skipLibCheck": true,
+    "allowJs": true,
+
+    // Module Resolution
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "moduleDetection": "force",
+    "allowImportingTsExtensions": false,
+    "paths": {
+      "*": ["src/*"]
+    },
+
+    // Output Configuration
+    "declaration": true,
+    "sourceMap": true,
+
+    // Additional Settings
+    "forceConsistentCasingInFileNames": true
+  },
+  "include": ["__test__/**/*", "/**/*.tsx", "**/*.ts"],
+  "exclude": ["node_modules", "dist"]
 }

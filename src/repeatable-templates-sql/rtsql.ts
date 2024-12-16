@@ -53,8 +53,8 @@ async function buildTemplates() {
       typeof modes.register === 'string'
         ? modes.register.split(/[,\s]+/).filter(Boolean)
         : Array.isArray(modes.register)
-        ? modes.register
-        : [modes.register];
+          ? modes.register
+          : [modes.register];
 
     for (const template of templatesForRegistration) {
       const templatePath = path.resolve(__dirname, TEMPLATE_DIR, template);
