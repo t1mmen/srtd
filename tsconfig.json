@@ -1,39 +1,58 @@
 {
   "compilerOptions": {
-    "target": "ES2022",
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
-    "outDir": "dist",
-    // "rootDir": ".",
     "baseUrl": ".",
-
-    // JSX Support
-    "jsx": "react",
-    "jsxFactory": "React.createElement",
-    "jsxFragmentFactory": "React.Fragment",
-
-    // Type Checking
+    "outDir": "./dist",
+    "paths": {
+      "@/*": ["src/*"],
+      "@tests/*": ["__tests__/setup/*"]
+    },
+    // Hoping this'll use compiled types from integration-cloud-sdk to improve performance.
+    // types are auto-generated via tic dev/mprocs
+    "disableSourceOfProjectReferenceRedirect": true,
+    "target": "esnext",
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "allowJs": true,
+    "skipLibCheck": true,
     "strict": true,
     "strictNullChecks": true,
-    "skipLibCheck": true,
-    "allowJs": true,
-
-    // Module Resolution
+    "strictPropertyInitialization": false,
+    "noImplicitOverride": true,
+    "forceConsistentCasingInFileNames": true,
+    "noEmit": true,
     "esModuleInterop": true,
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
     "resolveJsonModule": true,
-    "moduleDetection": "force",
-    "allowImportingTsExtensions": false,
-    "paths": {
-      "*": ["src/*"]
-    },
-
-    // Output Configuration
-    "declaration": true,
-    "sourceMap": true,
-
-    // Additional Settings
-    "forceConsistentCasingInFileNames": true
+    "isolatedModules": true,
+    "jsx": "preserve",
+    "incremental": true
   },
-  "include": ["__test__/**/*", "/**/*.tsx", "**/*.ts"],
-  "exclude": ["node_modules", "dist"]
+
+  "typeAcquisition": {
+    "enable": true
+  },
+
+  "include": [".", "**/*.ts", "**/*.tsx"],
+  "exclude": ["**/node_modules", "./dist"]
 }
+
+// {
+//   "compilerOptions": {
+//     "module": "NodeNext",
+//     "target": "ES2024",
+//     "moduleResolution": "nodenext",
+//     "jsx": "react-jsx",
+//     "strict": true,
+//     "esModuleInterop": true,
+//     "skipLibCheck": true,
+//     "forceConsistentCasingInFileNames": true,
+//     "baseUrl": ".",
+//     "noEmit": true,
+//     "paths": {
+//       "@/*": ["./src/*"]
+//     },
+//     "outDir": "./dist"
+//   },
+//   "include": ["./src/**/*"],
+//   "exclude": ["node_modules", "**/*.spec.ts"]
+// }

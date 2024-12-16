@@ -4,7 +4,7 @@ import path from 'path';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import chalk from 'chalk';
-import { BuildLog, BuildModes, LocalBuildLog, MigrationError } from './rtsql.types';
+import { BuildLog, BuildModes, LocalBuildLog, MigrationError } from './rtsql.types.js';
 
 export const execAsync = promisify(exec);
 import { execa } from 'execa';
@@ -93,7 +93,7 @@ export function displayErrorSummary(errors: MigrationError[]): void {
 
   console.log('\n  ❌ Error Summary:');
   console.log('  ================');
-  errors.forEach(({ file, templateName, error }) => {
+  errors.forEach(({ templateName, error }) => {
     console.log(`\n  Failed migration: ${chalk.red(templateName)}`);
     console.log(`  ${error.split('\n').join('\n  ')}`);
   });
