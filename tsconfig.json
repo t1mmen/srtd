@@ -1,58 +1,13 @@
 {
+  "extends": "@sindresorhus/tsconfig",
   "compilerOptions": {
-    "baseUrl": ".",
-    "outDir": "./dist",
-    "paths": {
-      "@/*": ["src/*"],
-      "@tests/*": ["__tests__/setup/*"]
-    },
-    // Hoping this'll use compiled types from integration-cloud-sdk to improve performance.
-    // types are auto-generated via tic dev/mprocs
-    "disableSourceOfProjectReferenceRedirect": true,
-    "target": "esnext",
-    "lib": ["dom", "dom.iterable", "esnext"],
-    "allowJs": true,
-    "skipLibCheck": true,
-    "strict": true,
-    "strictNullChecks": true,
-    "strictPropertyInitialization": false,
-    "noImplicitOverride": true,
-    "forceConsistentCasingInFileNames": true,
-    "noEmit": true,
-    "esModuleInterop": true,
-    "module": "ESNext",
-    "moduleResolution": "Bundler",
-    "resolveJsonModule": true,
-    "isolatedModules": true,
-    "jsx": "preserve",
-    "incremental": true
+    "moduleResolution": "bundler",
+    "module": "ES2022",
+    "outDir": "dist",
+    "sourceMap": true,
+    "noUncheckedIndexedAccess": false,
+    "noPropertyAccessFromIndexSignature": false
   },
-
-  "typeAcquisition": {
-    "enable": true
-  },
-
-  "include": [".", "**/*.ts", "**/*.tsx"],
-  "exclude": ["**/node_modules", "./dist"]
+  "include": ["src"],
+  "exclude": ["node_modules", "dist"]
 }
-
-// {
-//   "compilerOptions": {
-//     "module": "NodeNext",
-//     "target": "ES2024",
-//     "moduleResolution": "nodenext",
-//     "jsx": "react-jsx",
-//     "strict": true,
-//     "esModuleInterop": true,
-//     "skipLibCheck": true,
-//     "forceConsistentCasingInFileNames": true,
-//     "baseUrl": ".",
-//     "noEmit": true,
-//     "paths": {
-//       "@/*": ["./src/*"]
-//     },
-//     "outDir": "./dist"
-//   },
-//   "include": ["./src/**/*"],
-//   "exclude": ["node_modules", "**/*.spec.ts"]
-// }

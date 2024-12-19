@@ -5,9 +5,10 @@
   "bin": "dist/cli.js",
   "type": "module",
   "engines": {
-    "node": ">=16"
+    "node": ">=22"
   },
   "scripts": {
+    "start": "tsx src/cli.tsx",
     "build": "tsc",
     "dev": "tsc --watch",
     "prettier": "prettier --write .",
@@ -17,7 +18,7 @@
     "dist"
   ],
   "dependencies": {
-    "execa": "^9.5.2",
+    "execa": "^7.1.1",
     "glob": "^7.2.3",
     "ink": "^5.1.0",
     "meow": "^13.2.0",
@@ -40,7 +41,7 @@
     "eslint-plugin-react-hooks": "^5.1.0",
     "ink-testing-library": "^4.0.0",
     "prettier": "^3.4.2",
-    "ts-node": "^10.9.2",
+    "tsx": "^4.19.2",
     "typescript": "^5.7.2",
     "vitest": "^1.0.0"
   },

@@ -2,7 +2,7 @@ import React from 'react';
 import chalk from 'chalk';
 import { describe, test, expect } from 'vitest';
 import { render } from 'ink-testing-library';
-import Index from '../src/commands/index.js';
+import Index from '../commands/index';
 
 describe('Index component', () => {
   test('should greet user', () => {
