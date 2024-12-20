@@ -6,7 +6,6 @@ import glob from 'glob';
 import { readFile, writeFile } from 'fs/promises';
 import path from 'path';
 import fs from 'fs/promises';
-import { fileURLToPath } from 'url';
 import minimist from 'minimist';
 import chalk from 'chalk';
 import {
@@ -24,7 +23,7 @@ import {
   registerTemplate,
   displayErrorSummary,
 } from './rtsql.utils';
-import { RTSQLConfig, RTSQLResult, BuildModes, MigrationError } from './rtsql.types';
+import { RTSQLConfig, RTSQLResult, MigrationError } from './rtsql.types';
 
 export async function buildTemplates(config: RTSQLConfig = {}): Promise<RTSQLResult> {
   const baseDir = config.baseDir || process.cwd(); // path.dirname(fileURLToPath(import.meta.url));
@@ -32,11 +31,11 @@ export async function buildTemplates(config: RTSQLConfig = {}): Promise<RTSQLRes
   const errors: MigrationError[] = [];
   const applied: string[] = [];
 
-  const modes: BuildModes = {
+  const modes: RTSQLConfig = {
     force: config.force || false,
     apply: config.apply || false,
     skipFiles: config.skipFiles || false,
-    filter: !!config.filter,
+    filter: config.filter,
     register: config.register,
     verbose: config.verbose ?? true,
   };
@@ -163,6 +162,7 @@ export async function buildTemplates(config: RTSQLConfig = {}): Promise<RTSQLRes
         if (!localBuildLog.templates[relativeTemplatePath]) {
           localBuildLog.templates[relativeTemplatePath] = {
             lastApplied: currentHash,
+            lastAppliedDate: new Date().toISOString(),
           };
         } else {
           localBuildLog.templates[relativeTemplatePath].lastApplied = currentHash;

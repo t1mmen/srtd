@@ -19,15 +19,6 @@ export interface LocalBuildLog {
   lastTimestamp: string; // timestamp of last apply operation
 }
 
-export interface BuildModes {
-  force: boolean;
-  apply: boolean;
-  skipFiles: boolean;
-  filter?: boolean;
-  register?: string | string[];
-  verbose?: boolean;
-}
-
 export interface MigrationError {
   file: string;
   error: string;
@@ -53,10 +44,4 @@ export interface Template {
   name: string;
   path: string;
   status: 'unregistered' | 'registered' | 'modified';
-}
-
-export interface TemplateState {
-  items: Template[];
-  loading: boolean;
-  error?: string;
 }

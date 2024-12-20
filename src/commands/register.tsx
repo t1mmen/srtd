@@ -2,7 +2,13 @@ import React from 'react';
 import { Box, Text } from 'ink';
 import { MultiSelect } from '@inkjs/ui';
 import { loadTemplates, registerTemplate } from '../rtsql/rtsql.utils';
-import { TemplateState } from '../rtsql/rtsql.types';
+import { Template } from '../rtsql/rtsql.types';
+
+export interface TemplateState {
+  items: Template[];
+  loading: boolean;
+  error?: string;
+}
 
 export default function Register() {
   const [state, setState] = React.useState<TemplateState>({
