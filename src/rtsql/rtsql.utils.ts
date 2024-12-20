@@ -4,15 +4,17 @@ import path from 'path';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import chalk from 'chalk';
-import { BuildLog, BuildModes, LocalBuildLog, MigrationError } from './rtsql.types.js';
+import { BuildLog, BuildModes, LocalBuildLog, MigrationError, Template } from './rtsql.types.js';
+import glob from 'glob';
 
 export const execAsync = promisify(exec);
 import { execa } from 'execa';
+import { fileURLToPath } from 'url';
 
-export const TEMPLATE_DIR = '../../supabase/migrations-templates';
-export const MIGRATION_DIR = '../../supabase/migrations';
-export const BUILD_LOG = '../../supabase/migrations-templates/.buildlog.json';
-export const LOCAL_BUILD_LOG = '../../supabase/migrations-templates/.buildlog.local.json';
+export const TEMPLATE_DIR = 'supabase/migrations-templates';
+export const MIGRATION_DIR = 'supabase/migrations';
+export const BUILD_LOG = 'supabase/migrations-templates/.buildlog.json';
+export const LOCAL_BUILD_LOG = 'supabase/migrations-templates/.buildlog.local.json';
 export const PG_CONNECTION = 'postgresql://postgres:postgres@localhost:54322/postgres';
 
 export async function calculateMD5(content: string): Promise<string> {
@@ -100,40 +102,40 @@ export function displayErrorSummary(errors: MigrationError[]): void {
   console.log('\n  ⚠️  Some migrations failed. Please check the errors above.');
 }
 
-export function displayHelp(modes: BuildModes): void {
-  console.log(`
-  ${chalk.bold.bgBlue.white(' TIC Migration Template Builder ')}
+// export function displayHelp(modes: BuildModes): void {
+//   console.log(`
+//   ${chalk.bold.bgBlue.white(' TIC Migration Template Builder ')}
 
-  ${chalk.bold('Available Commands:')}
-  ${chalk.cyan('yarn db:build:migrations')}
-    ${
-      modes.force ? chalk.green('▶') : ' '
-    } 🔄 Regular build - Only generates migrations for changed templates
+//   ${chalk.bold('Available Commands:')}
+//   ${chalk.cyan('yarn db:build:migrations')}
+//     ${
+//       modes.force ? chalk.green('▶') : ' '
+//     } 🔄 Regular build - Only generates migrations for changed templates
 
-  ${chalk.cyan('yarn db:build:migrations:watch')}
-    ${
-      modes.skipFiles && modes.apply ? chalk.green('▶') : ' '
-    } 👀 Watches for changes with --apply --skip-files to directly apply changes to local database
+//   ${chalk.cyan('yarn db:build:migrations:watch')}
+//     ${
+//       modes.skipFiles && modes.apply ? chalk.green('▶') : ' '
+//     } 👀 Watches for changes with --apply --skip-files to directly apply changes to local database
 
-  ${chalk.cyan('yarn db:build:migrations:apply')}
-    ${
-      modes.apply ? chalk.green('▶') : ' '
-    } 🚀 Build & Apply - Generates migrations and (directly) applies them to local DB
+//   ${chalk.cyan('yarn db:build:migrations:apply')}
+//     ${
+//       modes.apply ? chalk.green('▶') : ' '
+//     } 🚀 Build & Apply - Generates migrations and (directly) applies them to local DB
 
-    ${chalk.bold('Flags:')}
-    --filter=pattern ${
-      modes.filter ? chalk.green('✓') : '🎯'
-    } Only process templates matching the pattern
-    --apply          ${
-      modes.apply ? chalk.green('✓') : '📥'
-    } Directly apply migrations to local database
-    --skip-files     ${modes.skipFiles ? chalk.green('✓') : '🏃'} Skip migration file generation
-    --force          ${modes.force ? chalk.green('✓') : '💪'} Force regeneration of all templates
-    --register=file  ${
-      modes.register ? chalk.green('✓') : '📝'
-    } Register template as already applied
-  `);
-}
+//     ${chalk.bold('Flags:')}
+//     --filter=pattern ${
+//       modes.filter ? chalk.green('✓') : '🎯'
+//     } Only process templates matching the pattern
+//     --apply          ${
+//       modes.apply ? chalk.green('✓') : '📥'
+//     } Directly apply migrations to local database
+//     --skip-files     ${modes.skipFiles ? chalk.green('✓') : '🏃'} Skip migration file generation
+//     --force          ${modes.force ? chalk.green('✓') : '💪'} Force regeneration of all templates
+//     --register=file  ${
+//       modes.register ? chalk.green('✓') : '📝'
+//     } Register template as already applied
+//   `);
+// }
 
 export function getTimeAgo(date: Date): string {
   const now = new Date();
@@ -145,29 +147,60 @@ export function getTimeAgo(date: Date): string {
   return `${Math.floor(seconds / 86400)}d ago`;
 }
 
-export async function registerTemplate(templatePath: string, dirname: string) {
-  const content = await readFile(templatePath, 'utf-8');
-  const currentHash = await calculateMD5(content);
-  const relativeTemplatePath = path.relative(dirname, templatePath);
+export async function registerTemplate(templatePath: string, baseDir: string) {
+  const content = await fs.readFile(templatePath, 'utf-8');
+  const hash = await calculateMD5(content);
+  const relativePath = path.relative(baseDir, templatePath);
+  const now = new Date().toISOString();
 
-  // Update both build logs
+  // Update build log
+  const buildLog = await loadBuildLog(baseDir);
+  buildLog.templates[relativePath] = {
+    lastHash: hash,
+    lastBuilt: now,
+    lastMigration: `registered_${path.basename(templatePath)}`,
+  };
+  await saveBuildLog(baseDir, buildLog);
+
+  // Update local build log
+  const localBuildLog = await loadLocalBuildLog(baseDir);
+  localBuildLog.templates[relativePath] = {
+    lastApplied: hash,
+    lastAppliedDate: now,
+  };
+  await saveLocalBuildLog(baseDir, localBuildLog);
+}
+
+export async function loadTemplates(dirname: string, filter = '**/*.sql'): Promise<Template[]> {
+  const baseDir = dirname || path.dirname(fileURLToPath(import.meta.url));
+  console.log(baseDir);
+  const files = await new Promise<string[]>((resolve, reject) => {
+    glob(path.join(baseDir, TEMPLATE_DIR, filter), (err, matches) => {
+      if (err) reject(err);
+      else resolve(matches);
+    });
+  });
+  // console.log({ files, TEMPLATE_DIR, baseDir });
+
   const buildLog = await loadBuildLog(dirname);
-  const localBuildLog = await loadLocalBuildLog(dirname);
+  // const localBuildLog = await loadLocalBuildLog(dirname);
 
-  // Register in build log
-  buildLog.templates[relativeTemplatePath] = {
-    lastHash: currentHash,
-    lastBuilt: new Date().toISOString(),
-    lastMigration: `registered_${path.basename(templatePath)}`, // Virtual migration name
-  };
+  const items = await Promise.all(
+    files.map(async filePath => {
+      const name = path.basename(filePath);
+      const content = await fs.readFile(filePath, 'utf-8');
+      const hash = await calculateMD5(content);
+      const relativePath = path.relative(dirname, filePath);
+      const logEntry = buildLog.templates[relativePath];
+      const status: Template['status'] = logEntry?.lastHash
+        ? logEntry.lastHash === hash
+          ? 'registered'
+          : 'modified'
+        : 'unregistered';
 
-  // Register in local build log
-  localBuildLog.templates[relativeTemplatePath] = {
-    lastApplied: currentHash,
-  };
+      return { name, path: filePath, status };
+    })
+  );
 
-  await saveBuildLog(dirname, buildLog);
-  await saveLocalBuildLog(dirname, localBuildLog);
-
-  return { buildLog, localBuildLog };
+  return items;
 }

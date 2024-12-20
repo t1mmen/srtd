@@ -1,34 +1,48 @@
 import React from 'react';
-import { Text, Box } from 'ink';
-import zod from 'zod';
+import { Box, Text } from 'ink';
+import { Select } from '@inkjs/ui';
 
-export const options = zod.object({
-  name: zod.string().default('Stranger').describe('Name'),
-  verbose: zod.boolean().default(false).describe('Show detailed output'),
-});
+// Import the "Register" component for demonstration of navigation:
+import Register from './register';
+import Apply from './apply';
+import Build from './build';
+import Status from './status';
 
-type Props = {
-  options: zod.infer<typeof options>;
-};
+export default function Index() {
+  const [selectedCommand, setSelectedCommand] = React.useState<string | null>(null);
 
-export default function Index({ options }: Props) {
+  // For now, we only demonstrate navigation to "register"
+  if (selectedCommand === 'register') {
+    return <Register />;
+  }
+
+  if (selectedCommand === 'apply') {
+    return <Apply />;
+  }
+
+  if (selectedCommand === 'build') {
+    return <Build />;
+  }
+
+  if (selectedCommand === 'status') {
+    return <Status />;
+  }
+
+  // Single-choice interactive menu
+  const menuItems = [
+    { label: 'build - Build migrations from templates', value: 'build' },
+    { label: 'apply - Build & apply migrations', value: 'apply' },
+    { label: 'register - Register templates as applied', value: 'register' },
+    { label: 'watch - Watch templates for changes', value: 'watch' },
+    { label: 'status - Show migration status', value: 'status' },
+  ];
+
   return (
     <Box flexDirection="column">
       <Text bold>RTSQL - Repeatable Template SQL Migration Tool</Text>
-      <Text>Available commands:</Text>
-      <Box marginLeft={2} flexDirection="column">
-        <Text>
-          <Text bold>build</Text> - Build migrations from templates
-        </Text>
-        <Text>
-          <Text bold>apply</Text> - Build & apply migrations to database
-        </Text>
-        <Text>
-          <Text bold>register</Text> - Register templates as applied
-        </Text>
-        <Text>
-          <Text bold>watch</Text> - Watch templates and apply changes
-        </Text>
+      <Text>Select a command:</Text>
+      <Box marginTop={1}>
+        <Select options={menuItems} onChange={value => setSelectedCommand(value)} />
       </Box>
     </Box>
   );

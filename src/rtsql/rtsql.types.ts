@@ -12,9 +12,11 @@ export interface BuildLog {
 export interface LocalBuildLog {
   templates: {
     [templatePath: string]: {
-      lastApplied: string;
+      lastApplied: string; // hash
+      lastAppliedDate: string; // ISO date string
     };
   };
+  lastTimestamp: string; // timestamp of last apply operation
 }
 
 export interface BuildModes {
@@ -45,4 +47,16 @@ export interface RTSQLConfig {
 export interface RTSQLResult {
   errors: MigrationError[];
   applied: string[];
+}
+
+export interface Template {
+  name: string;
+  path: string;
+  status: 'unregistered' | 'registered' | 'modified';
+}
+
+export interface TemplateState {
+  items: Template[];
+  loading: boolean;
+  error?: string;
 }

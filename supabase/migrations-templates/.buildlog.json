@@ -1,10 +1,20 @@
 {
   "templates": {
-    "../../supabase/migrations-templates/test.sql": {
+    "supabase/migrations-templates/other-migration.sql": {
+      "lastHash": "41344c160444dba9dbe503408a02ef3e",
+      "lastBuilt": "2024-12-20T13:58:48.527Z",
+      "lastMigration": "20241220135848_tmpl-other-migration.sql"
+    },
+    "supabase/migrations-templates/test.sql": {
       "lastHash": "156e46ee2f7df04fde6ad248927b1ee1",
-      "lastBuilt": "2024-12-20T12:10:11.509Z",
-      "lastMigration": "20241220121011_tmpl-test.sql"
+      "lastBuilt": "2024-12-20T13:19:18.708Z",
+      "lastMigration": "registered_test.sql"
+    },
+    "supabase/migrations-templates/new-test.sql": {
+      "lastHash": "781984a91a4aff31a3ed5b00154878e1",
+      "lastBuilt": "2024-12-20T14:02:17.159Z",
+      "lastMigration": "20241220140217_tmpl-new-test.sql"
     }
   },
-  "lastTimestamp": "20241220121011"
+  "lastTimestamp": "20241220140217"
 }

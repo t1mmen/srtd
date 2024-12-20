@@ -1,3 +1,10 @@
 {
-  "templates": {}
+  "templates": {
+    "supabase/migrations-templates/other-migration.sql": {
+      "lastApplied": "b0dbc2972c085a0ed45d28e6ac60c58c"
+    },
+    "supabase/migrations-templates/test.sql": {
+      "lastApplied": "156e46ee2f7df04fde6ad248927b1ee1"
+    }
+  }
 }

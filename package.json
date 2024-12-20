@@ -19,6 +19,7 @@
     "dist"
   ],
   "dependencies": {
+    "@inkjs/ui": "^2.0.0",
     "execa": "^7.1.1",
     "glob": "^7.2.3",
     "ink": "^5.1.0",

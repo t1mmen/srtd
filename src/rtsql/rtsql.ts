@@ -19,7 +19,7 @@ import {
   saveLocalBuildLog,
   getNextTimestamp,
   applyMigration,
-  displayHelp,
+  // displayHelp,
   isWipTemplate,
   registerTemplate,
   displayErrorSummary,
@@ -27,7 +27,7 @@ import {
 import { RTSQLConfig, RTSQLResult, BuildModes, MigrationError } from './rtsql.types';
 
 export async function buildTemplates(config: RTSQLConfig = {}): Promise<RTSQLResult> {
-  const baseDir = config.baseDir || path.dirname(fileURLToPath(import.meta.url));
+  const baseDir = config.baseDir || process.cwd(); // path.dirname(fileURLToPath(import.meta.url));
   const filter = config.filter || '**/*.sql';
   const errors: MigrationError[] = [];
   const applied: string[] = [];
@@ -42,7 +42,7 @@ export async function buildTemplates(config: RTSQLConfig = {}): Promise<RTSQLRes
   };
 
   // console.clear();
-  displayHelp(modes);
+  // displayHelp(modes);
 
   // Handle registration if requested
   if (modes.register) {
