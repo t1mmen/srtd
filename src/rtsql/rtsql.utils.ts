@@ -1,14 +1,11 @@
 import crypto from 'crypto';
-import fs, { readFile } from 'fs/promises';
+import fs from 'fs/promises';
 import path from 'path';
-import { exec } from 'child_process';
-import { promisify } from 'util';
 import chalk from 'chalk';
-import { BuildLog, BuildModes, LocalBuildLog, MigrationError, Template } from './rtsql.types.js';
+import { BuildLog, LocalBuildLog, MigrationError, Template } from './rtsql.types.js';
 import glob from 'glob';
-
-export const execAsync = promisify(exec);
-import { execa } from 'execa';
+import pg from 'pg';
+const { Pool } = pg;
 import { fileURLToPath } from 'url';
 
 export const TEMPLATE_DIR = 'supabase/migrations-templates';
@@ -16,6 +13,10 @@ export const MIGRATION_DIR = 'supabase/migrations';
 export const BUILD_LOG = 'supabase/migrations-templates/.buildlog.json';
 export const LOCAL_BUILD_LOG = 'supabase/migrations-templates/.buildlog.local.json';
 export const PG_CONNECTION = 'postgresql://postgres:postgres@localhost:54322/postgres';
+
+const pool = new Pool({
+  connectionString: PG_CONNECTION,
+});
 
 export async function calculateMD5(content: string): Promise<string> {
   return crypto.createHash('md5').update(content).digest('hex');
@@ -26,7 +27,7 @@ export async function loadLocalBuildLog(dirname: string): Promise<LocalBuildLog>
     const content = await fs.readFile(path.resolve(dirname, LOCAL_BUILD_LOG), 'utf-8');
     return JSON.parse(content);
   } catch (error) {
-    return { templates: {} };
+    return { templates: {}, lastTimestamp: '' };
   }
 }
 
@@ -65,29 +66,61 @@ export async function getNextTimestamp(buildLog: BuildLog): Promise<string> {
   return timestamp;
 }
 
+async function connect() {
+  const client = await pool.connect().catch(error => {
+    console.error(`  ❌ ${chalk.red('Failed to connect to database')}`);
+    console.error(error);
+    process.exit(1);
+  });
+  return client;
+}
+
 export async function applyMigration(
-  filePath: string,
-  templateName: string
-): Promise<MigrationError | true> {
+  content: string,
+  templateName: string,
+  verbose = true
+): Promise<true | MigrationError> {
+  const client = await connect();
   try {
-    await execa('psql', [PG_CONNECTION, '-v', 'ON_ERROR_STOP=1', '-f', filePath]);
-    console.log(`  ✨ Successfully applied: ${path.basename(filePath)}`);
+    await client.query('BEGIN');
+
+    // Create advisory lock
+    const lockKey = Math.abs(Buffer.from(templateName).reduce((acc, byte) => acc + byte, 0));
+    await client.query(`SELECT pg_advisory_xact_lock(${lockKey}::bigint)`);
+
+    if (verbose) console.log(`  🔐 Acquired lock for ${templateName}`);
+
+    // Split and execute statements
+    const statements = content
+      .split(/;\s*$/gm)
+      .map(s => s.trim())
+      .filter(Boolean);
+
+    for (const statement of statements) {
+      if (verbose) console.log(`  📝 Executing statement (${statement.length} bytes)`);
+      await client.query(statement);
+    }
+
+    await client.query('COMMIT');
+    if (verbose) console.log(`  ✅ ${chalk.green('Applied successfully')}`);
     return true;
-  } catch (error: any) {
-    const errorDetails = error.stderr || error.stdout || error.message;
-    console.error(`  ❌ Failed to apply migration: ${path.basename(filePath)}`);
-    console.error(`     Error: ${errorDetails}`);
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.log(`  ❌ ${chalk.red('Failed to apply:')} ${error}`);
     return {
-      file: path.basename(filePath),
-      error: errorDetails,
+      file: templateName,
+      error: error as string,
       templateName,
     };
   } finally {
-    await fs.unlink(filePath).catch(() => {
-      // Ignore cleanup errors
-    });
+    client.release();
   }
 }
+
+// Cleanup on process exit
+process.on('exit', () => {
+  pool.end();
+});
 
 // Add new function to display error summary
 export function displayErrorSummary(errors: MigrationError[]): void {

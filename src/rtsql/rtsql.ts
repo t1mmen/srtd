@@ -5,8 +5,6 @@
 import glob from 'glob';
 import { readFile, writeFile } from 'fs/promises';
 import path from 'path';
-import fs from 'fs/promises';
-import minimist from 'minimist';
 import chalk from 'chalk';
 import {
   TEMPLATE_DIR,
@@ -18,7 +16,6 @@ import {
   saveLocalBuildLog,
   getNextTimestamp,
   applyMigration,
-  // displayHelp,
   isWipTemplate,
   registerTemplate,
   displayErrorSummary,
@@ -134,29 +131,14 @@ export async function buildTemplates(config: RTSQLConfig = {}): Promise<RTSQLRes
     if (modes.apply) {
       console.log(`  🚀 Applying to DB...`);
       try {
-        const tempPath = path.resolve(baseDir, '../.temp-migration.sql');
-        try {
-          // Create a consistent hash for the lock key based on the template name
-          const lockKey = Math.abs(Buffer.from(templateName).reduce((acc, byte) => acc + byte, 0));
+        const result = await applyMigration(content, templateName, modes.verbose);
 
-          // Wrap the content in a transaction with advisory lock
-          const wrappedContent =
-            `BEGIN;\n\n` +
-            `-- Acquire advisory lock for this template\n` +
-            `SELECT pg_advisory_xact_lock(${lockKey}::bigint);\n\n` +
-            `${content}\n\n` +
-            `COMMIT;\n`;
-
-          await writeFile(tempPath, wrappedContent);
-          const result = await applyMigration(tempPath, templateName);
-          if (result !== true) {
-            errors.push(result);
-            continue;
-          }
-          applied.push(templateName);
-        } finally {
-          await fs.unlink(tempPath).catch(() => {}); // Single cleanup point
+        if (result !== true) {
+          errors.push(result);
+          continue;
         }
+
+        applied.push(templateName);
 
         // Update applied status in local build log
         if (!localBuildLog.templates[relativeTemplatePath]) {
@@ -166,12 +148,13 @@ export async function buildTemplates(config: RTSQLConfig = {}): Promise<RTSQLRes
           };
         } else {
           localBuildLog.templates[relativeTemplatePath].lastApplied = currentHash;
+          localBuildLog.templates[relativeTemplatePath].lastAppliedDate = new Date().toISOString();
         }
       } catch (error: unknown) {
         if (error instanceof Error) {
           console.log(`  ❌ ${chalk.red('Failed to apply:')} ${error.message}`);
         } else {
-          console.log(`  ❌ ${chalk.red('Failed to apply:')} Unknown error`);
+          console.log(`  ❌ ${chalk.red('Failed to apply: Unknown error')}`);
         }
       }
     }
@@ -229,21 +212,4 @@ export async function buildTemplates(config: RTSQLConfig = {}): Promise<RTSQLRes
   displayErrorSummary(errors);
 
   return { errors, applied };
-}
-
-// CLI wrapper
-if (import.meta.url === `file://${process.argv[1]}`) {
-  const argv = minimist(process.argv.slice(2));
-
-  buildTemplates({
-    filter: argv.filter,
-    force: argv.force,
-    apply: argv.apply,
-    skipFiles: argv['skip-files'],
-    register: argv.register,
-    verbose: argv.verbose,
-  }).catch(error => {
-    console.error(`\n  ❌ ${chalk.red('Error:')} ${error.message}\n`);
-    process.exit(1);
-  });
 }

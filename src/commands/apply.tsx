@@ -9,6 +9,7 @@ export default function Apply() {
         skipFiles: true,
         apply: true,
       });
+      process.exit(0);
     }
     doApply();
   }, []);
