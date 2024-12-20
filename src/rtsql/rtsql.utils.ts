@@ -77,8 +77,7 @@ async function connect() {
 
 export async function applyMigration(
   content: string,
-  templateName: string,
-  verbose = true
+  templateName: string
 ): Promise<true | MigrationError> {
   const client = await connect();
   try {
@@ -88,21 +87,11 @@ export async function applyMigration(
     const lockKey = Math.abs(Buffer.from(templateName).reduce((acc, byte) => acc + byte, 0));
     await client.query(`SELECT pg_advisory_xact_lock(${lockKey}::bigint)`);
 
-    if (verbose) console.log(`  🔐 Acquired lock for ${templateName}`);
-
-    // Split and execute statements
-    const statements = content
-      .split(/;\s*$/gm)
-      .map(s => s.trim())
-      .filter(Boolean);
-
-    for (const statement of statements) {
-      if (verbose) console.log(`  📝 Executing statement (${statement.length} bytes)`);
-      await client.query(statement);
-    }
+    await client.query(content);
 
     await client.query('COMMIT');
-    if (verbose) console.log(`  ✅ ${chalk.green('Applied successfully')}`);
+
+    console.log(`  ✅ ${chalk.green('Applied successfully')}`);
     return true;
   } catch (error) {
     await client.query('ROLLBACK');

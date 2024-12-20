@@ -1,8 +1,8 @@
 {
   "templates": {
     "supabase/migrations-templates/test.sql": {
-      "lastApplied": "1293c34e860a1360ec9194162005d395",
-      "lastAppliedDate": "2024-12-20T14:42:02.247Z"
+      "lastApplied": "1bf63dc61c8367a8d9121352fbd19da2",
+      "lastAppliedDate": "2024-12-20T14:58:40.411Z"
     }
   }
 }

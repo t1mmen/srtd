@@ -131,7 +131,7 @@ export async function buildTemplates(config: RTSQLConfig = {}): Promise<RTSQLRes
     if (modes.apply) {
       console.log(`  🚀 Applying to DB...`);
       try {
-        const result = await applyMigration(content, templateName, modes.verbose);
+        const result = await applyMigration(content, templateName);
 
         if (result !== true) {
           errors.push(result);
