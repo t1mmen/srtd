@@ -73,7 +73,6 @@ export async function buildTemplates(config: RTSQLConfig = {}): Promise<RTSQLRes
   const buildLog = await loadBuildLog(baseDir);
   const localBuildLog = await loadLocalBuildLog(baseDir);
 
-  console.log('\n  🔍 Scanning templates...');
   const templates = await new Promise<string[]>((resolve, reject) => {
     glob(path.join(baseDir, TEMPLATE_DIR, filter), (err, matches) => {
       if (err) reject(err);
@@ -81,10 +80,6 @@ export async function buildTemplates(config: RTSQLConfig = {}): Promise<RTSQLRes
     });
   });
   console.log(`  📁 Found ${chalk.cyan(templates.length)} template(s)\n`);
-
-  if (modes.skipFiles) {
-    console.log(`  ℹ️  ${chalk.dim('File generation disabled (--skip-files)')}`);
-  }
 
   for (const templatePath of templates) {
     const content = await readFile(templatePath, 'utf-8');
@@ -104,7 +99,7 @@ export async function buildTemplates(config: RTSQLConfig = {}): Promise<RTSQLRes
         // Skip if the template is unchanged since last apply
         if (isUnchangedSinceLastApply) {
           if (modes.verbose) {
-            console.log(`  ⏭️  ${chalk.dim(`Already applied: ${templateName}`)}`);
+            console.log(`  ⏭️ ${chalk.dim(`Already applied: ${templateName}`)}`);
           }
           continue;
         }
@@ -160,6 +155,7 @@ export async function buildTemplates(config: RTSQLConfig = {}): Promise<RTSQLRes
     }
 
     if (modes.skipFiles) {
+      console.log(`  ℹ️  ${chalk.dim('File generation disabled (--skip-files)')}`);
       continue;
     }
 
@@ -199,14 +195,12 @@ export async function buildTemplates(config: RTSQLConfig = {}): Promise<RTSQLRes
 
   if (errors.length) {
     console.log(`\n  ❌ ${chalk.red('Errors:')} ${errors.length} migration(s) failed\n`);
-  } else {
-    console.log('\n  ✅ No errors found!\n');
   }
 
   if (applied.length) {
     console.log(`  📦 Applied ${chalk.cyan(applied.length)} migration(s) to local database\n`);
   } else if (modes.apply) {
-    console.log(`  ⏸️ No changes to apply\n`);
+    console.log(`  💤 No changes to apply\n`);
   }
 
   displayErrorSummary(errors);

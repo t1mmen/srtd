@@ -14,6 +14,7 @@ interface TemplateStatus {
   };
   applyInfo: {
     lastApplied?: string;
+    lastAppliedDate?: string;
   };
 }
 
