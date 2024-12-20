@@ -1,0 +1,10 @@
+{
+  "templates": {
+    "../../supabase/migrations-templates/test.sql": {
+      "lastHash": "156e46ee2f7df04fde6ad248927b1ee1",
+      "lastBuilt": "2024-12-20T12:10:11.509Z",
+      "lastMigration": "20241220121011_tmpl-test.sql"
+    }
+  },
+  "lastTimestamp": "20241220121011"
+}

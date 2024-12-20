@@ -24,23 +24,21 @@ import {
   registerTemplate,
   displayErrorSummary,
 } from './rtsql.utils';
-import { BuildModes, MigrationError } from './rtsql.types';
+import { RTSQLConfig, RTSQLResult, BuildModes, MigrationError } from './rtsql.types';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-async function buildTemplates() {
-  const argv = minimist(process.argv.slice(2));
-  const filter = argv.filter || '**/*.sql';
+export async function buildTemplates(config: RTSQLConfig = {}): Promise<RTSQLResult> {
+  const baseDir = config.baseDir || path.dirname(fileURLToPath(import.meta.url));
+  const filter = config.filter || '**/*.sql';
   const errors: MigrationError[] = [];
   const applied: string[] = [];
+
   const modes: BuildModes = {
-    force: argv.force || false,
-    apply: argv.apply || false,
-    skipFiles: argv['skip-files'] || false,
-    filter: !!argv.filter,
-    register: argv.register,
-    verbose: argv.verbose || true,
+    force: config.force || false,
+    apply: config.apply || false,
+    skipFiles: config.skipFiles || false,
+    filter: !!config.filter,
+    register: config.register,
+    verbose: config.verbose ?? true,
   };
 
   // console.clear();
@@ -57,27 +55,31 @@ async function buildTemplates() {
           : [modes.register];
 
     for (const template of templatesForRegistration) {
-      const templatePath = path.resolve(__dirname, TEMPLATE_DIR, template);
+      const templatePath = path.resolve(baseDir, TEMPLATE_DIR, template);
       try {
-        await registerTemplate(templatePath, __dirname);
+        await registerTemplate(templatePath, baseDir);
         console.log(`\n  ✅ Successfully registered template: ${chalk.cyan(template)}`);
-      } catch (error: any) {
-        console.error(`\n  ❌ Failed to register template: ${error.message}\n`);
+      } catch (error: unknown) {
+        if (error instanceof Error) {
+          console.error(`\n  ❌ Failed to register template: ${error.message}\n`);
+        } else {
+          console.error(`\n  ❌ Failed to register template: Unknown error\n`);
+        }
         process.exit(1);
       }
     }
     console.log(
       `\n     ${templatesForRegistration.length} template(s) will be treated as already applied until modified.\n`
     );
-    return;
+    return { errors, applied };
   }
 
-  const buildLog = await loadBuildLog(__dirname);
-  const localBuildLog = await loadLocalBuildLog(__dirname);
+  const buildLog = await loadBuildLog(baseDir);
+  const localBuildLog = await loadLocalBuildLog(baseDir);
 
   console.log('\n  🔍 Scanning templates...');
   const templates = await new Promise<string[]>((resolve, reject) => {
-    glob(path.join(__dirname, TEMPLATE_DIR, filter), (err, matches) => {
+    glob(path.join(baseDir, TEMPLATE_DIR, filter), (err, matches) => {
       if (err) reject(err);
       else resolve(matches);
     });
@@ -92,7 +94,7 @@ async function buildTemplates() {
     const content = await readFile(templatePath, 'utf-8');
     const currentHash = await calculateMD5(content);
     const templateName = path.basename(templatePath, '.sql');
-    const relativeTemplatePath = path.relative(__dirname, templatePath);
+    const relativeTemplatePath = path.relative(baseDir, templatePath);
     const logEntry = buildLog.templates[relativeTemplatePath];
 
     // Skip if unchanged and not forced (for both file generation and DB apply)
@@ -133,7 +135,7 @@ async function buildTemplates() {
     if (modes.apply) {
       console.log(`  🚀 Applying to DB...`);
       try {
-        const tempPath = path.resolve(__dirname, '../.temp-migration.sql');
+        const tempPath = path.resolve(baseDir, '../.temp-migration.sql');
         try {
           // Create a consistent hash for the lock key based on the template name
           const lockKey = Math.abs(Buffer.from(templateName).reduce((acc, byte) => acc + byte, 0));
@@ -165,8 +167,12 @@ async function buildTemplates() {
         } else {
           localBuildLog.templates[relativeTemplatePath].lastApplied = currentHash;
         }
-      } catch (error: any) {
-        console.log(`  ❌ ${chalk.red('Failed to apply:')} ${error.message}`);
+      } catch (error: unknown) {
+        if (error instanceof Error) {
+          console.log(`  ❌ ${chalk.red('Failed to apply:')} ${error.message}`);
+        } else {
+          console.log(`  ❌ ${chalk.red('Failed to apply:')} Unknown error`);
+        }
       }
     }
 
@@ -192,7 +198,7 @@ async function buildTemplates() {
     const migrationContent = `${header}\n${disclaimer}\n\nBEGIN;\n\n${content}\n\nCOMMIT;\n\n${disclaimer}\n${footer}`;
 
     // Write migration file
-    await writeFile(path.resolve(__dirname, migrationPath), migrationContent);
+    await writeFile(path.resolve(baseDir, migrationPath), migrationContent);
 
     // Update build log
     buildLog.templates[relativeTemplatePath] = {
@@ -205,8 +211,8 @@ async function buildTemplates() {
   }
 
   // Save build log
-  await saveBuildLog(__dirname, buildLog);
-  await saveLocalBuildLog(__dirname, localBuildLog);
+  await saveBuildLog(baseDir, buildLog);
+  await saveLocalBuildLog(baseDir, localBuildLog);
 
   if (errors.length) {
     console.log(`\n  ❌ ${chalk.red('Errors:')} ${errors.length} migration(s) failed\n`);
@@ -221,9 +227,23 @@ async function buildTemplates() {
   }
 
   displayErrorSummary(errors);
+
+  return { errors, applied };
 }
 
-buildTemplates().catch(error => {
-  console.error(`\n  ❌ ${chalk.red('Error:')} ${error.message}\n`);
-  process.exit(1);
-});
+// CLI wrapper
+if (import.meta.url === `file://${process.argv[1]}`) {
+  const argv = minimist(process.argv.slice(2));
+
+  buildTemplates({
+    filter: argv.filter,
+    force: argv.force,
+    apply: argv.apply,
+    skipFiles: argv['skip-files'],
+    register: argv.register,
+    verbose: argv.verbose,
+  }).catch(error => {
+    console.error(`\n  ❌ ${chalk.red('Error:')} ${error.message}\n`);
+    process.exit(1);
+  });
+}

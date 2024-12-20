@@ -38,6 +38,7 @@ import {
   PG_CONNECTION,
   MIGRATION_DIR,
 } from '../rtsql.utils';
+import { buildTemplates } from '../rtsql';
 
 describe('Template Processing', () => {
   beforeEach(() => {
@@ -249,4 +250,21 @@ describe('Migration Application', () => {
       templateName: 'test',
     });
   });
+});
+
+describe('buildTemplates', () => {
+  it('should process templates with default config', async () => {
+    const result = await buildTemplates();
+    expect(result).toHaveProperty('errors');
+    expect(result).toHaveProperty('applied');
+  });
+
+  // it('should respect custom configuration', async () => {
+  //   const result = await buildTemplates({
+  //     filter: '*.sql',
+  //     force: true,
+  //     apply: true,
+  //   });
+  //   // Add assertions based on expected behavior
+  // });
 });

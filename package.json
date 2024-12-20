@@ -4,6 +4,7 @@
   "license": "MIT",
   "bin": "dist/cli.js",
   "type": "module",
+  "main": "src/cli.tsx",
   "engines": {
     "node": ">=22"
   },
