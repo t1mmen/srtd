@@ -166,8 +166,10 @@ describe('Build Logs', () => {
       templates: {
         'new.sql': {
           lastApplied: '456',
+          lastAppliedDate: '2024-01-02',
         },
       },
+      lastTimestamp: '',
     };
 
     await saveBuildLog(__dirname, newBuildLog);

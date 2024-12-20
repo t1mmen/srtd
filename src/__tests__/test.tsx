@@ -6,7 +6,7 @@ import Index from '../commands/index';
 
 describe('Index component', () => {
   test('should greet user', () => {
-    const { lastFrame } = render(<Index options={{ name: 'Jane' }} />);
+    const { lastFrame } = render(<Index />);
     expect(lastFrame()).toBe(`Hello, ${chalk.green('Jane')}`);
   });
 });

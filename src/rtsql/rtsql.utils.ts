@@ -202,7 +202,6 @@ export async function loadTemplates(dirname: string, filter = '**/*.sql'): Promi
       else resolve(matches);
     });
   });
-  // console.log({ files, TEMPLATE_DIR, baseDir });
 
   const buildLog = await loadBuildLog(dirname);
   // const localBuildLog = await loadLocalBuildLog(dirname);
