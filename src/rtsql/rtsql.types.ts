@@ -47,6 +47,37 @@ export interface RTSQLResult {
 export interface TemplateStatus {
   name: string;
   path: string;
-  status: 'unregistered' | 'registered' | 'modified';
+  currentHash: string;
+  migrationHash: string | null;
   buildState: TemplateBuildState;
+}
+
+export enum TemplateState {
+  WIP = 'WIP',
+  UNREGISTERED = 'UNREGISTERED',
+  REGISTERED = 'REGISTERED',
+  MODIFIED = 'MODIFIED',
+}
+
+export enum BuildStatus {
+  NOT_BUILT = 'NOT_BUILT',
+  BUILT = 'BUILT',
+  MODIFIED = 'MODIFIED',
+  ERROR = 'ERROR',
+}
+
+export enum ApplyStatus {
+  NOT_APPLIED = 'NOT_APPLIED',
+  APPLIED = 'APPLIED',
+  PENDING = 'PENDING',
+  ERROR = 'ERROR',
+}
+
+export interface TemplateStateInfo {
+  state: TemplateState;
+  buildStatus: BuildStatus;
+  applyStatus: ApplyStatus;
+  currentHash: string;
+  buildMessage?: string;
+  applyMessage?: string;
 }

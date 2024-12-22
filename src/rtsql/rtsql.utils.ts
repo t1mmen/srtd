@@ -6,7 +6,6 @@ import { BuildLog, LocalBuildLog, MigrationError, TemplateStatus } from './rtsql
 import glob from 'glob';
 import pg from 'pg';
 const { Pool } = pg;
-import { fileURLToPath } from 'url';
 
 export const TEMPLATE_DIR = 'supabase/migrations-templates';
 export const MIGRATION_DIR = 'supabase/migrations';
@@ -203,38 +202,53 @@ export async function registerTemplate(templatePath: string, baseDir: string) {
   await saveLocalBuildLog(baseDir, localBuildLog);
 }
 
+export async function getMigrationFileHash(
+  migrationFile: string,
+  baseDir: string
+): Promise<string | null> {
+  try {
+    const fullPath = path.join(baseDir, MIGRATION_DIR, migrationFile);
+    const content = await fs.readFile(fullPath, 'utf-8');
+    return calculateMD5(content);
+  } catch {
+    return null;
+  }
+}
+
 export async function loadTemplates(
   dirname: string,
   filter = '**/*.sql'
 ): Promise<TemplateStatus[]> {
-  const baseDir = dirname || path.dirname(fileURLToPath(import.meta.url));
-  console.log(baseDir);
-  const files = await new Promise<string[]>((resolve, reject) => {
-    glob(path.join(baseDir, TEMPLATE_DIR, filter), (err, matches) => {
+  const templates = await new Promise<string[]>((resolve, reject) => {
+    glob(path.join(dirname, TEMPLATE_DIR, filter), (err, matches) => {
       if (err) reject(err);
       else resolve(matches);
     });
   });
 
   const buildLog = await loadBuildLog(dirname);
-  // const localBuildLog = await loadLocalBuildLog(dirname);
 
-  const items = await Promise.all(
-    files.map(async filePath => {
-      const name = path.basename(filePath);
-      const content = await fs.readFile(filePath, 'utf-8');
-      const hash = await calculateMD5(content);
-      const relativePath = path.relative(dirname, filePath);
-      const logEntry = buildLog.templates[relativePath];
-      const status: TemplateStatus['status'] = logEntry?.lastBuildHash
-        ? logEntry.lastBuildHash === hash
-          ? 'registered'
-          : 'modified'
-        : 'unregistered';
+  const results: TemplateStatus[] = [];
 
-      return { name, path: filePath, status, buildState: logEntry };
-    })
-  );
+  for (const templatePath of templates) {
+    const content = await fs.readFile(templatePath, 'utf-8');
+    const currentHash = await calculateMD5(content);
+    const relPath = path.relative(dirname, templatePath);
+    const buildState = buildLog.templates[relPath] || {};
 
-  return items;
+    // Get hash from migration file if it exists
+    const migrationHash = buildState.lastMigrationFile
+      ? await getMigrationFileHash(buildState.lastMigrationFile, dirname)
+      : null;
+
+    results.push({
+      name: path.basename(templatePath, '.sql'),
+      path: templatePath,
+      currentHash,
+      migrationHash,
+      buildState,
+    });
+  }
+
+  return results;
 }
