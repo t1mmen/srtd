@@ -3,13 +3,12 @@
   "lastTimestamp": "",
   "templates": {
     "supabase/migrations-templates/test.sql": {
-      "lastApplied": "1bf63dc61c8367a8d9121352fbd19da2",
-      "lastAppliedDate": "2024-12-22T08:42:55.527Z",
-      "lastAppliedHash": "dc0fd6026b87560e8441798077455bb3"
+      "lastAppliedHash": "dc0fd6026b87560e8441798077455bb3",
+      "lastAppliedDate": "2024-12-22T12:13:29.422Z"
     },
     "supabase/migrations-templates/another.wip.sql": {
       "lastAppliedHash": "781984a91a4aff31a3ed5b00154878e1",
-      "lastAppliedDate": "2024-12-22T09:00:01.675Z"
+      "lastAppliedDate": "2024-12-22T12:13:29.419Z"
     }
   }
 }
