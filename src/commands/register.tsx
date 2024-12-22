@@ -2,39 +2,20 @@ import React from 'react';
 import { Box, Text } from 'ink';
 import { MultiSelect } from '@inkjs/ui';
 import { loadTemplates, registerTemplate } from '../rtsql/rtsql.utils';
-import { Template } from '../rtsql/rtsql.types';
+import { TemplateState } from '../rtsql/rtsql.types';
+import { useTemplateState } from '../hooks/useTemplateState';
 
 export interface TemplateState {
-  items: Template[];
+  items: TemplateState[];
   loading: boolean;
   error?: string;
 }
 
 export default function Register() {
-  const [state, setState] = React.useState<TemplateState>({
-    items: [],
-    loading: true,
-  });
+  const { loading, error, items } = useTemplateState();
   const [selectedValues, setSelectedValues] = React.useState<string[]>([]);
   const [registering, setRegistering] = React.useState(false);
   const [doneMessage, setDoneMessage] = React.useState('');
-
-  async function loadTemplatesData() {
-    try {
-      const templateEntities = await loadTemplates(process.cwd());
-      setState({ items: templateEntities, loading: false });
-    } catch (error) {
-      setState(s => ({
-        ...s,
-        loading: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
-      }));
-    }
-  }
-
-  React.useEffect(() => {
-    loadTemplatesData();
-  }, []);
 
   async function handleSubmit(vals: string[]) {
     setRegistering(true);
@@ -53,25 +34,25 @@ export default function Register() {
     }
 
     setDoneMessage(`Successfully registered ${successCount} template(s). Failed: ${failCount}`);
-    await loadTemplatesData(); // Refresh status
+
     setRegistering(false);
     process.exit(0);
   }
 
-  if (state.loading) {
+  if (loading) {
     return <Text>Loading templates...</Text>;
   }
 
-  if (state.error) {
-    return <Text color="red">Error: {state.error}</Text>;
+  if (error) {
+    return <Text color="red">Error: {error}</Text>;
   }
-
-  const options = state.items.map(t => ({
-    label: `${t.name}${
-      t.status === 'registered' ? ' (registered)' : t.status === 'modified' ? ' (modified)' : ''
-    }`,
-    value: t.path,
-  }));
+  const options = items.map(t => {
+    const status = t.buildState.lastMigrationFile ? 'registered' : 'new';
+    return {
+      label: `${t.name} (${status})`,
+      value: t.path,
+    };
+  });
 
   return (
     <Box flexDirection="column">
@@ -82,7 +63,7 @@ export default function Register() {
           {selectedValues.length} / {options.length} selected
         </Text>
       </Box>
-      <Box marginTop={1}>
+      <Box marginTop={1} marginBottom={1}>
         <MultiSelect
           options={options}
           onChange={vals => setSelectedValues(vals)}

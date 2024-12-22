@@ -173,14 +173,6 @@ export async function registerTemplate(templatePath: string, baseDir: string) {
     lastMigrationFile: `registered_${path.basename(templatePath)}`,
   };
   await saveBuildLog(baseDir, buildLog);
-
-  // Update local build log
-  const localBuildLog = await loadLocalBuildLog(baseDir);
-  localBuildLog.templates[relativePath] = {
-    lastAppliedHash: hash,
-    lastAppliedDate: now,
-  };
-  await saveLocalBuildLog(baseDir, localBuildLog);
 }
 
 export async function getMigrationFileHash(
