@@ -5,7 +5,6 @@ export default function Apply() {
   React.useEffect(() => {
     async function doApply() {
       await buildTemplates({
-        baseDir: process.cwd(),
         skipFiles: true,
         apply: true,
       });

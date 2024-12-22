@@ -1,7 +1,13 @@
 import React from 'react';
 import { Box, Text } from 'ink';
 import path from 'path';
-import { loadTemplates, loadBuildLog, loadLocalBuildLog, getTimeAgo } from '../rtsql/rtsql.utils';
+import {
+  loadTemplates,
+  loadBuildLog,
+  loadLocalBuildLog,
+  getTimeAgo,
+  isWipTemplate,
+} from '../rtsql/rtsql.utils';
 import {
   TemplateStatus,
   TemplateStateInfo,
@@ -12,7 +18,7 @@ import {
 
 const calculateTemplateState = (template: TemplateStatus): TemplateStateInfo => {
   const { currentHash, buildState, path } = template;
-  const isWip = path.endsWith('.wip.sql');
+  const isWip = isWipTemplate(path);
 
   // Build status tracks migration generation
   let buildStatus = BuildStatus.NOT_BUILT;

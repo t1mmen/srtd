@@ -2,9 +2,16 @@ import crypto from 'crypto';
 import fs from 'fs/promises';
 import path from 'path';
 import chalk from 'chalk';
-import { BuildLog, LocalBuildLog, MigrationError, TemplateStatus } from './rtsql.types.js';
+import {
+  BuildLog,
+  LocalBuildLog,
+  MigrationError,
+  RTSQLConfig,
+  TemplateStatus,
+} from './rtsql.types.js';
 import glob from 'glob';
 import pg from 'pg';
+import { loadConfig } from './config';
 const { Pool } = pg;
 
 export const TEMPLATE_DIR = 'supabase/migrations-templates';
@@ -16,6 +23,15 @@ export const PG_CONNECTION = 'postgresql://postgres:postgres@localhost:54322/pos
 const pool = new Pool({
   connectionString: PG_CONNECTION,
 });
+
+let config: RTSQLConfig;
+
+export async function getConfig(baseDir: string): Promise<RTSQLConfig> {
+  if (!config) {
+    config = await loadConfig(baseDir);
+  }
+  return config;
+}
 
 export async function calculateMD5(content: string): Promise<string> {
   return crypto.createHash('md5').update(content).digest('hex');
@@ -133,41 +149,6 @@ export function displayErrorSummary(errors: MigrationError[]): void {
   console.log('\n  ⚠️  Some migrations failed. Please check the errors above.');
 }
 
-// export function displayHelp(modes: BuildModes): void {
-//   console.log(`
-//   ${chalk.bold.bgBlue.white(' TIC Migration Template Builder ')}
-
-//   ${chalk.bold('Available Commands:')}
-//   ${chalk.cyan('yarn db:build:migrations')}
-//     ${
-//       modes.force ? chalk.green('▶') : ' '
-//     } 🔄 Regular build - Only generates migrations for changed templates
-
-//   ${chalk.cyan('yarn db:build:migrations:watch')}
-//     ${
-//       modes.skipFiles && modes.apply ? chalk.green('▶') : ' '
-//     } 👀 Watches for changes with --apply --skip-files to directly apply changes to local database
-
-//   ${chalk.cyan('yarn db:build:migrations:apply')}
-//     ${
-//       modes.apply ? chalk.green('▶') : ' '
-//     } 🚀 Build & Apply - Generates migrations and (directly) applies them to local DB
-
-//     ${chalk.bold('Flags:')}
-//     --filter=pattern ${
-//       modes.filter ? chalk.green('✓') : '🎯'
-//     } Only process templates matching the pattern
-//     --apply          ${
-//       modes.apply ? chalk.green('✓') : '📥'
-//     } Directly apply migrations to local database
-//     --skip-files     ${modes.skipFiles ? chalk.green('✓') : '🏃'} Skip migration file generation
-//     --force          ${modes.force ? chalk.green('✓') : '💪'} Force regeneration of all templates
-//     --register=file  ${
-//       modes.register ? chalk.green('✓') : '📝'
-//     } Register template as already applied
-//   `);
-// }
-
 export function getTimeAgo(date: Date): string {
   const now = new Date();
   const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
@@ -219,8 +200,10 @@ export async function loadTemplates(
   dirname: string,
   filter = '**/*.sql'
 ): Promise<TemplateStatus[]> {
+  const config = await getConfig(dirname);
+  const templatePath = path.join(dirname, config.templateDir, filter);
   const templates = await new Promise<string[]>((resolve, reject) => {
-    glob(path.join(dirname, TEMPLATE_DIR, filter), (err, matches) => {
+    glob(templatePath, (err, matches) => {
       if (err) reject(err);
       else resolve(matches);
     });

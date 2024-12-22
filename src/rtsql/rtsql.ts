@@ -20,15 +20,15 @@ import {
   registerTemplate,
   displayErrorSummary,
 } from './rtsql.utils';
-import { RTSQLConfig, RTSQLResult, MigrationError } from './rtsql.types';
+import { RTSQLArgs, RTSQLResult, MigrationError } from './rtsql.types';
 
-export async function buildTemplates(config: RTSQLConfig = {}): Promise<RTSQLResult> {
+export async function buildTemplates(config: RTSQLArgs = {}): Promise<RTSQLResult> {
   const baseDir = config.baseDir || process.cwd(); // path.dirname(fileURLToPath(import.meta.url));
   const filter = config.filter || '**/*.sql';
   const errors: MigrationError[] = [];
   const applied: string[] = [];
 
-  const modes: RTSQLConfig = {
+  const modes: RTSQLArgs = {
     force: config.force || false,
     apply: config.apply || false,
     skipFiles: config.skipFiles || false,

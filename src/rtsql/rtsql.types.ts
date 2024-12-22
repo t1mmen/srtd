@@ -30,6 +30,16 @@ export interface MigrationError {
 }
 
 export interface RTSQLConfig {
+  templateDir: string;
+  migrationDir: string;
+  buildLog: string;
+  localBuildLog: string;
+  pgConnection: string;
+}
+
+export type RTSQLConfigPartial = Partial<RTSQLConfig>;
+
+export interface RTSQLArgs {
   filter?: string;
   force?: boolean;
   apply?: boolean;
