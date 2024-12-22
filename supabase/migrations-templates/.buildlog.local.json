@@ -1,4 +1,6 @@
 {
+  "version": "1.0",
+  "lastTimestamp": "",
   "templates": {
     "supabase/migrations-templates/test.sql": {
       "lastApplied": "1bf63dc61c8367a8d9121352fbd19da2",

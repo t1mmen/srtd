@@ -1,22 +1,8 @@
 import React from 'react';
 import { Box, Text } from 'ink';
 import path from 'path';
-import { loadTemplates, loadBuildLog, loadLocalBuildLog } from '../rtsql/rtsql.utils';
-
-interface TemplateStatus {
-  name: string;
-  path: string;
-  status: 'unregistered' | 'registered' | 'modified';
-  buildInfo: {
-    lastHash?: string;
-    lastBuilt?: string;
-    lastMigration?: string;
-  };
-  applyInfo: {
-    lastApplied?: string;
-    lastAppliedDate?: string;
-  };
-}
+import { loadTemplates, loadBuildLog, loadLocalBuildLog, getTimeAgo } from '../rtsql/rtsql.utils';
+import { TemplateStatus } from '../rtsql/rtsql.types';
 
 export default function Status() {
   const [loading, setLoading] = React.useState(true);
@@ -33,21 +19,16 @@ export default function Status() {
 
         const combined = templates.map(t => {
           const relPath = path.relative(dirname, t.path);
-          const logEntry = buildLog.templates[relPath] || {};
-          const localEntry = localBuildLog.templates[relPath] || {};
+          const buildState = {
+            ...buildLog.templates[relPath],
+            ...localBuildLog.templates[relPath],
+          };
 
           return {
             name: t.name,
             path: relPath,
             status: t.status,
-            buildInfo: {
-              lastHash: logEntry.lastHash,
-              lastBuilt: logEntry.lastBuilt,
-              lastMigration: logEntry.lastMigration,
-            },
-            applyInfo: {
-              lastApplied: localEntry.lastApplied,
-            },
+            buildState,
           };
         });
 
@@ -63,29 +44,26 @@ export default function Status() {
 
   const formatDate = (date?: string) => {
     if (!date) return 'Never';
-    const d = new Date(date);
-    return d.toLocaleString();
+    return getTimeAgo(new Date(date));
   };
 
-  const getAgeIndicator = (item: TemplateStatus) => {
-    if (!item.buildInfo.lastBuilt) return '⚠️ Never built';
-    if (!item.applyInfo.lastApplied) return '⚠️ Never applied';
+  const getStatusIndicator = (item: TemplateStatus) => {
+    const { buildState } = item;
 
-    const buildDate = new Date(item.buildInfo.lastBuilt);
-    const applyDate = new Date(item.applyInfo.lastApplied || 0);
+    if (buildState.lastBuildError) return '❌ Build failed';
+    if (buildState.lastAppliedError) return '❌ Apply failed';
+    if (!buildState.lastBuildDate) return '⚠️ Not built';
+    if (!buildState.lastAppliedDate) return '⚠️ Not applied';
 
-    if (buildDate > applyDate) return '⚠️ Out of sync';
+    if (buildState.lastBuildHash !== buildState.lastAppliedHash) {
+      return '⚠️ Out of sync';
+    }
+
     return '✓ In sync';
   };
 
-  if (loading || error) {
-    if (loading) {
-      return <Text>Loading status…</Text>;
-    }
-    if (error) {
-      return <Text color="red">Error: {error}</Text>;
-    }
-  }
+  if (loading) return <Text>Loading status…</Text>;
+  if (error) return <Text color="red">Error: {error}</Text>;
 
   const total = items.length;
   const unregisteredCount = items.filter(i => i.status === 'unregistered').length;
@@ -95,63 +73,67 @@ export default function Status() {
   return (
     <Box flexDirection="column">
       <Box marginBottom={1}>
-        <Text bold>Templates Status Summary</Text>
+        <Text bold>Template Status</Text>
       </Box>
-      <Box>
+
+      <Box marginBottom={1}>
         <Text>Total: {total} | </Text>
         <Text color="green">✓ {registeredCount} | </Text>
         <Text color="yellow">⚒️ {modifiedCount} | </Text>
         <Text color="red">⨯ {unregisteredCount}</Text>
       </Box>
 
-      {/* Enhanced Table Header */}
       <Box marginY={1}>
-        <Box width={2}>
-          <Text> </Text>
-        </Box>
         <Box width={25}>
           <Text bold>Template</Text>
         </Box>
-        <Box width={20}>
-          <Text bold>Last Built</Text>
-        </Box>
-        <Box width={20}>
-          <Text bold>Last Applied</Text>
+        <Box width={15}>
+          <Text bold>Built</Text>
         </Box>
         <Box width={15}>
+          <Text bold>Applied</Text>
+        </Box>
+        <Box width={20}>
           <Text bold>Status</Text>
         </Box>
       </Box>
 
-      {/* Enhanced Table Content */}
-      <Box flexDirection="column">
-        {items.map(item => {
-          const statusEmoji =
-            item.status === 'registered' ? '✓' : item.status === 'modified' ? '⚒️' : '⨯';
-          const statusColor =
-            item.status === 'registered' ? 'green' : item.status === 'modified' ? 'yellow' : 'red';
+      {items.map(item => {
+        const statusColor =
+          item.buildState.lastBuildError || item.buildState.lastAppliedError
+            ? 'red'
+            : item.status === 'registered'
+              ? 'green'
+              : item.status === 'modified'
+                ? 'yellow'
+                : 'red';
 
-          return (
-            <Box key={item.path}>
-              <Box width={2}>
-                <Text color={statusColor}>{statusEmoji}</Text>
-              </Box>
+        return (
+          <Box key={item.path} flexDirection="column">
+            <Box>
               <Box width={25}>
                 <Text>{item.name}</Text>
               </Box>
-              <Box width={20}>
-                <Text dimColor>{formatDate(item.buildInfo.lastBuilt)}</Text>
-              </Box>
-              <Box width={20}>
-                <Text dimColor>{formatDate(item.applyInfo.lastApplied)}</Text>
+              <Box width={15}>
+                <Text dimColor>{formatDate(item.buildState.lastBuildDate)}</Text>
               </Box>
               <Box width={15}>
-                <Text>{getAgeIndicator(item)}</Text>
+                <Text dimColor>{formatDate(item.buildState.lastAppliedDate)}</Text>
+              </Box>
+              <Box width={20}>
+                <Text color={statusColor}>{getStatusIndicator(item)}</Text>
               </Box>
             </Box>
-          );
-        })}
-      </Box>
+            {(item.buildState.lastBuildError || item.buildState.lastAppliedError) && (
+              <Box marginLeft={2} marginBottom={1}>
+                <Text color="red">
+                  {item.buildState.lastBuildError || item.buildState.lastAppliedError}
+                </Text>
+              </Box>
+            )}
+          </Box>
+        );
+      })}
     </Box>
   );
 }

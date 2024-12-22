@@ -91,9 +91,9 @@ export async function buildTemplates(config: RTSQLConfig = {}): Promise<RTSQLRes
     // Skip if unchanged and not forced (for both file generation and DB apply)
     if (!modes.force) {
       const localLogEntry = localBuildLog.templates[relativeTemplatePath];
-      const hasGeneratedMigration = logEntry?.lastMigration;
-      const isUnchangedSinceGeneration = logEntry?.lastHash === currentHash;
-      const isUnchangedSinceLastApply = localLogEntry?.lastApplied === currentHash;
+      const hasGeneratedMigration = logEntry?.lastMigrationFile;
+      const isUnchangedSinceGeneration = logEntry?.lastBuildHash === currentHash;
+      const isUnchangedSinceLastApply = localLogEntry?.lastAppliedHash === currentHash;
 
       if (modes.apply) {
         // Skip if the template is unchanged since last apply
@@ -130,21 +130,24 @@ export async function buildTemplates(config: RTSQLConfig = {}): Promise<RTSQLRes
 
         if (result !== true) {
           errors.push(result);
+          // Update error state
+          if (!buildLog.templates[relativeTemplatePath]) {
+            buildLog.templates[relativeTemplatePath] = {};
+          }
+          buildLog.templates[relativeTemplatePath].lastAppliedError = result.error;
           continue;
         }
 
         applied.push(templateName);
 
-        // Update applied status in local build log
+        // Update template state
         if (!localBuildLog.templates[relativeTemplatePath]) {
-          localBuildLog.templates[relativeTemplatePath] = {
-            lastApplied: currentHash,
-            lastAppliedDate: new Date().toISOString(),
-          };
-        } else {
-          localBuildLog.templates[relativeTemplatePath].lastApplied = currentHash;
-          localBuildLog.templates[relativeTemplatePath].lastAppliedDate = new Date().toISOString();
+          localBuildLog.templates[relativeTemplatePath] = {};
         }
+
+        localBuildLog.templates[relativeTemplatePath].lastAppliedHash = currentHash;
+        localBuildLog.templates[relativeTemplatePath].lastAppliedDate = new Date().toISOString();
+        localBuildLog.templates[relativeTemplatePath].lastAppliedError = undefined;
       } catch (error: unknown) {
         if (error instanceof Error) {
           console.log(`  ❌ ${chalk.red('Failed to apply:')} ${error.message}`);
@@ -173,7 +176,7 @@ export async function buildTemplates(config: RTSQLConfig = {}): Promise<RTSQLRes
     const disclaimer =
       `-- **ONLY** use the migration template + yarn db:migration:build to adjust ANY SQL in this file\n` +
       `-- **DO NOT** write any manual migrations to change any SQL from this file`;
-    const footer = `-- Last built: ${logEntry?.lastBuilt || 'Never'}`;
+    const footer = `-- Last built: ${logEntry?.lastBuildDate || 'Never'}`;
     const migrationContent = `${header}\n${disclaimer}\n\nBEGIN;\n\n${content}\n\nCOMMIT;\n\n${disclaimer}\n${footer}`;
 
     // Write migration file
@@ -181,9 +184,11 @@ export async function buildTemplates(config: RTSQLConfig = {}): Promise<RTSQLRes
 
     // Update build log
     buildLog.templates[relativeTemplatePath] = {
-      lastHash: currentHash,
-      lastBuilt: new Date().toISOString(),
-      lastMigration: migrationName,
+      ...buildLog.templates[relativeTemplatePath],
+      lastBuildHash: currentHash,
+      lastBuildDate: new Date().toISOString(),
+      lastMigrationFile: migrationName,
+      lastBuildError: undefined,
     };
 
     console.log(`  ✅  Generated: ${chalk.green(migrationName)}`);

@@ -1,23 +1,27 @@
-export interface BuildLog {
-  templates: {
-    [templatePath: string]: {
-      lastHash: string;
-      lastBuilt: string;
-      lastMigration: string;
-    };
-  };
-  lastTimestamp: string;
+export interface TemplateBuildState {
+  // Build info
+  lastBuildHash?: string;
+  lastBuildDate?: string;
+  lastBuildError?: string;
+  lastMigrationFile?: string;
+
+  // Apply info
+  lastAppliedHash?: string;
+  lastAppliedDate?: string;
+  lastAppliedError?: string;
 }
 
-export interface LocalBuildLog {
+export interface BuildLogBase {
+  version: string; // Format version
+  lastTimestamp: string;
   templates: {
-    [templatePath: string]: {
-      lastApplied: string; // hash
-      lastAppliedDate: string; // ISO date string
-    };
+    [templatePath: string]: TemplateBuildState;
   };
-  lastTimestamp: string; // timestamp of last apply operation
 }
+
+// For backward compatibility and type safety
+export type BuildLog = BuildLogBase;
+export type LocalBuildLog = BuildLogBase;
 
 export interface MigrationError {
   file: string;
@@ -40,8 +44,9 @@ export interface RTSQLResult {
   applied: string[];
 }
 
-export interface Template {
+export interface TemplateStatus {
   name: string;
   path: string;
   status: 'unregistered' | 'registered' | 'modified';
+  buildState: TemplateBuildState;
 }

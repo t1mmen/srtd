@@ -2,7 +2,7 @@ import crypto from 'crypto';
 import fs from 'fs/promises';
 import path from 'path';
 import chalk from 'chalk';
-import { BuildLog, LocalBuildLog, MigrationError, Template } from './rtsql.types.js';
+import { BuildLog, LocalBuildLog, MigrationError, TemplateStatus } from './rtsql.types.js';
 import glob from 'glob';
 import pg from 'pg';
 const { Pool } = pg;
@@ -25,18 +25,28 @@ export async function calculateMD5(content: string): Promise<string> {
 export async function loadLocalBuildLog(dirname: string): Promise<LocalBuildLog> {
   try {
     const content = await fs.readFile(path.resolve(dirname, LOCAL_BUILD_LOG), 'utf-8');
-    return JSON.parse(content);
+    const log = JSON.parse(content);
+    return {
+      version: log.version || '1.0',
+      lastTimestamp: log.lastTimestamp || '',
+      templates: log.templates || {},
+    };
   } catch (error) {
-    return { templates: {}, lastTimestamp: '' };
+    return { version: '1.0', templates: {}, lastTimestamp: '' };
   }
 }
 
 export async function loadBuildLog(dirname: string): Promise<BuildLog> {
   try {
     const content = await fs.readFile(path.resolve(dirname, BUILD_LOG), 'utf-8');
-    return JSON.parse(content);
+    const log = JSON.parse(content);
+    return {
+      version: log.version || '1.0',
+      lastTimestamp: log.lastTimestamp || '',
+      templates: log.templates || {},
+    };
   } catch (error) {
-    return { templates: {}, lastTimestamp: '' };
+    return { version: '1.0', templates: {}, lastTimestamp: '' };
   }
 }
 
@@ -178,22 +188,25 @@ export async function registerTemplate(templatePath: string, baseDir: string) {
   // Update build log
   const buildLog = await loadBuildLog(baseDir);
   buildLog.templates[relativePath] = {
-    lastHash: hash,
-    lastBuilt: now,
-    lastMigration: `registered_${path.basename(templatePath)}`,
+    lastBuildHash: hash,
+    lastBuildDate: now,
+    lastMigrationFile: `registered_${path.basename(templatePath)}`,
   };
   await saveBuildLog(baseDir, buildLog);
 
   // Update local build log
   const localBuildLog = await loadLocalBuildLog(baseDir);
   localBuildLog.templates[relativePath] = {
-    lastApplied: hash,
+    lastAppliedHash: hash,
     lastAppliedDate: now,
   };
   await saveLocalBuildLog(baseDir, localBuildLog);
 }
 
-export async function loadTemplates(dirname: string, filter = '**/*.sql'): Promise<Template[]> {
+export async function loadTemplates(
+  dirname: string,
+  filter = '**/*.sql'
+): Promise<TemplateStatus[]> {
   const baseDir = dirname || path.dirname(fileURLToPath(import.meta.url));
   console.log(baseDir);
   const files = await new Promise<string[]>((resolve, reject) => {
@@ -213,13 +226,13 @@ export async function loadTemplates(dirname: string, filter = '**/*.sql'): Promi
       const hash = await calculateMD5(content);
       const relativePath = path.relative(dirname, filePath);
       const logEntry = buildLog.templates[relativePath];
-      const status: Template['status'] = logEntry?.lastHash
-        ? logEntry.lastHash === hash
+      const status: TemplateStatus['status'] = logEntry?.lastBuildHash
+        ? logEntry.lastBuildHash === hash
           ? 'registered'
           : 'modified'
         : 'unregistered';
 
-      return { name, path: filePath, status };
+      return { name, path: filePath, status, buildState: logEntry };
     })
   );
 
