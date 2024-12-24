@@ -1,11 +1,12 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { BuildLog } from '../rtsql/rtsql.types';
-import { BUILD_LOG } from '../rtsql/rtsql.utils';
+import { loadConfig } from './config';
 
 export async function loadBuildLog(dirname: string): Promise<BuildLog> {
   try {
-    const content = await fs.readFile(path.resolve(dirname, BUILD_LOG), 'utf-8');
+    const config = await loadConfig();
+    const content = await fs.readFile(path.resolve(dirname, config.buildLog), 'utf-8');
     const log = JSON.parse(content);
     return {
       version: log.version || '1.0',

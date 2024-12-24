@@ -24,7 +24,6 @@ vi.mock('execa', () => ({
 vi.mock('fs/promises', () => fsImpl);
 
 import { execa } from 'execa';
-import { BUILD_LOG, LOCAL_BUILD_LOG, PG_CONNECTION, MIGRATION_DIR } from '../rtsql/rtsql.utils';
 import { loadLocalBuildLog } from '../utils/loadLocalBuildLog';
 import { loadBuildLog } from '../utils/loadBuildLog';
 import { isWipTemplate } from '../utils/isWipTemplate';
@@ -34,7 +33,15 @@ import { getNextTimestamp } from '../utils/getNextTimestamp';
 import { buildTemplates } from '../rtsql/rtsql';
 import { applyMigration } from '../utils/applyMigration';
 import { calculateMD5 } from '../utils/md5';
-import { BuildLog, LocalBuildLog } from '../rtsql/rtsql.types';
+import { BuildLog, LocalBuildLog, RTSQLConfig } from '../rtsql/rtsql.types';
+import { loadConfig } from '../utils/config';
+
+let config: RTSQLConfig;
+
+const setup = async () => {
+  config = await loadConfig();
+};
+setup();
 
 describe('Template Processing', () => {
   beforeEach(() => {
@@ -73,9 +80,10 @@ describe('Template Processing', () => {
   });
 
   it('should not overwrite existing migration files', async () => {
+    const { migrationDir } = await loadConfig();
     // Setup existing migration file
     const existingTimestamp = '20241125223247';
-    const existingPath = path.join(MIGRATION_DIR, `${existingTimestamp}_tmpl-test.sql`);
+    const existingPath = path.join(migrationDir, `${existingTimestamp}_tmpl-test.sql`);
     const existingContent = 'existing content';
     files.set(existingPath, existingContent);
 
@@ -121,8 +129,8 @@ describe('Build Logs', () => {
     files.clear();
 
     // Pre-populate mock filesystem with absolute paths
-    files.set(path.resolve(__dirname, BUILD_LOG), JSON.stringify(mockBuildLog));
-    files.set(path.resolve(__dirname, LOCAL_BUILD_LOG), JSON.stringify(mockLocalBuildLog));
+    files.set(path.resolve(__dirname, config.buildLog), JSON.stringify(mockBuildLog));
+    files.set(path.resolve(__dirname, config.localBuildLog), JSON.stringify(mockLocalBuildLog));
   });
 
   afterEach(() => {
@@ -174,9 +182,9 @@ describe('Build Logs', () => {
     await saveBuildLog(__dirname, newBuildLog);
     await saveLocalBuildLog(__dirname, newLocalBuildLog);
 
-    const savedBuildLog = JSON.parse(files.get(path.resolve(__dirname, BUILD_LOG)) || '');
+    const savedBuildLog = JSON.parse(files.get(path.resolve(__dirname, config.buildLog)) || '');
     const savedLocalBuildLog = JSON.parse(
-      files.get(path.resolve(__dirname, LOCAL_BUILD_LOG)) || ''
+      files.get(path.resolve(__dirname, config.localBuildLog)) || ''
     );
 
     expect(savedBuildLog).toEqual(newBuildLog);
@@ -234,7 +242,7 @@ describe('Migration Application', () => {
     expect(result).toBe(true);
 
     expect(execa).toHaveBeenCalledWith('psql', [
-      PG_CONNECTION,
+      config.pgConnection,
       '-v',
       'ON_ERROR_STOP=1',
       '-f',

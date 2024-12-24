@@ -6,7 +6,6 @@ import glob from 'glob';
 import { readFile, writeFile } from 'fs/promises';
 import path from 'path';
 import chalk from 'chalk';
-import { TEMPLATE_DIR, MIGRATION_DIR } from './rtsql.utils';
 import { loadLocalBuildLog } from '../utils/loadLocalBuildLog';
 import { loadBuildLog } from '../utils/loadBuildLog';
 import { isWipTemplate } from '../utils/isWipTemplate';
@@ -18,20 +17,22 @@ import { applyMigration } from '../utils/applyMigration';
 import { calculateMD5 } from '../utils/md5';
 import { registerTemplate } from '../utils/registerTemplate';
 import { displayErrorSummary } from '../utils/displayErrorSummary';
+import { loadConfig } from '../utils/config';
 
-export async function buildTemplates(config: RTSQLArgs = {}): Promise<RTSQLResult> {
-  const baseDir = config.baseDir || process.cwd(); // path.dirname(fileURLToPath(import.meta.url));
-  const filter = config.filter || '**/*.sql';
+export async function buildTemplates(args: RTSQLArgs = {}): Promise<RTSQLResult> {
+  const config = await loadConfig();
+  const baseDir = args.baseDir || process.cwd(); // path.dirname(fileURLToPath(import.meta.url));
+  const filter = args.filter || '**/*.sql';
   const errors: MigrationError[] = [];
   const applied: string[] = [];
 
   const modes: RTSQLArgs = {
-    force: config.force || false,
-    apply: config.apply || false,
-    skipFiles: config.skipFiles || false,
-    filter: config.filter,
-    register: config.register,
-    verbose: config.verbose ?? true,
+    force: args.force || false,
+    apply: args.apply || false,
+    skipFiles: args.skipFiles || false,
+    filter: args.filter,
+    register: args.register,
+    verbose: args.verbose ?? true,
   };
 
   // console.clear();
@@ -48,7 +49,7 @@ export async function buildTemplates(config: RTSQLArgs = {}): Promise<RTSQLResul
           : [modes.register];
 
     for (const template of templatesForRegistration) {
-      const templatePath = path.resolve(baseDir, TEMPLATE_DIR, template);
+      const templatePath = path.resolve(baseDir, config.templateDir, template);
       try {
         await registerTemplate(templatePath, baseDir);
         console.log(`\n  ✅ Successfully registered template: ${chalk.cyan(template)}`);
@@ -71,7 +72,7 @@ export async function buildTemplates(config: RTSQLArgs = {}): Promise<RTSQLResul
   const localBuildLog = await loadLocalBuildLog(baseDir);
 
   const templates = await new Promise<string[]>((resolve, reject) => {
-    glob(path.join(baseDir, TEMPLATE_DIR, filter), (err, matches) => {
+    glob(path.join(baseDir, config.templateDir, filter), (err, matches) => {
       if (err) reject(err);
       else resolve(matches);
     });
@@ -167,7 +168,7 @@ export async function buildTemplates(config: RTSQLArgs = {}): Promise<RTSQLResul
     // Generate migration file
     const timestamp = await getNextTimestamp(buildLog);
     const migrationName = `${timestamp}_tmpl-${templateName}.sql`;
-    const migrationPath = path.join(MIGRATION_DIR, migrationName);
+    const migrationPath = path.join(config.migrationDir, migrationName);
 
     const header = `-- Generated from template: /supabase/migrations-templates/${templateName}.sql`;
     const disclaimer =

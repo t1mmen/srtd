@@ -19,7 +19,8 @@ export const defaultConfig: RTSQLConfig = {
   pgConnection: 'postgresql://postgres:postgres@localhost:54322/postgres',
 };
 
-export async function loadConfig(baseDir: string): Promise<RTSQLConfig> {
+export async function loadConfig(dir?: string): Promise<RTSQLConfig> {
+  const baseDir = dir || process.cwd();
   const configPath = path.join(baseDir, '.rtsqlrc.json');
   try {
     const content = await fs.readFile(configPath, 'utf-8');
