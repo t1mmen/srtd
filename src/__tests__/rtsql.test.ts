@@ -9,10 +9,10 @@ const fsImpl = vi.hoisted(() => ({
       files.set(path, content);
       return Promise.resolve();
     }),
-    // readFile: vi.fn((path: string) => {
-    //   const content = files.get(path);
-    //   return content ? Promise.resolve(content) : Promise.reject(new Error('File not found'));
-    // }),
+    readFile: vi.fn((path: string) => {
+      const content = files.get(path);
+      return content ? Promise.resolve(content) : Promise.reject(new Error('File not found'));
+    }),
     unlink: vi.fn(() => Promise.resolve()),
   },
 }));
@@ -24,22 +24,17 @@ vi.mock('execa', () => ({
 vi.mock('fs/promises', () => fsImpl);
 
 import { execa } from 'execa';
-import {
-  calculateMD5,
-  loadBuildLog,
-  loadLocalBuildLog,
-  getNextTimestamp,
-  isWipTemplate,
-  applyMigration,
-  saveBuildLog,
-  saveLocalBuildLog,
-  BUILD_LOG,
-  LOCAL_BUILD_LOG,
-  PG_CONNECTION,
-  MIGRATION_DIR,
-} from '../rtsql/rtsql.utils';
+import { BUILD_LOG, LOCAL_BUILD_LOG, PG_CONNECTION, MIGRATION_DIR } from '../rtsql/rtsql.utils';
+import { loadLocalBuildLog } from '../utils/loadLocalBuildLog';
+import { loadBuildLog } from '../utils/loadBuildLog';
+import { isWipTemplate } from '../utils/isWipTemplate';
+import { saveBuildLog } from '../utils/saveBuildLog';
+import { saveLocalBuildLog } from '../utils/saveLocalBuildLog';
+import { getNextTimestamp } from '../utils/getNextTimestamp';
 import { buildTemplates } from '../rtsql/rtsql';
-import { BuildLogBase } from '../rtsql/rtsql.types';
+import { applyMigration } from '../utils/applyMigration';
+import { calculateMD5 } from '../utils/md5';
+import { BuildLog, LocalBuildLog } from '../rtsql/rtsql.types';
 
 describe('Template Processing', () => {
   beforeEach(() => {
@@ -86,9 +81,9 @@ describe('Template Processing', () => {
 
     // Setup build log with the same timestamp
     const buildLog = {
-      version: '1.0',
       templates: {},
       lastTimestamp: existingTimestamp,
+      version: '1.0',
     };
 
     // Get next timestamp - should be different
@@ -154,7 +149,6 @@ describe('Build Logs', () => {
 
   it('should save build logs correctly', async () => {
     const newBuildLog = {
-      version: '1.0',
       templates: {
         'new.sql': {
           lastBuildHash: '456',
@@ -163,10 +157,10 @@ describe('Build Logs', () => {
         },
       },
       lastTimestamp: '20240102120000',
-    } satisfies BuildLogBase;
+      version: '1.0',
+    } satisfies BuildLog;
 
     const newLocalBuildLog = {
-      version: '1.0',
       templates: {
         'new.sql': {
           lastAppliedHash: '456',
@@ -174,7 +168,8 @@ describe('Build Logs', () => {
         },
       },
       lastTimestamp: '',
-    } satisfies BuildLogBase;
+      version: '1.0',
+    } satisfies LocalBuildLog;
 
     await saveBuildLog(__dirname, newBuildLog);
     await saveLocalBuildLog(__dirname, newLocalBuildLog);
@@ -189,14 +184,14 @@ describe('Build Logs', () => {
   });
 
   it('should generate sequential timestamps', async () => {
-    const buildLog = { version: '1.0', templates: {}, lastTimestamp: '20240101120000' };
+    const buildLog = { templates: {}, lastTimestamp: '20240101120000', version: '1.0' };
     const timestamp1 = await getNextTimestamp(buildLog);
     const timestamp2 = await getNextTimestamp(buildLog);
     expect(BigInt(timestamp2)).toBeGreaterThan(BigInt(timestamp1));
   });
 
   it('should handle timestamp collisions', async () => {
-    const buildLog = { version: '1.0', templates: {}, lastTimestamp: '20240101120000' };
+    const buildLog = { templates: {}, lastTimestamp: '20240101120000', version: '1.0' };
     vi.setSystemTime(new Date('2024-01-01T11:59:59Z')); // Earlier than lastTimestamp
 
     const timestamp = await getNextTimestamp(buildLog);
@@ -205,7 +200,7 @@ describe('Build Logs', () => {
   });
 
   it('should use current time when newer than last timestamp', async () => {
-    const buildLog = { version: '1.0', templates: {}, lastTimestamp: '20240101120000' };
+    const buildLog = { templates: {}, lastTimestamp: '20240101120000', version: '1.0' };
     vi.setSystemTime(new Date('2024-01-01T13:00:00Z')); // Later than lastTimestamp
 
     const timestamp = await getNextTimestamp(buildLog);

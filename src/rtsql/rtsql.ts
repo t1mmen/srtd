@@ -6,21 +6,18 @@ import glob from 'glob';
 import { readFile, writeFile } from 'fs/promises';
 import path from 'path';
 import chalk from 'chalk';
-import {
-  TEMPLATE_DIR,
-  MIGRATION_DIR,
-  calculateMD5,
-  loadBuildLog,
-  saveBuildLog,
-  loadLocalBuildLog,
-  saveLocalBuildLog,
-  getNextTimestamp,
-  applyMigration,
-  isWipTemplate,
-  registerTemplate,
-  displayErrorSummary,
-} from './rtsql.utils';
+import { TEMPLATE_DIR, MIGRATION_DIR } from './rtsql.utils';
+import { loadLocalBuildLog } from '../utils/loadLocalBuildLog';
+import { loadBuildLog } from '../utils/loadBuildLog';
+import { isWipTemplate } from '../utils/isWipTemplate';
+import { saveBuildLog } from '../utils/saveBuildLog';
+import { saveLocalBuildLog } from '../utils/saveLocalBuildLog';
+import { getNextTimestamp } from '../utils/getNextTimestamp';
 import { RTSQLArgs, RTSQLResult, MigrationError } from './rtsql.types';
+import { applyMigration } from '../utils/applyMigration';
+import { calculateMD5 } from '../utils/md5';
+import { registerTemplate } from '../utils/registerTemplate';
+import { displayErrorSummary } from '../utils/displayErrorSummary';
 
 export async function buildTemplates(config: RTSQLArgs = {}): Promise<RTSQLResult> {
   const baseDir = config.baseDir || process.cwd(); // path.dirname(fileURLToPath(import.meta.url));

@@ -7,6 +7,7 @@ import Register from './register';
 import Apply from './apply';
 import Build from './build';
 import Status from './status';
+import Watch from './watch';
 
 export default function Index() {
   const [selectedCommand, setSelectedCommand] = React.useState<string | null>(null);
@@ -26,6 +27,10 @@ export default function Index() {
 
   if (selectedCommand === 'status') {
     return <Status />;
+  }
+
+  if (selectedCommand === 'watch') {
+    return <Watch />;
   }
 
   // Single-choice interactive menu

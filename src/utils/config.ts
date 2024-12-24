@@ -1,6 +1,15 @@
-import { RTSQLConfig, RTSQLConfigPartial } from './rtsql.types';
+import { RTSQLConfig, RTSQLConfigPartial } from '../rtsql/rtsql.types';
 import path from 'path';
 import fs from 'fs/promises';
+
+let config: RTSQLConfig;
+
+export async function getConfig(baseDir: string): Promise<RTSQLConfig> {
+  if (!config) {
+    config = await loadConfig(baseDir);
+  }
+  return config;
+}
 
 export const defaultConfig: RTSQLConfig = {
   templateDir: 'supabase/migrations-templates',

@@ -1,8 +1,8 @@
 import React from 'react';
 import { Box, Text } from 'ink';
 import { MultiSelect } from '@inkjs/ui';
-import { registerTemplate } from '../rtsql/rtsql.utils';
 import { useTemplateState } from '../hooks/useTemplateState';
+import { registerTemplate } from '../utils/registerTemplate';
 
 export default function Register() {
   const { loading, error, items } = useTemplateState();

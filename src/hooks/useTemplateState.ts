@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
-import { loadTemplates, loadBuildLog, loadLocalBuildLog } from '../rtsql/rtsql.utils';
+import { loadLocalBuildLog } from '../utils/loadLocalBuildLog';
+import { loadBuildLog } from '../utils/loadBuildLog';
+import { loadTemplates } from '../utils/loadTemplates';
 import { TemplateStatus } from '../rtsql/rtsql.types';
 import path from 'path';
 

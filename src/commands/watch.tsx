@@ -3,7 +3,7 @@ import { Box, Text } from 'ink';
 import fs from 'fs';
 import path from 'path';
 import { buildTemplates } from '../rtsql/rtsql';
-import { getConfig } from '../rtsql/rtsql.utils';
+import { getConfig } from '../utils/config';
 
 export default function Watch() {
   const [status, setStatus] = React.useState<string>('Initializing...');

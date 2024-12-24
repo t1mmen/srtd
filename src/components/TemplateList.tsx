@@ -3,7 +3,7 @@ import { Box, Text } from 'ink';
 import { TemplateStatus } from '../rtsql/rtsql.types';
 import { StatusIndicator } from './StatusIndicator';
 import { calculateTemplateState } from '../utils/templateState';
-import { getTimeAgo } from '../rtsql/rtsql.utils';
+import { getTimeAgo } from '../utils/getTimeAgo';
 
 interface TemplateListProps {
   items: TemplateStatus[];
