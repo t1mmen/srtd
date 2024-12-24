@@ -1,7 +1,7 @@
 import React from 'react';
 import fs from 'fs/promises';
 import path from 'path';
-import { saveConfig, defaultConfig } from '../utils/config';
+import { saveConfig, loadConfig } from '../utils/config';
 
 async function fileExists(filepath: string): Promise<boolean> {
   try {
@@ -32,8 +32,9 @@ async function createEmptyBuildLog(filepath: string): Promise<boolean> {
 async function ensureDirectories(
   baseDir: string
 ): Promise<{ templateDir: boolean; migrationDir: boolean }> {
-  const templatePath = path.join(baseDir, defaultConfig.templateDir);
-  const migrationPath = path.join(baseDir, defaultConfig.migrationDir);
+  const config = await loadConfig();
+  const templatePath = path.join(baseDir, config.templateDir);
+  const migrationPath = path.join(baseDir, config.migrationDir);
 
   const templateExists = await fileExists(templatePath);
   const migrationExists = await fileExists(migrationPath);
@@ -56,6 +57,7 @@ export default function Init() {
   React.useEffect(() => {
     async function doInit() {
       try {
+        const config = await loadConfig();
         const baseDir = process.cwd();
         const configPath = path.join(baseDir, '.rtsqlrc.json');
 
@@ -81,11 +83,9 @@ export default function Init() {
         }
 
         // Create build logs if they don't exist
-        const buildLogCreated = await createEmptyBuildLog(
-          path.join(baseDir, defaultConfig.buildLog)
-        );
+        const buildLogCreated = await createEmptyBuildLog(path.join(baseDir, config.buildLog));
         const localBuildLogCreated = await createEmptyBuildLog(
-          path.join(baseDir, defaultConfig.localBuildLog)
+          path.join(baseDir, config.localBuildLog)
         );
 
         if (buildLogCreated) console.log('✅ Created build log');
@@ -93,7 +93,7 @@ export default function Init() {
 
         // Update gitignore
         const gitignorePath = path.join(baseDir, '.gitignore');
-        const ignoreEntry = defaultConfig.localBuildLog;
+        const ignoreEntry = config.localBuildLog;
 
         let content = '';
         try {

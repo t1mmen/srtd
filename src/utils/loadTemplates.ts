@@ -2,7 +2,7 @@ import fs from 'fs/promises';
 import glob from 'glob';
 import path from 'path';
 import { getConfig } from './config';
-import { calculateMD5 } from './md5';
+import { calculateMD5 } from './calculateMD5';
 import { getMigrationFileHash } from './getMigrationFileHash';
 import { TemplateStatus } from '../rtsql/rtsql.types';
 import { loadBuildLog } from './loadBuildLog';

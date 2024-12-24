@@ -2,7 +2,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import { loadBuildLog } from './loadBuildLog';
 import { saveBuildLog } from './saveBuildLog';
-import { calculateMD5 } from './md5';
+import { calculateMD5 } from './calculateMD5';
 
 export async function registerTemplate(templatePath: string, baseDir: string) {
   const content = await fs.readFile(templatePath, 'utf-8');

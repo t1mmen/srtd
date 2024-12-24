@@ -14,7 +14,7 @@ import { saveLocalBuildLog } from '../utils/saveLocalBuildLog';
 import { getNextTimestamp } from '../utils/getNextTimestamp';
 import { RTSQLArgs, RTSQLResult, MigrationError } from './rtsql.types';
 import { applyMigration } from '../utils/applyMigration';
-import { calculateMD5 } from '../utils/md5';
+import { calculateMD5 } from '../utils/calculateMD5';
 import { registerTemplate } from '../utils/registerTemplate';
 import { displayErrorSummary } from '../utils/displayErrorSummary';
 import { loadConfig } from '../utils/config';

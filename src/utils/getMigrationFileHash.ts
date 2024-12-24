@@ -1,6 +1,6 @@
 import fs from 'fs/promises';
 import path from 'path';
-import { calculateMD5 } from './md5';
+import { calculateMD5 } from './calculateMD5';
 import { loadConfig } from './config';
 
 export async function getMigrationFileHash(

@@ -32,7 +32,7 @@ import { saveLocalBuildLog } from '../utils/saveLocalBuildLog';
 import { getNextTimestamp } from '../utils/getNextTimestamp';
 import { buildTemplates } from '../rtsql/rtsql';
 import { applyMigration } from '../utils/applyMigration';
-import { calculateMD5 } from '../utils/md5';
+import { calculateMD5 } from '../utils/calculateMD5';
 import { BuildLog, LocalBuildLog, RTSQLConfig } from '../rtsql/rtsql.types';
 import { loadConfig } from '../utils/config';
 
