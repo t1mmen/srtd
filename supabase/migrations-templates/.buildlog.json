@@ -4,12 +4,12 @@
   "templates": {
     "supabase/migrations-templates/test.sql": {
       "lastBuildHash": "dc0fd6026b87560e8441798077455bb3",
-      "lastBuildDate": "2024-12-22T12:31:48.084Z",
+      "lastBuildDate": "2024-12-22T12:33:42.200Z",
       "lastMigrationFile": "registered_test.sql"
     },
     "supabase/migrations-templates/another.wip.sql": {
       "lastBuildHash": "781984a91a4aff31a3ed5b00154878e1",
-      "lastBuildDate": "2024-12-22T12:31:48.083Z",
+      "lastBuildDate": "2024-12-22T12:33:42.196Z",
       "lastMigrationFile": "registered_another.wip.sql"
     }
   }
