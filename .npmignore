@@ -1,0 +1,10 @@
+src/
+tests/
+.github/
+.vscode/
+tsconfig.json
+tsup.config.ts
+.eslintrc
+.prettierrc
+vitest.config.ts
+.buildlog.json

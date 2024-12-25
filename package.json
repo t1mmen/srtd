@@ -6,14 +6,16 @@
   "type": "module",
   "main": "src/cli.tsx",
   "engines": {
-    "node": ">=22"
+    "node": ">=18"
   },
   "scripts": {
     "start": "tsx src/cli.tsx",
     "build": "tsc",
+    "typecheck": "tsc --noEmit",
     "dev": "tsc --watch",
     "prettier": "prettier --write .",
-    "test": "vitest"
+    "test": "vitest",
+    "x": "npm run build; npm link; supasimplemigrations"
   },
   "files": [
     "dist"
