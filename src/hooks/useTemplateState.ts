@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { loadLocalBuildLog } from '../utils/loadLocalBuildLog';
 import { loadBuildLog } from '../utils/loadBuildLog';
 import { loadTemplates } from '../utils/loadTemplates';
 import { TemplateStatus } from '../types';
@@ -15,8 +14,8 @@ export function useTemplateState() {
       try {
         const dirname = process.cwd();
         const templates = await loadTemplates(dirname);
-        const buildLog = await loadBuildLog(dirname);
-        const localBuildLog = await loadLocalBuildLog(dirname);
+        const buildLog = await loadBuildLog(dirname, 'common');
+        const localBuildLog = await loadBuildLog(dirname, 'local');
 
         const combined: TemplateStatus[] = templates.map(t => ({
           name: t.name,

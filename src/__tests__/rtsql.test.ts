@@ -27,7 +27,6 @@ import { execa } from 'execa';
 import { loadBuildLog } from '../utils/loadBuildLog';
 import { isWipTemplate } from '../utils/isWipTemplate';
 import { saveBuildLog } from '../utils/saveBuildLog';
-import { saveLocalBuildLog } from '../utils/saveLocalBuildLog';
 import { getNextTimestamp } from '../utils/getNextTimestamp';
 import { buildTemplates } from '../lib/buildTemplates';
 import { applyMigration } from '../utils/applyMigration';
@@ -178,8 +177,8 @@ describe('Build Logs', () => {
       version: '1.0',
     } satisfies BuildLog;
 
-    await saveBuildLog(__dirname, newBuildLog);
-    await saveLocalBuildLog(__dirname, newLocalBuildLog);
+    await saveBuildLog(__dirname, newBuildLog, 'common');
+    await saveBuildLog(__dirname, newLocalBuildLog, 'local');
 
     const savedBuildLog = JSON.parse(files.get(path.resolve(__dirname, config.buildLog)) || '');
     const savedLocalBuildLog = JSON.parse(

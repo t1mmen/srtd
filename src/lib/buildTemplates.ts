@@ -9,7 +9,6 @@ import chalk from 'chalk';
 import { loadBuildLog } from '../utils/loadBuildLog';
 import { isWipTemplate } from '../utils/isWipTemplate';
 import { saveBuildLog } from '../utils/saveBuildLog';
-import { saveLocalBuildLog } from '../utils/saveLocalBuildLog';
 import { getNextTimestamp } from '../utils/getNextTimestamp';
 import { RTSQLArgs, RTSQLResult, MigrationError } from '../types';
 import { applyMigration } from '../utils/applyMigration';
@@ -192,8 +191,8 @@ export async function buildTemplates(args: RTSQLArgs = {}): Promise<RTSQLResult>
   }
 
   // Save build log
-  await saveBuildLog(baseDir, buildLog);
-  await saveLocalBuildLog(baseDir, localBuildLog);
+  await saveBuildLog(baseDir, buildLog, 'common');
+  await saveBuildLog(baseDir, localBuildLog, 'local');
 
   if (errors.length) {
     console.log(`\n  ❌ ${chalk.red('Errors:')} ${errors.length} migration(s) failed\n`);

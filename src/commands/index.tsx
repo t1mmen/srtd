@@ -9,7 +9,7 @@ import Build from './build';
 import Status from './status';
 import Watch from './watch';
 
-export default function Index() {
+export default function UI() {
   const [selectedCommand, setSelectedCommand] = React.useState<string | null>(null);
 
   // For now, we only demonstrate navigation to "register"
