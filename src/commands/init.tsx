@@ -3,56 +3,9 @@ import fs from 'fs/promises';
 import path from 'path';
 import { saveConfig, loadConfig } from '../utils/config';
 import { CONFIG_FILE } from '../constants';
-
-async function fileExists(filepath: string): Promise<boolean> {
-  try {
-    await fs.access(filepath);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-async function safeCreate(filepath: string, content: string): Promise<boolean> {
-  if (await fileExists(filepath)) {
-    return false;
-  }
-  await fs.writeFile(filepath, content);
-  return true;
-}
-
-async function createEmptyBuildLog(filepath: string): Promise<boolean> {
-  const initial = {
-    version: '1.0',
-    lastTimestamp: '',
-    templates: {},
-  };
-  return safeCreate(filepath, JSON.stringify(initial, null, 2));
-}
-
-async function ensureDirectories(
-  baseDir: string
-): Promise<{ templateDir: boolean; migrationDir: boolean }> {
-  const config = await loadConfig();
-  const templatePath = path.join(baseDir, config.templateDir);
-  const migrationPath = path.join(baseDir, config.migrationDir);
-
-  const templateExists = await fileExists(templatePath);
-  const migrationExists = await fileExists(migrationPath);
-
-  if (!templateExists) {
-    await fs.mkdir(templatePath, { recursive: true });
-  }
-
-  if (!migrationExists) {
-    await fs.mkdir(migrationPath, { recursive: true });
-  }
-
-  return {
-    templateDir: !templateExists,
-    migrationDir: !migrationExists,
-  };
-}
+import { createEmptyBuildLog } from '../utils/createEmptyBuildLog';
+import { ensureDirectories } from '../utils/ensureDirectories';
+import { fileExists } from '../utils/fileExists';
 
 export default function Init() {
   React.useEffect(() => {
