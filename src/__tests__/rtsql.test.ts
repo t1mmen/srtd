@@ -29,7 +29,7 @@ import { isWipTemplate } from '../utils/isWipTemplate';
 import { saveBuildLog } from '../utils/saveBuildLog';
 import { saveLocalBuildLog } from '../utils/saveLocalBuildLog';
 import { getNextTimestamp } from '../utils/getNextTimestamp';
-import { buildTemplates } from '../utils/buildTemplates';
+import { buildTemplates } from '../lib/buildTemplates';
 import { applyMigration } from '../utils/applyMigration';
 import { calculateMD5 } from '../utils/calculateMD5';
 import { BuildLog, RTSQLConfig } from '../types';
