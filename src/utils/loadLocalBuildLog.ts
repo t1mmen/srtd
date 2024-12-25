@@ -1,6 +1,6 @@
 import fs from 'fs/promises';
 import path from 'path';
-import { LocalBuildLog } from '../rtsql/rtsql.types';
+import { LocalBuildLog } from '../types';
 import { loadConfig } from './config';
 
 export async function loadLocalBuildLog(dirname: string): Promise<LocalBuildLog> {

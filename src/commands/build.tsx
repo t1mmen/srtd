@@ -1,5 +1,5 @@
 import React from 'react';
-import { buildTemplates } from '../rtsql/rtsql';
+import { buildTemplates } from '../utils/buildTemplates';
 
 export default function Build() {
   React.useEffect(() => {

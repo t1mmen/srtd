@@ -30,10 +30,10 @@ import { isWipTemplate } from '../utils/isWipTemplate';
 import { saveBuildLog } from '../utils/saveBuildLog';
 import { saveLocalBuildLog } from '../utils/saveLocalBuildLog';
 import { getNextTimestamp } from '../utils/getNextTimestamp';
-import { buildTemplates } from '../rtsql/rtsql';
+import { buildTemplates } from '../utils/buildTemplates';
 import { applyMigration } from '../utils/applyMigration';
 import { calculateMD5 } from '../utils/calculateMD5';
-import { BuildLog, LocalBuildLog, RTSQLConfig } from '../rtsql/rtsql.types';
+import { BuildLog, LocalBuildLog, RTSQLConfig } from '../types';
 import { loadConfig } from '../utils/config';
 
 let config: RTSQLConfig;

@@ -1,5 +1,5 @@
 import chalk from 'chalk';
-import { MigrationError } from '../rtsql/rtsql.types';
+import { MigrationError } from '../types';
 
 export function displayErrorSummary(errors: MigrationError[]): void {
   if (errors.length === 0) return;

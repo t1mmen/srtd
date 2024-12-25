@@ -1,4 +1,4 @@
-import { BuildLog } from '../rtsql/rtsql.types';
+import { BuildLog } from '../types';
 
 export async function getNextTimestamp(buildLog: BuildLog): Promise<string> {
   const now = new Date();

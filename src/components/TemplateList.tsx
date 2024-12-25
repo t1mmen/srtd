@@ -1,6 +1,6 @@
 import React from 'react';
 import { Box, Text } from 'ink';
-import { TemplateStatus } from '../rtsql/rtsql.types';
+import { TemplateStatus } from '../types';
 import { StatusIndicator } from './StatusIndicator';
 import { calculateTemplateState } from '../utils/templateState';
 import { getTimeAgo } from '../utils/getTimeAgo';

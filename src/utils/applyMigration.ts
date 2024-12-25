@@ -1,5 +1,5 @@
 import chalk from 'chalk';
-import { MigrationError } from '../rtsql/rtsql.types';
+import { MigrationError } from '../types';
 import { connect } from './db.connection';
 
 export async function applyMigration(

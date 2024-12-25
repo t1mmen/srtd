@@ -1,6 +1,6 @@
 import React from 'react';
 import { Box, Text } from 'ink';
-import { TemplateStateInfo } from '../rtsql/rtsql.types';
+import { TemplateStateInfo } from '../types';
 import {
   getBuildStatusColor,
   getApplyStatusColor,

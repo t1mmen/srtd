@@ -5,7 +5,7 @@ import { loadLocalBuildLog } from '../utils/loadLocalBuildLog';
 import { loadBuildLog } from '../utils/loadBuildLog';
 import { getTimeAgo } from '../utils/getTimeAgo';
 import { loadTemplates } from '../utils/loadTemplates';
-import { TemplateStatus } from '../rtsql/rtsql.types';
+import { TemplateStatus } from '../types';
 import { calculateTemplateState } from '../utils/templateState';
 import { StatusIndicator } from '../components/StatusIndicator';
 

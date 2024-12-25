@@ -2,7 +2,7 @@ import React from 'react';
 import { Box, Text } from 'ink';
 import fs from 'fs';
 import path from 'path';
-import { buildTemplates } from '../rtsql/rtsql';
+import { buildTemplates } from '../utils/buildTemplates';
 import { getConfig } from '../utils/config';
 
 export default function Watch() {

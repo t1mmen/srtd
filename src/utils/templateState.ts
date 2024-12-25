@@ -4,7 +4,7 @@ import {
   BuildStatus,
   ApplyStatus,
   TemplateState,
-} from '../rtsql/rtsql.types';
+} from '../types';
 import { isWipTemplate } from './isWipTemplate';
 
 export function calculateTemplateState(template: TemplateStatus): TemplateStateInfo {

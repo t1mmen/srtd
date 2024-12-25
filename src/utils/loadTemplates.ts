@@ -4,7 +4,7 @@ import path from 'path';
 import { getConfig } from './config';
 import { calculateMD5 } from './calculateMD5';
 import { getMigrationFileHash } from './getMigrationFileHash';
-import { TemplateStatus } from '../rtsql/rtsql.types';
+import { TemplateStatus } from '../types';
 import { loadBuildLog } from './loadBuildLog';
 
 export async function loadTemplates(

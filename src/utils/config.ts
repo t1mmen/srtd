@@ -1,4 +1,4 @@
-import { RTSQLConfig, RTSQLConfigPartial } from '../rtsql/rtsql.types';
+import { RTSQLConfig, RTSQLConfigPartial } from '../types';
 import path from 'path';
 import fs from 'fs/promises';
 
