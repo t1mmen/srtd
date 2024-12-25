@@ -24,7 +24,6 @@ vi.mock('execa', () => ({
 vi.mock('fs/promises', () => fsImpl);
 
 import { execa } from 'execa';
-import { loadLocalBuildLog } from '../utils/loadLocalBuildLog';
 import { loadBuildLog } from '../utils/loadBuildLog';
 import { isWipTemplate } from '../utils/isWipTemplate';
 import { saveBuildLog } from '../utils/saveBuildLog';
@@ -33,7 +32,7 @@ import { getNextTimestamp } from '../utils/getNextTimestamp';
 import { buildTemplates } from '../utils/buildTemplates';
 import { applyMigration } from '../utils/applyMigration';
 import { calculateMD5 } from '../utils/calculateMD5';
-import { BuildLog, LocalBuildLog, RTSQLConfig } from '../types';
+import { BuildLog, RTSQLConfig } from '../types';
 import { loadConfig } from '../utils/config';
 
 let config: RTSQLConfig;
@@ -138,8 +137,8 @@ describe('Build Logs', () => {
   });
 
   it('should load build logs correctly', async () => {
-    const buildLog = await loadBuildLog(__dirname);
-    const localBuildLog = await loadLocalBuildLog(__dirname);
+    const buildLog = await loadBuildLog(__dirname, 'common');
+    const localBuildLog = await loadBuildLog(__dirname, 'local');
 
     expect(buildLog).toEqual(mockBuildLog);
     expect(localBuildLog).toEqual(mockLocalBuildLog);
@@ -148,8 +147,8 @@ describe('Build Logs', () => {
   it('should handle missing build logs', async () => {
     files.clear();
 
-    const buildLog = await loadBuildLog(__dirname);
-    const localBuildLog = await loadLocalBuildLog(__dirname);
+    const buildLog = await loadBuildLog(__dirname, 'common');
+    const localBuildLog = await loadBuildLog(__dirname, 'local');
 
     expect(buildLog).toEqual({ templates: {}, lastTimestamp: '' });
     expect(localBuildLog).toEqual({ templates: {} });
@@ -177,7 +176,7 @@ describe('Build Logs', () => {
       },
       lastTimestamp: '',
       version: '1.0',
-    } satisfies LocalBuildLog;
+    } satisfies BuildLog;
 
     await saveBuildLog(__dirname, newBuildLog);
     await saveLocalBuildLog(__dirname, newLocalBuildLog);

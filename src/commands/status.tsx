@@ -1,7 +1,6 @@
 import React from 'react';
 import { Box, Text } from 'ink';
 import path from 'path';
-import { loadLocalBuildLog } from '../utils/loadLocalBuildLog';
 import { loadBuildLog } from '../utils/loadBuildLog';
 import { getTimeAgo } from '../utils/getTimeAgo';
 import { loadTemplates } from '../utils/loadTemplates';
@@ -19,8 +18,8 @@ export default function Status() {
       try {
         const dirname = process.cwd();
         const templates = await loadTemplates(dirname);
-        const buildLog = await loadBuildLog(dirname);
-        const localBuildLog = await loadLocalBuildLog(dirname);
+        const buildLog = await loadBuildLog(dirname, 'common');
+        const localBuildLog = await loadBuildLog(dirname, 'local');
 
         const combined: TemplateStatus[] = templates.map(t => {
           const relPath = path.relative(dirname, t.path);

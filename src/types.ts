@@ -11,17 +11,13 @@ export interface TemplateBuildState {
   lastAppliedError?: string;
 }
 
-export interface BuildLogBase {
+export interface BuildLog {
   version: string; // Format version
   lastTimestamp: string;
   templates: {
     [templatePath: string]: TemplateBuildState;
   };
 }
-
-// For backward compatibility and type safety
-export type BuildLog = BuildLogBase;
-export type LocalBuildLog = BuildLogBase;
 
 export interface MigrationError {
   file: string;

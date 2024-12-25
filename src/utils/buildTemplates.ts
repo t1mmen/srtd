@@ -6,7 +6,6 @@ import glob from 'glob';
 import { readFile, writeFile } from 'fs/promises';
 import path from 'path';
 import chalk from 'chalk';
-import { loadLocalBuildLog } from './loadLocalBuildLog';
 import { loadBuildLog } from './loadBuildLog';
 import { isWipTemplate } from './isWipTemplate';
 import { saveBuildLog } from './saveBuildLog';
@@ -68,8 +67,8 @@ export async function buildTemplates(args: RTSQLArgs = {}): Promise<RTSQLResult>
     return { errors, applied };
   }
 
-  const buildLog = await loadBuildLog(baseDir);
-  const localBuildLog = await loadLocalBuildLog(baseDir);
+  const buildLog = await loadBuildLog(baseDir, 'common');
+  const localBuildLog = await loadBuildLog(baseDir, 'local');
 
   const templates = await new Promise<string[]>((resolve, reject) => {
     glob(path.join(baseDir, config.templateDir, filter), (err, matches) => {
