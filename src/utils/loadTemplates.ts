@@ -9,9 +9,10 @@ import { loadBuildLog } from './loadBuildLog';
 
 export async function loadTemplates(
   dirname: string,
-  filter = '**/*.sql'
+  optionalFilter?: string
 ): Promise<TemplateStatus[]> {
   const config = await getConfig(dirname);
+  const filter = optionalFilter || config.filter;
   const templatePath = path.join(dirname, config.templateDir, filter);
   const templates = await new Promise<string[]>((resolve, reject) => {
     glob(templatePath, (err, matches) => {
@@ -20,7 +21,7 @@ export async function loadTemplates(
     });
   });
 
-  const buildLog = await loadBuildLog(dirname);
+  const buildLog = await loadBuildLog(dirname, 'common');
 
   const results: TemplateStatus[] = [];
 

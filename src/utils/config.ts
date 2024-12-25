@@ -13,6 +13,10 @@ export async function getConfig(baseDir: string): Promise<CLIConfig> {
 }
 
 const defaultConfig: CLIConfig = {
+  wipIndicator: '.wip',
+  banner: '**DO NOT** manually edit this file.',
+  footer: '',
+  wrapInTransaction: true,
   templateDir: 'supabase/migrations-templates',
   migrationDir: 'supabase/migrations',
   buildLog: 'supabase/migrations-templates/.buildlog.json',

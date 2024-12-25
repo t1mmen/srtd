@@ -26,6 +26,11 @@ export interface MigrationError {
 }
 
 export interface CLIConfig {
+  filter: string;
+  wipIndicator: string;
+  wrapInTransaction: boolean;
+  banner: string;
+  footer: string;
   templateDir: string;
   migrationDir: string;
   buildLog: string;

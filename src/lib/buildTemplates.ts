@@ -33,9 +33,6 @@ export async function buildTemplates(args: CLIArgs = {}): Promise<CLIResult> {
     verbose: args.verbose ?? true,
   };
 
-  // console.clear();
-  // displayHelp(modes);
-
   // Handle registration if requested
   if (modes.register) {
     // Split register argument into array if it's a string, handling both comma and space separators
@@ -83,7 +80,7 @@ export async function buildTemplates(args: CLIArgs = {}): Promise<CLIResult> {
     const templateName = path.basename(templatePath, '.sql');
     const relativeTemplatePath = path.relative(baseDir, templatePath);
     const logEntry = buildLog.templates[relativeTemplatePath];
-
+    const wipTemplate = await isWipTemplate(templatePath);
     // Skip if unchanged and not forced (for both file generation and DB apply)
     if (!modes.force) {
       const localLogEntry = localBuildLog.templates[relativeTemplatePath];
@@ -105,7 +102,7 @@ export async function buildTemplates(args: CLIArgs = {}): Promise<CLIResult> {
           console.log(`  ⏭️  ${chalk.dim(`Unchanged since last build: ${templateName}`)}`);
           continue;
         }
-      } else if (!isWipTemplate(templatePath) && isUnchangedSinceGeneration) {
+      } else if (!wipTemplate && isUnchangedSinceGeneration) {
         // For non-apply mode, skip if unchanged and not a WIP template
         console.log(`  ⏭️  ${chalk.dim(`Unchanged: ${templateName}`)}`);
         continue;
@@ -114,7 +111,7 @@ export async function buildTemplates(args: CLIArgs = {}): Promise<CLIResult> {
 
     console.log(
       `  🔨  ${chalk.bold('Processing')}: ${chalk.cyan(templateName)}${
-        isWipTemplate(templatePath) ? chalk.yellow(' [WIP]') : ''
+        wipTemplate ? chalk.yellow(' [WIP]') : ''
       }`
     );
 
@@ -158,7 +155,7 @@ export async function buildTemplates(args: CLIArgs = {}): Promise<CLIResult> {
       continue;
     }
 
-    if (isWipTemplate(templatePath)) {
+    if (wipTemplate) {
       console.log(`      ${chalk.yellow('Skipping migration file generation for WIP template')}`);
       continue;
     }
@@ -168,12 +165,11 @@ export async function buildTemplates(args: CLIArgs = {}): Promise<CLIResult> {
     const migrationName = `${timestamp}_tmpl-${templateName}.sql`;
     const migrationPath = path.join(config.migrationDir, migrationName);
 
-    const header = `-- Generated from template: /supabase/migrations-templates/${templateName}.sql`;
-    const disclaimer =
-      `-- **ONLY** use the migration template + yarn db:migration:build to adjust ANY SQL in this file\n` +
-      `-- **DO NOT** write any manual migrations to change any SQL from this file`;
-    const footer = `-- Last built: ${logEntry?.lastBuildDate || 'Never'}`;
-    const migrationContent = `${header}\n${disclaimer}\n\nBEGIN;\n\n${content}\n\nCOMMIT;\n\n${disclaimer}\n${footer}`;
+    const header = `-- Generated from template: ${config.templateDir}/${templateName}.sql\n`;
+    const banner = config.banner ? `-- ${config.banner}\n` : '\n';
+    const footer = `${config.footer}\n-- Last built: ${logEntry?.lastBuildDate || 'Never'}`;
+    const safeContent = config.wrapInTransaction ? `BEGIN;\n${content}\nCOMMIT;` : content;
+    const migrationContent = `${header}${banner}\n${safeContent}\n${footer}`;
 
     // Write migration file
     await writeFile(path.resolve(baseDir, migrationPath), migrationContent);

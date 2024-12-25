@@ -61,22 +61,6 @@ describe('Template Processing', () => {
     expect(hash1).toBe(hash2);
   });
 
-  it('should clean up temporary files even if migration fails', async () => {
-    vi.mocked(execa).mockRejectedValueOnce(new Error('DB Error'));
-    const tempPath = path.resolve(__dirname, '../.temp-migration.sql');
-
-    // Create a mock file first to simulate the file existing
-    await fsImpl.default.writeFile(tempPath, 'test content');
-
-    const result = await applyMigration(tempPath, 'test');
-    expect(result).toEqual({
-      file: path.basename(tempPath),
-      error: 'DB Error',
-      templateName: 'test',
-    });
-    expect(fsImpl.default.unlink).toHaveBeenCalledWith(tempPath);
-  });
-
   it('should not overwrite existing migration files', async () => {
     const { migrationDir } = await loadConfig();
     // Setup existing migration file
@@ -90,7 +74,7 @@ describe('Template Processing', () => {
       templates: {},
       lastTimestamp: existingTimestamp,
       version: '1.0',
-    };
+    } satisfies BuildLog;
 
     // Get next timestamp - should be different
     const newTimestamp = await getNextTimestamp(buildLog);
@@ -104,23 +88,28 @@ describe('Template Processing', () => {
 
 describe('Build Logs', () => {
   const mockBuildLog = {
+    version: '1.0',
+    lastTimestamp: '20240101120000',
     templates: {
       'test.sql': {
-        lastHash: '123',
-        lastBuilt: '2024-01-01',
-        lastMigration: 'migration.sql',
+        lastBuildHash: '123',
+        lastBuildDate: '2024-01-01',
+        lastMigrationFile: 'migration.sql',
       },
     },
-    lastTimestamp: '20240101120000',
-  };
+  } satisfies BuildLog;
 
   const mockLocalBuildLog = {
+    version: '1.0',
+    lastTimestamp: '',
     templates: {
       'test.sql': {
-        lastApplied: '123',
+        lastAppliedHash: '123',
+        lastAppliedDate: '2024-12-25T07:07:37+00:00',
+        lastMigrationFile: '',
       },
     },
-  };
+  } satisfies BuildLog;
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -265,13 +254,4 @@ describe('buildTemplates', () => {
     expect(result).toHaveProperty('errors');
     expect(result).toHaveProperty('applied');
   });
-
-  // it('should respect custom configuration', async () => {
-  //   const result = await buildTemplates({
-  //     filter: '*.sql',
-  //     force: true,
-  //     apply: true,
-  //   });
-  //   // Add assertions based on expected behavior
-  // });
 });

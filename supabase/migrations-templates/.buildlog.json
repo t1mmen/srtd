@@ -1,16 +1,11 @@
 {
   "version": "1.0",
-  "lastTimestamp": "20241222084305",
+  "lastTimestamp": "20241225070313",
   "templates": {
     "supabase/migrations-templates/test.sql": {
-      "lastBuildHash": "dc0fd6026b87560e8441798077455bb3",
-      "lastBuildDate": "2024-12-22T12:33:42.200Z",
-      "lastMigrationFile": "registered_test.sql"
-    },
-    "supabase/migrations-templates/another.wip.sql": {
-      "lastBuildHash": "781984a91a4aff31a3ed5b00154878e1",
-      "lastBuildDate": "2024-12-22T12:33:42.196Z",
-      "lastMigrationFile": "registered_another.wip.sql"
+      "lastBuildHash": "194c6f56bf04ff1fd072ff0a2a3e61c2",
+      "lastBuildDate": "2024-12-25T07:03:13.443Z",
+      "lastMigrationFile": "20241225070313_tmpl-test.sql"
     }
   }
 }
