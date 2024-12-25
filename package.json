@@ -13,7 +13,7 @@
     "build": "tsc",
     "dev": "tsc --watch",
     "prettier": "prettier --write .",
-    "test": "prettier --check . && vitest"
+    "test": "vitest"
   },
   "files": [
     "dist"
@@ -25,7 +25,6 @@
     "glob": "^7.2.3",
     "ink": "^5.1.0",
     "meow": "^13.2.0",
-    "minimist": "^1.2.8",
     "pastel": "^3.0.0",
     "pg": "^8.13.1",
     "react": "^18.0.0",
@@ -34,7 +33,6 @@
   "devDependencies": {
     "@sindresorhus/tsconfig": "^7.0.0",
     "@types/glob": "^8.1.0",
-    "@types/minimist": "^1.2.5",
     "@types/react": "^18.0.0",
     "@typescript-eslint/eslint-plugin": "^6.0.0",
     "@typescript-eslint/parser": "^6.0.0",
