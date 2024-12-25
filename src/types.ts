@@ -25,7 +25,7 @@ export interface MigrationError {
   templateName: string;
 }
 
-export interface RTSQLConfig {
+export interface CLIConfig {
   templateDir: string;
   migrationDir: string;
   buildLog: string;
@@ -33,9 +33,7 @@ export interface RTSQLConfig {
   pgConnection: string;
 }
 
-export type RTSQLConfigPartial = Partial<RTSQLConfig>;
-
-export interface RTSQLArgs {
+export interface CLIArgs {
   filter?: string;
   force?: boolean;
   apply?: boolean;
@@ -45,7 +43,7 @@ export interface RTSQLArgs {
   baseDir?: string;
 }
 
-export interface RTSQLResult {
+export interface CLIResult {
   errors: MigrationError[];
   applied: string[];
 }

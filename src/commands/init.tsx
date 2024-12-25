@@ -2,6 +2,7 @@ import React from 'react';
 import fs from 'fs/promises';
 import path from 'path';
 import { saveConfig, loadConfig } from '../utils/config';
+import { CONFIG_FILE } from '../constants';
 
 async function fileExists(filepath: string): Promise<boolean> {
   try {
@@ -59,7 +60,7 @@ export default function Init() {
       try {
         const config = await loadConfig();
         const baseDir = process.cwd();
-        const configPath = path.join(baseDir, '.rtsqlrc.json');
+        const configPath = path.join(baseDir, CONFIG_FILE);
 
         // Check/create config
         if (await fileExists(configPath)) {

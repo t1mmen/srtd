@@ -10,21 +10,21 @@ import { loadBuildLog } from '../utils/loadBuildLog';
 import { isWipTemplate } from '../utils/isWipTemplate';
 import { saveBuildLog } from '../utils/saveBuildLog';
 import { getNextTimestamp } from '../utils/getNextTimestamp';
-import { RTSQLArgs, RTSQLResult, MigrationError } from '../types';
+import { CLIArgs, CLIResult, MigrationError } from '../types';
 import { applyMigration } from '../utils/applyMigration';
 import { calculateMD5 } from '../utils/calculateMD5';
 import { registerTemplate } from '../utils/registerTemplate';
 import { displayErrorSummary } from '../utils/displayErrorSummary';
 import { loadConfig } from '../utils/config';
 
-export async function buildTemplates(args: RTSQLArgs = {}): Promise<RTSQLResult> {
+export async function buildTemplates(args: CLIArgs = {}): Promise<CLIResult> {
   const config = await loadConfig();
   const baseDir = args.baseDir || process.cwd(); // path.dirname(fileURLToPath(import.meta.url));
   const filter = args.filter || '**/*.sql';
   const errors: MigrationError[] = [];
   const applied: string[] = [];
 
-  const modes: RTSQLArgs = {
+  const modes: CLIArgs = {
     force: args.force || false,
     apply: args.apply || false,
     skipFiles: args.skipFiles || false,
