@@ -3,19 +3,21 @@ import type { ExecaReturnValue } from 'execa';
 import path from 'path';
 
 const files = vi.hoisted(() => new Map<string, string>());
-const fsImpl = vi.hoisted(() => ({
-  default: {
-    writeFile: vi.fn((path: string, content: string) => {
-      files.set(path, content);
-      return Promise.resolve();
-    }),
-    readFile: vi.fn((path: string) => {
-      const content = files.get(path);
-      return content ? Promise.resolve(content) : Promise.reject(new Error('File not found'));
-    }),
-    unlink: vi.fn(() => Promise.resolve()),
-  },
-}));
+const fsImpl = vi.hoisted(() => {
+  return {
+    default: {
+      writeFile: vi.fn((path: string, content: string) => {
+        files.set(path, content);
+        return Promise.resolve();
+      }),
+      readFile: vi.fn((path: string) => {
+        const content = files.get(path);
+        return content ? Promise.resolve(content) : Promise.reject(new Error('File not found'));
+      }),
+      unlink: vi.fn(() => Promise.resolve()),
+    },
+  };
+});
 
 vi.mock('execa', () => ({
   execa: vi.fn(),
@@ -49,9 +51,9 @@ describe('Template Processing', () => {
     vi.spyOn(console, 'error').mockImplementation(() => {});
   });
 
-  it('should detect WIP templates correctly', () => {
-    expect(isWipTemplate('test.wip.sql')).toBe(true);
-    expect(isWipTemplate('test.sql')).toBe(false);
+  it('should detect WIP templates correctly', async () => {
+    expect(await isWipTemplate('test.wip.sql')).toBe(true);
+    expect(await isWipTemplate('test.sql')).toBe(false);
   });
 
   it('should calculate consistent hashes', async () => {
@@ -138,8 +140,8 @@ describe('Build Logs', () => {
     const buildLog = await loadBuildLog(__dirname, 'common');
     const localBuildLog = await loadBuildLog(__dirname, 'local');
 
-    expect(buildLog).toEqual({ templates: {}, lastTimestamp: '' });
-    expect(localBuildLog).toEqual({ templates: {} });
+    expect(buildLog).toEqual({ templates: {}, lastTimestamp: '', version: '1.0' });
+    expect(localBuildLog).toEqual({ templates: {}, lastTimestamp: '', version: '1.0' });
   });
 
   it('should save build logs correctly', async () => {

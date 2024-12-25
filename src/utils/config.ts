@@ -14,6 +14,7 @@ export async function getConfig(baseDir: string): Promise<CLIConfig> {
 
 const defaultConfig: CLIConfig = {
   wipIndicator: '.wip',
+  filter: '**/*.sql',
   banner: '**DO NOT** manually edit this file.',
   footer: '',
   wrapInTransaction: true,
