@@ -12,7 +12,7 @@ export async function getConfig(baseDir: string): Promise<CLIConfig> {
   return config;
 }
 
-export const defaultConfig: CLIConfig = {
+const defaultConfig: CLIConfig = {
   templateDir: 'supabase/migrations-templates',
   migrationDir: 'supabase/migrations',
   buildLog: 'supabase/migrations-templates/.buildlog.json',
