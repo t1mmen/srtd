@@ -33,18 +33,20 @@ export default function UI() {
     return <Watch />;
   }
 
-  // Single-choice interactive menu
   const menuItems = [
-    { label: 'build - Build migrations from templates', value: 'build' },
-    { label: 'apply - Build & apply migrations', value: 'apply' },
-    { label: 'register - Register templates as applied', value: 'register' },
-    { label: 'watch - Watch templates for changes', value: 'watch' },
-    { label: 'status - Show migration status', value: 'status' },
+    { label: '🏗️  build - Build Supabase migrations from templates', value: 'build' },
+    { label: '▶️  apply - Apply migration templates directly to database', value: 'apply' },
+    { label: '✍️  register - Register templates as already built', value: 'register' },
+    {
+      label: '👀  watch - Watch templates for changes and apply directly to database',
+      value: 'watch',
+    },
+    { label: 'ℹ️  status - Show migration status', value: 'status' },
   ];
 
   return (
     <Box flexDirection="column">
-      <Text bold>RTSQL - Repeatable Template SQL Migration Tool</Text>
+      <Text bold>Supasimplemigrations - Repeatable Template SQL Migration Tool</Text>
       <Text>Select a command:</Text>
       <Box marginTop={1}>
         <Select options={menuItems} onChange={value => setSelectedCommand(value)} />

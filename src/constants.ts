@@ -1,1 +1,1 @@
-export const CONFIG_FILE = '.rtsqlrc.json';
+export const CONFIG_FILE = '.supasimplemigrationsrc.json';

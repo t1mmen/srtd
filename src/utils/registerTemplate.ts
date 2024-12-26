@@ -11,11 +11,11 @@ export async function registerTemplate(templatePath: string, baseDir: string) {
   const now = new Date().toISOString();
 
   // Update build log
-  const buildLog = await loadBuildLog(baseDir);
+  const buildLog = await loadBuildLog(baseDir, 'common');
   buildLog.templates[relativePath] = {
     lastBuildHash: hash,
     lastBuildDate: now,
     lastMigrationFile: `registered_${path.basename(templatePath)}`,
   };
-  await saveBuildLog(baseDir, buildLog);
+  await saveBuildLog(baseDir, buildLog, 'common');
 }

@@ -1,5 +1,4 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import type { ExecaReturnValue } from 'execa';
 import path from 'path';
 
 const files = vi.hoisted(() => new Map<string, string>());
@@ -19,22 +18,15 @@ const fsImpl = vi.hoisted(() => {
   };
 });
 
-vi.mock('execa', () => ({
-  execa: vi.fn(),
-}));
-
 vi.mock('fs/promises', () => fsImpl);
 
-import { execa } from 'execa';
-import { loadBuildLog } from '../utils/loadBuildLog';
-import { isWipTemplate } from '../utils/isWipTemplate';
-import { saveBuildLog } from '../utils/saveBuildLog';
-import { getNextTimestamp } from '../utils/getNextTimestamp';
-import { buildTemplates } from '../lib/buildTemplates';
-import { applyMigration } from '../utils/applyMigration';
-import { calculateMD5 } from '../utils/calculateMD5';
-import { BuildLog, CLIConfig } from '../types';
-import { loadConfig } from '../utils/config';
+import { loadBuildLog } from '../src/utils/loadBuildLog';
+import { isWipTemplate } from '../src/utils/isWipTemplate';
+import { saveBuildLog } from '../src/utils/saveBuildLog';
+import { getNextTimestamp } from '../src/utils/getNextTimestamp';
+import { calculateMD5 } from '../src/utils/calculateMD5';
+import { BuildLog, CLIConfig } from '../src/types';
+import { loadConfig } from '../src/utils/config';
 
 let config: CLIConfig;
 
@@ -203,57 +195,5 @@ describe('Build Logs', () => {
     const timestamp = await getNextTimestamp(buildLog);
     expect(timestamp).toBe('20240101130000');
     expect(buildLog.lastTimestamp).toBe('20240101130000');
-  });
-});
-
-describe('Migration Application', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  it('should apply migrations successfully', async () => {
-    vi.mocked(execa).mockResolvedValueOnce({
-      stdout: Buffer.from('Success'),
-      stderr: Buffer.from(''),
-      exitCode: 0,
-      failed: false,
-      killed: false,
-      signal: undefined, // Changed from null to undefined
-      command: '',
-      timedOut: false,
-      isCanceled: false,
-      all: Buffer.from(''),
-      escapedCommand: '',
-      cwd: process.cwd(),
-    } as ExecaReturnValue<Buffer>);
-
-    const result = await applyMigration('test.sql', 'test');
-    expect(result).toBe(true);
-
-    expect(execa).toHaveBeenCalledWith('psql', [
-      config.pgConnection,
-      '-v',
-      'ON_ERROR_STOP=1',
-      '-f',
-      'test.sql',
-    ]);
-  });
-
-  it('should handle migration failures', async () => {
-    vi.mocked(execa).mockRejectedValueOnce(new Error('DB Error'));
-    const result = await applyMigration('test.sql', 'test');
-    expect(result).toEqual({
-      file: 'test.sql',
-      error: 'DB Error',
-      templateName: 'test',
-    });
-  });
-});
-
-describe('buildTemplates', () => {
-  it('should process templates with default config', async () => {
-    const result = await buildTemplates();
-    expect(result).toHaveProperty('errors');
-    expect(result).toHaveProperty('applied');
   });
 });

@@ -4,14 +4,19 @@ import path from 'path';
 import { loadBuildLog } from '../utils/loadBuildLog';
 import { getTimeAgo } from '../utils/getTimeAgo';
 import { loadTemplates } from '../utils/loadTemplates';
-import { TemplateStatus } from '../types';
+import { TemplateStatus, TemplateStateInfo } from '../types';
 import { calculateTemplateState } from '../utils/templateState';
 import { StatusIndicator } from '../components/StatusIndicator';
+
+interface TemplateWithState {
+  template: TemplateStatus;
+  state: TemplateStateInfo;
+}
 
 export default function Status() {
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
-  const [items, setItems] = React.useState<TemplateStatus[]>([]);
+  const [templateStates, setTemplateStates] = React.useState<TemplateWithState[]>([]);
 
   React.useEffect(() => {
     async function fetchStatus() {
@@ -31,14 +36,20 @@ export default function Status() {
           return {
             name: t.name,
             path: relPath,
-            // status: t.status,
             currentHash: t.currentHash,
             migrationHash: t.migrationHash,
             buildState,
           };
         });
 
-        setItems(combined);
+        // Calculate states for all templates
+        const states = await Promise.all(
+          combined.map(async item => ({
+            template: item,
+            state: await calculateTemplateState(item),
+          }))
+        );
+        setTemplateStates(states);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Unknown error');
       } finally {
@@ -80,33 +91,28 @@ export default function Status() {
         </Box>
       </Box>
 
-      {items.map(item => {
-        const state = calculateTemplateState(item);
-
-        return (
-          <Box key={item.path} flexDirection="column">
-            <Box>
-              <Box width={25}>
-                <Text>{item.name}</Text>
-              </Box>
-              <StatusIndicator state={state} />
-
-              <Box width={15}>
-                <Text dimColor>{formatDate(item.buildState.lastBuildDate)}</Text>
-              </Box>
-              <Box width={15}>
-                <Text dimColor>{formatDate(item.buildState.lastAppliedDate)}</Text>
-              </Box>
+      {templateStates.map(({ template, state }) => (
+        <Box key={template.path} flexDirection="column">
+          <Box>
+            <Box width={25}>
+              <Text>{template.name}</Text>
             </Box>
-            {(state.buildMessage || state.applyMessage) && (
-              <Box marginLeft={2} marginBottom={1}>
-                {state.buildMessage && <Text color="red">Build: {state.buildMessage}</Text>}
-                {state.applyMessage && <Text color="red">Apply: {state.applyMessage}</Text>}
-              </Box>
-            )}
+            <StatusIndicator state={state} />
+            <Box width={15}>
+              <Text dimColor>{formatDate(template.buildState.lastBuildDate)}</Text>
+            </Box>
+            <Box width={15}>
+              <Text dimColor>{formatDate(template.buildState.lastAppliedDate)}</Text>
+            </Box>
           </Box>
-        );
-      })}
+          {(state.buildMessage || state.applyMessage) && (
+            <Box marginLeft={2} marginBottom={1}>
+              {state.buildMessage && <Text color="red">Build: {state.buildMessage}</Text>}
+              {state.applyMessage && <Text color="red">Apply: {state.applyMessage}</Text>}
+            </Box>
+          )}
+        </Box>
+      ))}
     </Box>
   );
 }

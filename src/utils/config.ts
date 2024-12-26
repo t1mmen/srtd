@@ -15,7 +15,7 @@ export async function getConfig(baseDir: string): Promise<CLIConfig> {
 const defaultConfig: CLIConfig = {
   wipIndicator: '.wip',
   filter: '**/*.sql',
-  banner: '**DO NOT** manually edit this file.',
+  banner: 'You very likely **DO NOT** want to manually edit this generated file.',
   footer: '',
   wrapInTransaction: true,
   templateDir: 'supabase/migrations-templates',

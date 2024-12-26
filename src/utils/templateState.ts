@@ -7,9 +7,9 @@ import {
 } from '../types';
 import { isWipTemplate } from './isWipTemplate';
 
-export function calculateTemplateState(template: TemplateStatus): TemplateStateInfo {
+export async function calculateTemplateState(template: TemplateStatus): Promise<TemplateStateInfo> {
   const { currentHash, buildState, path } = template;
-  const isWip = isWipTemplate(path);
+  const isWip = await isWipTemplate(path);
 
   // Build status tracks migration generation
   let buildStatus = BuildStatus.NOT_BUILT;

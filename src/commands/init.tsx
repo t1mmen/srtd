@@ -17,10 +17,10 @@ export default function Init() {
 
         // Check/create config
         if (await fileExists(configPath)) {
-          console.log('⏭️ Configuration already exists');
+          console.log(`⏭️ ${CONFIG_FILE} already exists`);
         } else {
           await saveConfig(baseDir, {});
-          console.log('✅ Created .rtsqlrc.json with default configuration');
+          console.log(`✅ Created ${CONFIG_FILE} with default configuration`);
         }
 
         // Create directories

@@ -3,7 +3,7 @@
  */
 
 import glob from 'glob';
-import { readFile, writeFile } from 'fs/promises';
+import fs from 'fs/promises';
 import path from 'path';
 import chalk from 'chalk';
 import { loadBuildLog } from '../utils/loadBuildLog';
@@ -75,7 +75,7 @@ export async function buildTemplates(args: CLIArgs = {}): Promise<CLIResult> {
   console.log(`  📁 Found ${chalk.cyan(templates.length)} template(s)\n`);
 
   for (const templatePath of templates) {
-    const content = await readFile(templatePath, 'utf-8');
+    const content = await fs.readFile(templatePath, 'utf-8');
     const currentHash = await calculateMD5(content);
     const templateName = path.basename(templatePath, '.sql');
     const relativeTemplatePath = path.relative(baseDir, templatePath);
@@ -172,7 +172,7 @@ export async function buildTemplates(args: CLIArgs = {}): Promise<CLIResult> {
     const migrationContent = `${header}${banner}\n${safeContent}\n${footer}`;
 
     // Write migration file
-    await writeFile(path.resolve(baseDir, migrationPath), migrationContent);
+    await fs.writeFile(path.resolve(baseDir, migrationPath), migrationContent);
 
     // Update build log
     buildLog.templates[relativeTemplatePath] = {

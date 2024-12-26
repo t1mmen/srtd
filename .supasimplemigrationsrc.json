@@ -1,4 +1,9 @@
 {
+  "wipIndicator": ".wip",
+  "filter": "**/*.sql",
+  "banner": "You very likely **DO NOT** want to manually edit this generated file.",
+  "footer": "",
+  "wrapInTransaction": true,
   "templateDir": "supabase/migrations-templates",
   "migrationDir": "supabase/migrations",
   "buildLog": "supabase/migrations-templates/.buildlog.json",
