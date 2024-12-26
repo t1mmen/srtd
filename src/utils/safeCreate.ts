@@ -1,5 +1,5 @@
 import fs from 'fs/promises';
-import { fileExists } from './fileExists';
+import { fileExists } from './fileExists.js';
 
 export async function safeCreate(filepath: string, content: string): Promise<boolean> {
   if (await fileExists(filepath)) {

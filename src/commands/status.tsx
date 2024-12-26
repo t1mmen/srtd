@@ -1,12 +1,12 @@
 import React from 'react';
 import { Box, Text } from 'ink';
 import path from 'path';
-import { loadBuildLog } from '../utils/loadBuildLog';
-import { getTimeAgo } from '../utils/getTimeAgo';
-import { loadTemplates } from '../utils/loadTemplates';
-import { TemplateStatus, TemplateStateInfo } from '../types';
-import { calculateTemplateState } from '../utils/templateState';
-import { StatusIndicator } from '../components/StatusIndicator';
+import { loadBuildLog } from '../utils/loadBuildLog.js';
+import { getTimeAgo } from '../utils/getTimeAgo.js';
+import { loadTemplates } from '../utils/loadTemplates.js';
+import { TemplateStatus, TemplateStateInfo } from '../types.js';
+import { calculateTemplateState } from '../utils/templateState.js';
+import { StatusIndicator } from '../components/StatusIndicator.js';
 
 interface TemplateWithState {
   template: TemplateStatus;

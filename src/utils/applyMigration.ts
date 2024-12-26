@@ -1,6 +1,6 @@
 import chalk from 'chalk';
-import { MigrationError } from '../types';
-import { connect } from './db.connection';
+import { MigrationError } from '../types.js';
+import { connect } from './db.connection.js';
 
 export async function applyMigration(
   content: string,

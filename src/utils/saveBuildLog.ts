@@ -1,7 +1,7 @@
 import fs from 'fs/promises';
 import path from 'path';
-import { BuildLog } from '../types';
-import { loadConfig } from './config';
+import { BuildLog } from '../types.js';
+import { loadConfig } from './config.js';
 
 export async function saveBuildLog(
   dirname: string,

@@ -1,5 +1,5 @@
 import React from 'react';
-import { buildTemplates } from '../lib/buildTemplates';
+import { buildTemplates } from '../lib/buildTemplates.js';
 
 export default function Apply() {
   React.useEffect(() => {

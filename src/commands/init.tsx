@@ -1,11 +1,11 @@
 import React from 'react';
 import fs from 'fs/promises';
 import path from 'path';
-import { saveConfig, loadConfig } from '../utils/config';
-import { CONFIG_FILE } from '../constants';
-import { createEmptyBuildLog } from '../utils/createEmptyBuildLog';
-import { ensureDirectories } from '../utils/ensureDirectories';
-import { fileExists } from '../utils/fileExists';
+import { saveConfig, loadConfig } from '../utils/config.js';
+import { CONFIG_FILE } from '../constants.js';
+import { createEmptyBuildLog } from '../utils/createEmptyBuildLog.js';
+import { ensureDirectories } from '../utils/ensureDirectories.js';
+import { fileExists } from '../utils/fileExists.js';
 
 export default function Init() {
   React.useEffect(() => {

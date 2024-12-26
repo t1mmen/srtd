@@ -6,16 +6,16 @@ import glob from 'glob';
 import fs from 'fs/promises';
 import path from 'path';
 import chalk from 'chalk';
-import { loadBuildLog } from '../utils/loadBuildLog';
-import { isWipTemplate } from '../utils/isWipTemplate';
-import { saveBuildLog } from '../utils/saveBuildLog';
-import { getNextTimestamp } from '../utils/getNextTimestamp';
-import { CLIArgs, CLIResult, MigrationError } from '../types';
-import { applyMigration } from '../utils/applyMigration';
-import { calculateMD5 } from '../utils/calculateMD5';
-import { registerTemplate } from '../utils/registerTemplate';
-import { displayErrorSummary } from '../utils/displayErrorSummary';
-import { loadConfig } from '../utils/config';
+import { loadBuildLog } from '../utils/loadBuildLog.js';
+import { isWipTemplate } from '../utils/isWipTemplate.js';
+import { saveBuildLog } from '../utils/saveBuildLog.js';
+import { getNextTimestamp } from '../utils/getNextTimestamp.js';
+import { CLIArgs, CLIResult, MigrationError } from '../types.js';
+import { applyMigration } from '../utils/applyMigration.js';
+import { calculateMD5 } from '../utils/calculateMD5.js';
+import { registerTemplate } from '../utils/registerTemplate.js';
+import { displayErrorSummary } from '../utils/displayErrorSummary.js';
+import { loadConfig } from '../utils/config.js';
 
 export async function buildTemplates(args: CLIArgs = {}): Promise<CLIResult> {
   const config = await loadConfig();

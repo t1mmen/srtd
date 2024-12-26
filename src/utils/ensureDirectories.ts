@@ -1,7 +1,7 @@
 import fs from 'fs/promises';
 import path from 'path';
-import { loadConfig } from './config';
-import { fileExists } from './fileExists';
+import { loadConfig } from './config.js';
+import { fileExists } from './fileExists.js';
 
 export async function ensureDirectories(
   baseDir: string

@@ -1,6 +1,6 @@
 import chalk from 'chalk';
 import pg from 'pg';
-import { getConfig } from './config';
+import { getConfig } from './config.js';
 const { Pool } = pg;
 
 let pool: pg.Pool | undefined;

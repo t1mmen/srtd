@@ -1,11 +1,11 @@
 import fs from 'fs/promises';
 import glob from 'glob';
 import path from 'path';
-import { getConfig } from './config';
-import { calculateMD5 } from './calculateMD5';
-import { getMigrationFileHash } from './getMigrationFileHash';
-import { TemplateStatus } from '../types';
-import { loadBuildLog } from './loadBuildLog';
+import { getConfig } from './config.js';
+import { calculateMD5 } from './calculateMD5.js';
+import { getMigrationFileHash } from './getMigrationFileHash.js';
+import { TemplateStatus } from '../types.js';
+import { loadBuildLog } from './loadBuildLog.js';
 
 export async function loadTemplates(
   dirname: string,

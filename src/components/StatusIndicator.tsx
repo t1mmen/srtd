@@ -1,12 +1,12 @@
 import React from 'react';
 import { Box, Text } from 'ink';
-import { TemplateStateInfo } from '../types';
+import { TemplateStateInfo } from '../types.js';
 import {
   getBuildStatusColor,
   getApplyStatusColor,
   getApplyStatusIcon,
   getBuildStatusIcon,
-} from '../utils/templateState';
+} from '../utils/templateState.js';
 
 interface StatusIndicatorProps {
   state: TemplateStateInfo;

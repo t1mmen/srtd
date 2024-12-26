@@ -31,7 +31,7 @@
     "dev": "tsc --watch",
     "prettier": "prettier --write .",
     "test": "vitest",
-    "x": "npm run build && npm link && supasimplemigrations"
+    "x": "npm run build && npm link && chmod u+x ./dist/cli.js && supasimplemigrations"
   },
   "files": [
     "dist"

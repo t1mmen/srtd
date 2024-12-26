@@ -4,8 +4,8 @@ import {
   BuildStatus,
   ApplyStatus,
   TemplateState,
-} from '../types';
-import { isWipTemplate } from './isWipTemplate';
+} from '../types.js';
+import { isWipTemplate } from './isWipTemplate.js';
 
 export async function calculateTemplateState(template: TemplateStatus): Promise<TemplateStateInfo> {
   const { currentHash, buildState, path } = template;

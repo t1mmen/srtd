@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { Box, Text } from 'ink';
-import { TemplateStatus, TemplateStateInfo } from '../types';
-import { StatusIndicator } from './StatusIndicator';
-import { calculateTemplateState } from '../utils/templateState';
-import { getTimeAgo } from '../utils/getTimeAgo';
+import { TemplateStatus, TemplateStateInfo } from '../types.js';
+import { StatusIndicator } from './StatusIndicator.js';
+import { calculateTemplateState } from '../utils/templateState.js';
+import { getTimeAgo } from '../utils/getTimeAgo.js';
 
 interface TemplateListProps {
   items: TemplateStatus[];

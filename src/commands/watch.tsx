@@ -2,8 +2,8 @@ import React from 'react';
 import { Box, Text } from 'ink';
 import fs from 'fs';
 import path from 'path';
-import { buildTemplates } from '../lib/buildTemplates';
-import { getConfig } from '../utils/config';
+import { buildTemplates } from '../lib/buildTemplates.js';
+import { getConfig } from '../utils/config.js';
 
 export default function Watch() {
   const [status, setStatus] = React.useState<string>('Initializing...');
@@ -50,7 +50,7 @@ export default function Watch() {
               });
 
               if (result.errors.length > 0) {
-                setError(result.errors[0].error);
+                setError(result.errors[0]?.error ?? 'Unknown error');
               } else {
                 setError(null);
                 setLastBuild(new Date());

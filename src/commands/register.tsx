@@ -1,8 +1,8 @@
 import React from 'react';
 import { Box, Text } from 'ink';
 import { MultiSelect } from '@inkjs/ui';
-import { useTemplateState } from '../hooks/useTemplateState';
-import { registerTemplate } from '../utils/registerTemplate';
+import { useTemplateState } from '../hooks/useTemplateState.js';
+import { registerTemplate } from '../utils/registerTemplate.js';
 
 export default function Register() {
   const { loading, error, items } = useTemplateState();

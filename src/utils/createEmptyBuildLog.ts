@@ -1,5 +1,5 @@
-import { BuildLog } from '../types';
-import { safeCreate } from './safeCreate';
+import { BuildLog } from '../types.js';
+import { safeCreate } from './safeCreate.js';
 
 export async function createEmptyBuildLog(filepath: string): Promise<boolean> {
   const initial = {

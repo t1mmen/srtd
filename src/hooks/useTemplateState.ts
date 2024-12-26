@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { loadBuildLog } from '../utils/loadBuildLog';
-import { loadTemplates } from '../utils/loadTemplates';
-import { TemplateStatus } from '../types';
+import { loadBuildLog } from '../utils/loadBuildLog.js';
+import { loadTemplates } from '../utils/loadTemplates.js';
+import { TemplateStatus } from '../types.js';
 import path from 'path';
 
 export function useTemplateState() {

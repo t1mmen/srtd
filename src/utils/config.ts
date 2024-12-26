@@ -1,7 +1,7 @@
-import { CLIConfig } from '../types';
+import { CLIConfig } from '../types.js';
 import path from 'path';
 import fs from 'fs/promises';
-import { CONFIG_FILE } from '../constants';
+import { CONFIG_FILE } from '../constants.js';
 
 let config: CLIConfig;
 

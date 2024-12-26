@@ -3,11 +3,11 @@ import { Box, Text } from 'ink';
 import { Select } from '@inkjs/ui';
 
 // Import the "Register" component for demonstration of navigation:
-import Register from './register';
-import Apply from './apply';
-import Build from './build';
-import Status from './status';
-import Watch from './watch';
+import Register from './register.js';
+import Apply from './apply.js';
+import Build from './build.js';
+import Status from './status.js';
+import Watch from './watch.js';
 
 export default function UI() {
   const [selectedCommand, setSelectedCommand] = React.useState<string | null>(null);

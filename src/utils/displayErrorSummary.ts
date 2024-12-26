@@ -1,5 +1,5 @@
 import chalk from 'chalk';
-import { MigrationError } from '../types';
+import { MigrationError } from '../types.js';
 
 export function displayErrorSummary(errors: MigrationError[]): void {
   if (errors.length === 0) return;
