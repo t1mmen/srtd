@@ -1,8 +1,8 @@
 {
-  "name": "supasimplemigrations",
+  "name": "srtd",
   "version": "0.1.0",
   "license": "MIT",
-  "description": "CLI tool for managing repeatable SQL migrations with Supabase using templates",
+  "description": "Supabase Repeatable Template Definitions (srtd) is a powerful CLI for managing repeatable SQL templates tailored for Postgres features that require full redefinition, such as functions, stored procedures, and RLS policies. Streamline your development with live reloads and simplified workflows.",
   "bin": "dist/cli.js",
   "type": "module",
   "engines": {
@@ -31,7 +31,7 @@
     "dev": "tsc --watch",
     "prettier": "prettier --write .",
     "test": "vitest",
-    "x": "npm run build && npm link && chmod u+x ./dist/cli.js && supasimplemigrations"
+    "x": "npm run build && npm link && chmod u+x ./dist/cli.js && srtd"
   },
   "files": [
     "dist"

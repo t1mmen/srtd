@@ -46,7 +46,7 @@ export default function UI() {
 
   return (
     <Box flexDirection="column">
-      <Text bold>Supasimplemigrations - Repeatable Template SQL Migration Tool</Text>
+      <Text bold>srtd - Repeatable Template SQL Migration Tool</Text>
       <Text>Select a command:</Text>
       <Box marginTop={1}>
         <Select options={menuItems} onChange={value => setSelectedCommand(value)} />

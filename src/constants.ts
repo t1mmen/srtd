@@ -1,1 +1,1 @@
-export const CONFIG_FILE = '.supasimplemigrationsrc.json';
+export const CONFIG_FILE = '.srtdrc.json';
