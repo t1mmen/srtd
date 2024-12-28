@@ -1,13 +1,19 @@
 {
   "extends": "@sindresorhus/tsconfig",
   "compilerOptions": {
-    "moduleResolution": "bundler",
-    "module": "ES2022",
+    "moduleResolution": "node16",
+    "module": "NodeNext",
+    "target": "ES2022",
     "outDir": "dist",
+    "rootDir": "src",
+    "strict": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "declaration": true,
     "sourceMap": true,
-    "noUncheckedIndexedAccess": false,
-    "noPropertyAccessFromIndexSignature": false
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true
   },
-  "include": ["src"],
+  "include": ["src", "__tests__"],
   "exclude": ["node_modules", "dist"]
 }
