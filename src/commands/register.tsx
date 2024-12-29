@@ -65,7 +65,7 @@ export default function Register({ args: templateArgs }: Props) {
   }
 
   // If no templates were provided as arguments, show interactive selection
-  if (templateArgs?.length === 0) {
+  if (!templateArgs?.length) {
     const options = items.map(t => {
       const status = t.buildState.lastMigrationFile ? 'registered' : 'new';
       return {

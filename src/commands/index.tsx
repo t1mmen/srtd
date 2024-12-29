@@ -14,7 +14,7 @@ export default function UI() {
 
   // For now, we only demonstrate navigation to "register"
   if (selectedCommand === 'register') {
-    return <Register />;
+    return <Register args={undefined} />;
   }
 
   if (selectedCommand === 'apply') {
