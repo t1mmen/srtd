@@ -6,7 +6,7 @@
   "bin": "dist/cli.js",
   "type": "module",
   "engines": {
-    "node": ">=18"
+    "node": ">=20"
   },
   "author": {
     "name": "Timm Stokke",
@@ -31,7 +31,8 @@
     "dev": "tsc --watch",
     "prettier": "prettier --write .",
     "test": "vitest",
-    "x": "npm run build && npm link && chmod u+x ./dist/cli.js && srtd"
+    "x": "npm run build && npm link && chmod u+x ./dist/cli.js && srtd",
+    "repomix": "npx repomix ./src"
   },
   "files": [
     "dist"

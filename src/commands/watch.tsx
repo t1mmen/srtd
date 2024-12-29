@@ -1,9 +1,10 @@
+// commands/watch.tsx
 import React from 'react';
 import { Box, Text } from 'ink';
-import fs from 'fs';
+import { watch } from 'fs';
 import path from 'path';
-import { buildTemplates } from '../lib/buildTemplates.js';
 import { getConfig } from '../utils/config.js';
+import { TemplateManager } from '../lib/templateManager.js';
 
 export default function Watch() {
   const [status, setStatus] = React.useState<string>('Initializing...');
@@ -12,9 +13,8 @@ export default function Watch() {
 
   React.useEffect(() => {
     let debounceTimer: NodeJS.Timeout;
-    let watcher: fs.FSWatcher;
+    let watcher: ReturnType<typeof watch>;
 
-    // Add SIGINT handler
     const handleExit = () => {
       setStatus('Shutting down...');
       if (debounceTimer) clearTimeout(debounceTimer);
@@ -24,15 +24,19 @@ export default function Watch() {
 
     process.on('SIGINT', handleExit);
 
-    async function init(): Promise<void> {
+    async function init() {
       try {
         const baseDir = process.cwd();
         const config = await getConfig(baseDir);
+        const manager = await TemplateManager.create(baseDir);
         const templatePath = path.join(baseDir, config.templateDir);
 
-        if (!fs.existsSync(templatePath)) {
-          throw new Error('Template directory not found. Run init first.');
+        setStatus('Checking for unapplied templates...');
+        const initialResult = await manager.processTemplates({ apply: true });
+        if (initialResult.errors.length > 0) {
+          setError(initialResult.errors.map(e => `${e.file}: ${e.error}`).join('\n'));
         }
+        setStatus('Watching for changes...');
 
         const handleChange = async (_: string, filename: string | null) => {
           if (!filename?.endsWith('.sql')) return;
@@ -41,19 +45,18 @@ export default function Watch() {
           debounceTimer = setTimeout(async () => {
             try {
               setStatus(`Building ${filename}...`);
-              const result = await buildTemplates({
-                baseDir,
+              const result = await manager.processTemplates({
                 filter: filename,
                 apply: true,
-                skipFiles: true,
-                verbose: false,
               });
 
               if (result.errors.length > 0) {
-                setError(result.errors[0]?.error ?? 'Unknown error');
+                setError(result.errors.map(e => `${e.file}: ${e.error}`).join('\n'));
               } else {
                 setError(null);
-                setLastBuild(new Date());
+                if (result.applied.length > 0) {
+                  setLastBuild(new Date());
+                }
               }
             } catch (err) {
               setError(err instanceof Error ? err.message : 'Unknown error');
@@ -63,8 +66,7 @@ export default function Watch() {
           }, 100);
         };
 
-        watcher = fs.watch(templatePath, { recursive: true } as fs.WatchOptions, handleChange);
-        setStatus('Watching for changes...');
+        watcher = watch(templatePath, { recursive: true }, handleChange);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Unknown error');
         setStatus('Watch failed');
