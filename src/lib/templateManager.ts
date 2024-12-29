@@ -24,25 +24,29 @@ export class TemplateManager extends EventEmitter {
   private config: Awaited<ReturnType<typeof getConfig>>;
   private templateCache: Map<string, TemplateCache> = new Map();
   private cacheTimeout = 1000;
+  private silent: boolean;
 
+  // Constructor:
   private constructor(
     baseDir: string,
     buildLog: BuildLog,
     localBuildLog: BuildLog,
-    config: Awaited<ReturnType<typeof getConfig>>
+    config: Awaited<ReturnType<typeof getConfig>>,
+    options: { silent?: boolean } = {}
   ) {
     super();
+    this.silent = options.silent ?? false;
     this.baseDir = baseDir;
     this.buildLog = buildLog;
     this.localBuildLog = localBuildLog;
     this.config = config;
   }
 
-  static async create(baseDir: string) {
+  static async create(baseDir: string, options: { silent?: boolean } = {}) {
     const config = await getConfig(baseDir);
     const buildLog = await loadBuildLog(baseDir, 'common');
     const localBuildLog = await loadBuildLog(baseDir, 'local');
-    return new TemplateManager(baseDir, buildLog, localBuildLog, config);
+    return new TemplateManager(baseDir, buildLog, localBuildLog, config, options);
   }
 
   private isCacheValid(cache: TemplateCache): boolean {
@@ -126,7 +130,7 @@ export class TemplateManager extends EventEmitter {
     const watcher = chokidar.watch(templatePath, {
       ignoreInitial: true,
       depth: 0,
-      ignored: /(^|[\/\\])\../,
+      ignored: /(^|[\\])\../,
     });
 
     watcher.on('change', async (filepath: string) => {
@@ -141,7 +145,7 @@ export class TemplateManager extends EventEmitter {
   async applyTemplate(templatePath: string): Promise<CLIResult> {
     const template = await this.getTemplateStatus(templatePath);
     const content = await fs.readFile(templatePath, 'utf-8');
-    const result = await applyMigration(content, template.name);
+    const result = await applyMigration(content, template.name, this.silent);
     const relPath = path.relative(this.baseDir, templatePath);
 
     this.invalidateCache(templatePath);
@@ -173,7 +177,7 @@ export class TemplateManager extends EventEmitter {
     const relPath = path.relative(this.baseDir, templatePath);
 
     if (isWip) {
-      logger.skip(`Skipping WIP template: ${template.name}`);
+      this.log(`Skipping WIP template: ${template.name}`, 'skip');
       return;
     }
 
@@ -181,7 +185,7 @@ export class TemplateManager extends EventEmitter {
     const currentHash = await calculateMD5(content);
 
     if (!force && this.buildLog.templates[relPath]?.lastBuildHash === currentHash) {
-      logger.skip(`Skipping unchanged template: ${template.name}`);
+      this.log(`Skipping unchanged template: ${template.name}`, 'skip');
       return;
     }
 
@@ -213,6 +217,13 @@ export class TemplateManager extends EventEmitter {
     this.emit('templateBuilt', template);
   }
 
+  private log(msg: string, type: 'info' | 'error' | 'success' | 'skip' = 'info') {
+    if (this.silent) return;
+    if (type === 'error') logger.error(msg);
+    else if (type === 'success') logger.success(msg);
+    else if (type === 'skip') logger.skip(msg);
+    else logger.info(msg);
+  }
   async processTemplates(options: {
     apply?: boolean;
     generateFiles?: boolean;
@@ -221,23 +232,55 @@ export class TemplateManager extends EventEmitter {
     const templates = await this.findTemplates();
     const result: CLIResult = { errors: [], applied: [] };
 
-    for (const templatePath of templates) {
-      const template = await this.getTemplateStatus(templatePath);
+    if (options.apply) {
+      this.log('Applying changes...');
+      let hasChanges = false;
 
-      if (options.apply) {
+      for (const templatePath of templates) {
+        const template = await this.getTemplateStatus(templatePath);
         const needsApply =
           !template.buildState.lastAppliedHash ||
           template.buildState.lastAppliedHash !== template.currentHash;
 
         if (needsApply) {
+          hasChanges = true;
           const applyResult = await this.applyTemplate(templatePath);
           result.errors.push(...applyResult.errors);
           result.applied.push(...applyResult.applied);
         }
       }
 
-      if (options.generateFiles) {
-        await this.buildTemplate(templatePath, options.force);
+      if (!hasChanges) {
+        this.log('No changes to apply');
+      } else if (result.errors.length > 0) {
+        this.log(`${result.errors.length} template(s) failed to apply`, 'error');
+        result.errors.forEach(err => this.log(`${err.file}: ${err.error}`, 'error'));
+      } else {
+        this.log(`Applied ${result.applied.length} template(s)`, 'success');
+      }
+    }
+
+    if (options.generateFiles) {
+      let built = 0;
+      let skipped = 0;
+
+      for (const templatePath of templates) {
+        const isWip = await isWipTemplate(templatePath);
+        if (!isWip) {
+          const template = await this.getTemplateStatus(templatePath);
+          if (options.force || template.currentHash !== template.buildState.lastBuildHash) {
+            await this.buildTemplate(templatePath, options.force);
+            built++;
+          } else {
+            skipped++;
+          }
+        }
+      }
+
+      if (built > 0) {
+        this.log(`Generated ${built} migration file(s)`, 'success');
+      } else if (skipped > 0) {
+        this.log('No changes to build');
       }
     }
 

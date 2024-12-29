@@ -1,6 +1,6 @@
 CREATE OR REPLACE FUNCTION public.test()
 returns void as $$
 BEGIN
-  RAISE NOTICE 'Hel11lo!!';
+  RAISE NOTICE 'Hel11111111s111lo!!';
 END;
 $$ language plpgsql;

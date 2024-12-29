@@ -4,7 +4,8 @@ import { logger } from './logger.js';
 
 export async function applyMigration(
   content: string,
-  templateName: string
+  templateName: string,
+  silent: boolean = false
 ): Promise<true | MigrationError> {
   const client = await connect();
   try {
@@ -13,11 +14,11 @@ export async function applyMigration(
     await client.query(`SELECT pg_advisory_xact_lock(${lockKey}::bigint)`);
     await client.query(content);
     await client.query('COMMIT');
-    logger.success('Migration applied successfully');
+    if (!silent) logger.success('Migration applied successfully');
     return true;
   } catch (error) {
     await client.query('ROLLBACK');
-    logger.error(`Migration failed for ${templateName}: ${error}`);
+    if (!silent) logger.error(`Migration failed for ${templateName}: ${error}`);
     return {
       file: templateName,
       error: error instanceof Error ? error.message : String(error),

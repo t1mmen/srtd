@@ -4,7 +4,7 @@ import { Select } from '@inkjs/ui';
 
 // Import the "Register" component for demonstration of navigation:
 import Register from './register.js';
-// import Apply from './apply.js';
+import Apply from './apply.js';
 import Build from './build.js';
 // import Status from './status.js';
 import Watch from './watch.js';
@@ -17,9 +17,9 @@ export default function UI() {
     return <Register />;
   }
 
-  // if (selectedCommand === 'apply') {
-  //   return <Apply />;
-  // }
+  if (selectedCommand === 'apply') {
+    return <Apply />;
+  }
 
   if (selectedCommand === 'build') {
     return <Build />;

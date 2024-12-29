@@ -4,15 +4,15 @@
   "templates": {
     "supabase/migrations-templates/another.wip.sql": {
       "lastAppliedHash": "515cb9d070a86dc74a4ba817b234d3d2",
-      "lastAppliedDate": "2024-12-29T15:13:46.589Z"
+      "lastAppliedDate": "2024-12-29T15:36:40.613Z"
     },
     "supabase/migrations-templates/new.wip.sql": {
       "lastAppliedHash": "a14c111283c38350a71a033b8873f17e",
       "lastAppliedDate": "2024-12-29T15:11:04.095Z"
     },
     "supabase/migrations-templates/test.sql": {
-      "lastAppliedHash": "7a9c1f57625f09c138c7770f4c93bedb",
-      "lastAppliedDate": "2024-12-29T15:13:12.814Z"
+      "lastAppliedHash": "428c3836145f47cfa0de99a57e4fd3f0",
+      "lastAppliedDate": "2024-12-29T15:34:11.574Z"
     }
   }
 }

@@ -4,13 +4,32 @@ import path from 'path';
 import { TemplateManager } from '../lib/templateManager.js';
 import type { TemplateStatus } from '../types.js';
 
+const TimeSince: React.FC<{ date?: string }> = ({ date }) => {
+  const [now, setNow] = React.useState(new Date());
+
+  React.useEffect(() => {
+    const timer = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  if (!date) return <Text>never</Text>;
+
+  const diff = now.getTime() - new Date(date).getTime();
+  const seconds = Math.floor(diff / 1000);
+
+  if (seconds < 60) return <Text>{seconds}s</Text>;
+  if (seconds < 3600) return <Text>{Math.floor(seconds / 60)}m</Text>;
+  if (seconds < 86400) return <Text>{Math.floor(seconds / 3600)}h</Text>;
+  return <Text>{Math.floor(seconds / 86400)}d</Text>;
+};
+
 export default function Watch() {
   const { exit } = useApp();
   const [templates, setTemplates] = React.useState<TemplateStatus[]>([]);
   const [error, setError] = React.useState<string>();
   const managerRef = React.useRef<TemplateManager>();
   const mounted = React.useRef(true);
-  const [now, setNow] = React.useState(new Date());
+  const [, setNow] = React.useState(new Date());
 
   useInput((input, key) => {
     if (input.toLowerCase() === 'q' || (key.ctrl && input === 'c')) {
@@ -27,15 +46,11 @@ export default function Watch() {
 
   React.useEffect(() => {
     let cleanup: (() => void) | undefined;
+    console.clear();
 
     async function init(): Promise<() => void> {
       try {
-        // Clear console once
-        process.stdout.write('\x1b[2J');
-        process.stdout.write('\x1b[0f');
-        process.stdout.write('\n'.repeat(2));
-
-        managerRef.current = await TemplateManager.create(process.cwd());
+        managerRef.current = await TemplateManager.create(process.cwd(), { silent: true });
 
         // Initial template load
         const initialTemplates = await managerRef.current.findTemplates();
@@ -83,16 +98,6 @@ export default function Watch() {
     return () => cleanup?.();
   }, []);
 
-  const formatTimeAgo = (date: string | undefined) => {
-    if (!date) return 'never';
-    const diff = now.getTime() - new Date(date).getTime();
-    const seconds = Math.floor(diff / 1000);
-    if (seconds < 60) return `${seconds}s`;
-    if (seconds < 3600) return `${Math.floor(seconds / 60)}m`;
-    if (seconds < 86400) return `${Math.floor(seconds / 3600)}h`;
-    return `${Math.floor(seconds / 86400)}d`;
-  };
-
   if (error) {
     return <Text color="red">Error: {error}</Text>;
   }
@@ -109,7 +114,7 @@ export default function Watch() {
   const hasErrors = templates.some(t => t.buildState.lastAppliedError);
 
   return (
-    <Box flexDirection="column">
+    <Box flexDirection="column" marginBottom={2} marginTop={2}>
       <Box marginBottom={1}>
         <Text bold>srtd - Watch Mode</Text>
       </Box>
@@ -133,10 +138,18 @@ export default function Watch() {
               </Box>
               <Box>
                 <Text dimColor>
-                  applied {formatTimeAgo(template.buildState.lastAppliedDate)} ago
-                  {template.currentHash !== template.buildState.lastBuildHash
-                    ? ' • needs build'
-                    : ` • built ${formatTimeAgo(template.buildState.lastBuildDate)} ago`}
+                  applied <TimeSince date={template.buildState.lastAppliedDate} /> ago
+                  {!template.buildState.lastBuildDate ||
+                  template.currentHash !== template.buildState.lastBuildHash ? (
+                    <> • needs build</>
+                  ) : (
+                    <>
+                      {' '}
+                      • built
+                      <TimeSince date={template.buildState.lastBuildDate} />
+                      ago
+                    </>
+                  )}
                 </Text>
               </Box>
             </Box>
@@ -162,8 +175,12 @@ export default function Watch() {
       )}
 
       <Box marginY={1}>
-        <Text bold color={hasErrors ? 'red' : 'green'}>
-          {hasErrors ? 'FAIL' : 'PASS'}
+        <Text
+          bold
+          // color={hasErrors ? 'red' : 'green'}
+          backgroundColor={hasErrors ? 'red' : 'green'}
+        >
+          {hasErrors ? ' FAIL ' : ' OK '}
         </Text>
         <Text> </Text>
         <Text dimColor>Waiting for file changes...</Text>
