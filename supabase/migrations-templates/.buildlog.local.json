@@ -1,18 +1,18 @@
 {
   "version": "1.0",
+  "lastTimestamp": "",
   "templates": {
     "supabase/migrations-templates/another.wip.sql": {
-      "lastAppliedHash": "e236648e04bd8a84fd533c1487bc5696",
-      "lastAppliedDate": "2024-12-29T13:03:38.041Z"
+      "lastAppliedHash": "515cb9d070a86dc74a4ba817b234d3d2",
+      "lastAppliedDate": "2024-12-29T15:13:46.589Z"
     },
     "supabase/migrations-templates/new.wip.sql": {
-      "lastAppliedHash": "ce3752dee76e49f1e6086b5d96c3c3f3",
-      "lastAppliedDate": "2024-12-29T13:03:38.077Z"
+      "lastAppliedHash": "a14c111283c38350a71a033b8873f17e",
+      "lastAppliedDate": "2024-12-29T15:11:04.095Z"
     },
     "supabase/migrations-templates/test.sql": {
-      "lastAppliedHash": "831825b7ed852aaf914dedbab00d09ff",
-      "lastAppliedDate": "2024-12-29T13:03:44.723Z"
+      "lastAppliedHash": "7a9c1f57625f09c138c7770f4c93bedb",
+      "lastAppliedDate": "2024-12-29T15:13:12.814Z"
     }
-  },
-  "lastTimestamp": ""
+  }
 }
