@@ -57,7 +57,10 @@ export class TemplateManager {
     const content = await fs.readFile(templatePath, 'utf-8');
     const currentHash = await calculateMD5(content);
     const relPath = path.relative(this.baseDir, templatePath);
-    const buildState = this.localBuildLog.templates[relPath] || {};
+    const buildState = {
+      ...this.buildLog.templates[relPath], // Common build info
+      ...this.localBuildLog.templates[relPath], // Local apply info
+    };
 
     return {
       name: path.basename(templatePath, '.sql'),
@@ -114,19 +117,21 @@ export class TemplateManager {
     const result = await applyMigration(content, template.name);
     const relPath = path.relative(this.baseDir, template.path);
 
+    const newState = {
+      ...this.localBuildLog.templates[relPath],
+      lastAppliedHash: template.currentHash,
+      lastAppliedDate: new Date().toISOString(),
+    };
+
     if (result === true) {
-      this.localBuildLog.templates[relPath] = {
-        ...this.localBuildLog.templates[relPath],
-        lastAppliedHash: template.currentHash,
-        lastAppliedDate: new Date().toISOString(),
-        lastAppliedError: undefined,
-      };
+      delete newState.lastAppliedError;
+      this.localBuildLog.templates[relPath] = newState;
       await this.saveBuildLogs();
       return { errors: [], applied: [template.name] };
     }
 
     this.localBuildLog.templates[relPath] = {
-      ...this.localBuildLog.templates[relPath],
+      ...newState,
       lastAppliedError: result.error,
     };
     await this.saveBuildLogs();
@@ -135,11 +140,12 @@ export class TemplateManager {
 
   async processTemplates(options: {
     filter?: string;
+    files?: string[];
     apply?: boolean;
     generateFiles?: boolean;
     force?: boolean;
   }): Promise<CLIResult> {
-    const templates = await this.findTemplates(options.filter);
+    const templates = options.files || (await this.findTemplates());
     const result: CLIResult = { errors: [], applied: [] };
 
     for (const templatePath of templates) {
@@ -149,11 +155,17 @@ export class TemplateManager {
       const { currentHash, buildState } = template;
 
       if (options.apply) {
+        logger.debug(`Processing template: ${template.name}, WIP: ${isWip}`);
+
+        // Allow applying WIP templates in watch mode
         const hasChanges = buildState.lastAppliedHash !== currentHash;
         if (hasChanges) {
+          logger.debug(`Attempting to apply template: ${template.name}`);
           const applyResult = await this.applyTemplate(template);
           result.errors.push(...applyResult.errors);
           result.applied.push(...applyResult.applied);
+        } else {
+          logger.info(`No changes for template: ${template.name}`);
         }
       }
 

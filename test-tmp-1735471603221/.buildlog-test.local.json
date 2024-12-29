@@ -1,0 +1,13 @@
+{
+  "version": "1.0",
+  "lastTimestamp": "",
+  "templates": {
+    "test-templates/test-1735471603221.sql": {
+      "lastAppliedHash": "e792d406f7b113f84b78399a7db2a8f2",
+      "lastAppliedDate": "2024-12-29T11:26:43.414Z"
+    },
+    "test-templates/test-1735471603221.wip.sql": {
+      "lastAppliedError": "function \"test_func_1735471603221\" already exists with same argument types"
+    }
+  }
+}
