@@ -1,49 +1,48 @@
 // utils/db.connection.ts
 import pg from 'pg';
 import { getConfig } from './config.js';
+import { logger } from './logger.js';
 
 let pool: pg.Pool | undefined;
+let connectionAttempts = 0;
+const MAX_RETRIES = 3;
+const RETRY_DELAY = 1000;
 
-export async function connect() {
-  if (!pool) {
-    const config = await getConfig(process.cwd());
-    pool = new pg.Pool({ connectionString: config.pgConnection });
+async function createPool(): Promise<pg.Pool> {
+  const config = await getConfig(process.cwd());
+  return new pg.Pool({
+    connectionString: config.pgConnection,
+    connectionTimeoutMillis: 5000,
+  });
+}
+
+async function retryConnection(): Promise<pg.PoolClient> {
+  connectionAttempts++;
+  logger.debug(`Connection attempt ${connectionAttempts}`);
+
+  try {
+    if (!pool) pool = await createPool();
+    return await pool.connect();
+  } catch (err) {
+    if (connectionAttempts < MAX_RETRIES) {
+      logger.warn(`Connection failed, retrying in ${RETRY_DELAY}ms...`);
+      await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
+      return retryConnection();
+    }
+    throw new Error(`Database connection failed after ${MAX_RETRIES} attempts: ${err}`);
   }
-  return pool.connect();
+}
+
+export async function connect(): Promise<pg.PoolClient> {
+  connectionAttempts = 0;
+  return retryConnection();
+}
+
+export async function disconnect(): Promise<void> {
+  if (pool) {
+    await pool.end();
+    pool = undefined;
+  }
 }
 
 process.on('exit', () => pool?.end());
-
-// import chalk from 'chalk';
-// import pg from 'pg';
-// import { getConfig } from './config.js';
-// const { Pool } = pg;
-
-// let pool: pg.Pool | undefined;
-
-// async function setup() {
-//   const config = await getConfig(process.cwd());
-//   if (!pool) {
-//     pool = new Pool({ connectionString: config.pgConnection });
-//   }
-// }
-
-// export async function connect() {
-//   await setup();
-//   if (!pool) {
-//     throw new Error('Failed to connect to database');
-//   }
-//   const client = await pool.connect().catch(error => {
-//     console.error(`  ❌ ${chalk.red('Failed to connect to database')}`);
-//     console.error(error);
-//     process.exit(1);
-//   });
-//   return client;
-// }
-
-// // Cleanup on process exit
-// process.on('exit', () => {
-//   if (pool) {
-//     pool.end();
-//   }
-// });

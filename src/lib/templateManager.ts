@@ -145,29 +145,26 @@ export class TemplateManager {
     for (const templatePath of templates) {
       const template = await this.getTemplateStatus(templatePath);
       const isWip = await isWipTemplate(templatePath);
-
-      // Skip WIP templates only for file generation
-      if (isWip && options.generateFiles) {
-        logger.skip(`Skipping WIP template: ${template.name}`);
-        continue;
-      }
-
       const relPath = path.relative(this.baseDir, templatePath);
       const { currentHash, buildState } = template;
-      const hasChanges = buildState.lastAppliedHash !== currentHash;
 
-      if (options.apply && hasChanges) {
-        const applyResult = await this.applyTemplate(template);
-        result.errors.push(...applyResult.errors);
-        result.applied.push(...applyResult.applied);
+      if (options.apply) {
+        const hasChanges = buildState.lastAppliedHash !== currentHash;
+        if (hasChanges) {
+          const applyResult = await this.applyTemplate(template);
+          result.errors.push(...applyResult.errors);
+          result.applied.push(...applyResult.applied);
+        }
       }
 
-      if (options.generateFiles) {
+      if (options.generateFiles && !isWip) {
         const loggedTemplate = this.buildLog.templates[relPath];
         if (options.force || loggedTemplate?.lastBuildHash !== currentHash) {
           const content = await fs.readFile(templatePath, 'utf-8');
           await this.generateMigration(templatePath, content, currentHash);
         }
+      } else if (options.generateFiles) {
+        logger.skip(`Skipping WIP template: ${template.name}`);
       }
     }
 
