@@ -1,12 +1,13 @@
+// utils/ensureDirectories.ts
 import fs from 'fs/promises';
 import path from 'path';
-import { loadConfig } from './config.js';
+import { getConfig } from './config.js';
 import { fileExists } from './fileExists.js';
 
 export async function ensureDirectories(
   baseDir: string
 ): Promise<{ templateDir: boolean; migrationDir: boolean }> {
-  const config = await loadConfig();
+  const config = await getConfig(baseDir);
   const templatePath = path.join(baseDir, config.templateDir);
   const migrationPath = path.join(baseDir, config.migrationDir);
 

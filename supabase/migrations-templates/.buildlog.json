@@ -1,11 +1,11 @@
 {
   "version": "1.0",
+  "lastTimestamp": "20241229101834",
   "templates": {
     "supabase/migrations-templates/test.sql": {
       "lastBuildHash": "895e10b084fed5d9c69e2e1a6ec02da2",
-      "lastBuildDate": "2024-12-29T10:04:18.302Z",
-      "lastMigrationFile": "20241229100418_tmpl-test.sql"
+      "lastBuildDate": "2024-12-29T10:18:34.544Z",
+      "lastMigrationFile": "20241229101834_tmpl-test.sql"
     }
-  },
-  "lastTimestamp": "20241229100418"
+  }
 }

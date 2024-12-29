@@ -6,7 +6,7 @@ import { Select } from '@inkjs/ui';
 import Register from './register.js';
 import Apply from './apply.js';
 import Build from './build.js';
-import Status from './status.js';
+// import Status from './status.js';
 import Watch from './watch.js';
 
 export default function UI() {
@@ -25,9 +25,9 @@ export default function UI() {
     return <Build />;
   }
 
-  if (selectedCommand === 'status') {
-    return <Status />;
-  }
+  // if (selectedCommand === 'status') {
+  //   return <Status />;
+  // }
 
   if (selectedCommand === 'watch') {
     return <Watch />;

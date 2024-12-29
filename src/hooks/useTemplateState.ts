@@ -1,7 +1,7 @@
+// hooks/useTemplateState.ts
 import { useState, useEffect } from 'react';
-import { loadBuildLog } from '../utils/loadBuildLog.js';
-import { loadTemplates } from '../utils/loadTemplates.js';
 import { TemplateStatus } from '../types.js';
+import { TemplateManager } from '../lib/templateManager.js';
 import path from 'path';
 
 export function useTemplateState() {
@@ -12,23 +12,11 @@ export function useTemplateState() {
   useEffect(() => {
     async function fetchStatus() {
       try {
-        const dirname = process.cwd();
-        const templates = await loadTemplates(dirname);
-        const buildLog = await loadBuildLog(dirname, 'common');
-        const localBuildLog = await loadBuildLog(dirname, 'local');
-
-        const combined: TemplateStatus[] = templates.map(t => ({
-          name: t.name,
-          path: path.relative(dirname, t.path),
-          currentHash: t.currentHash,
-          migrationHash: t.migrationHash,
-          buildState: {
-            ...buildLog.templates[path.relative(dirname, t.path)],
-            ...localBuildLog.templates[path.relative(dirname, t.path)],
-          },
-        }));
-
-        setItems(combined);
+        const baseDir = process.cwd();
+        const manager = await TemplateManager.create(baseDir);
+        const templates = await manager.findTemplates();
+        const statuses = await Promise.all(templates.map(t => manager.getTemplateStatus(t)));
+        setItems(statuses);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Unknown error');
       } finally {

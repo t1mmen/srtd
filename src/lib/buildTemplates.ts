@@ -9,7 +9,7 @@ import { getNextTimestamp } from '../utils/getNextTimestamp.js';
 import { BuildLog, CLIArgs, CLIResult, MigrationError } from '../types.js';
 import { applyMigration } from '../utils/applyMigration.js';
 import { calculateMD5 } from '../utils/calculateMD5.js';
-import { loadConfig } from '../utils/config.js';
+import { getConfig } from '../utils/config.js';
 
 async function findTemplates(baseDir: string, filter: string): Promise<string[]> {
   return new Promise((resolve, reject) => {
@@ -50,7 +50,7 @@ async function applyTemplate(
 }
 
 export async function buildTemplates(args: CLIArgs = {}): Promise<CLIResult> {
-  const config = await loadConfig();
+  const config = await getConfig();
   const baseDir = args.baseDir || process.cwd();
   const filter = args.filter || '**/*.sql';
   const errors: MigrationError[] = [];

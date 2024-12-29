@@ -8,6 +8,7 @@ import { getConfig } from '../utils/config.js';
 import { isWipTemplate } from '../utils/isWipTemplate.js';
 import { applyMigration } from '../utils/applyMigration.js';
 import { getNextTimestamp } from '../utils/getNextTimestamp.js';
+import { logger } from '../utils/logger.js';
 import type { BuildLog, TemplateStatus, CLIResult } from '../types.js';
 
 export class TemplateManager {
@@ -35,12 +36,19 @@ export class TemplateManager {
     return new TemplateManager(baseDir, buildLog, localBuildLog, config);
   }
 
-  private async findTemplates(filter?: string): Promise<string[]> {
+  async findTemplates(filter?: string): Promise<string[]> {
     const templatePath = path.join(this.baseDir, this.config.templateDir, filter || '**/*.sql');
+    logger.debug(`Looking for templates in: ${templatePath}`);
+
     return new Promise((resolve, reject) => {
       glob(templatePath, (err, matches) => {
-        if (err) reject(err);
-        else resolve(matches);
+        if (err) {
+          logger.error(`Failed to find templates: ${err.message}`);
+          reject(err);
+        } else {
+          logger.debug(`Found ${matches.length} template(s)`);
+          resolve(matches);
+        }
       });
     });
   }
@@ -60,15 +68,7 @@ export class TemplateManager {
     };
   }
 
-  private async shouldApplyTemplate(template: TemplateStatus): Promise<boolean> {
-    const isWip = await isWipTemplate(template.path);
-    if (isWip) return false;
-
-    const { currentHash, buildState } = template;
-    return buildState.lastAppliedHash !== currentHash;
-  }
-
-  async generateMigration(
+  private async generateMigration(
     templatePath: string,
     content: string,
     currentHash: string
@@ -90,7 +90,6 @@ export class TemplateManager {
 
     await fs.writeFile(path.resolve(this.baseDir, migrationPath), migrationContent);
 
-    // Update build log
     this.buildLog.templates[relPath] = {
       ...this.buildLog.templates[relPath],
       lastBuildHash: currentHash,
@@ -100,6 +99,7 @@ export class TemplateManager {
     };
 
     await this.saveBuildLogs();
+    logger.success(`Generated: ${migrationName}`);
   }
 
   private async saveBuildLogs(): Promise<void> {
@@ -145,22 +145,28 @@ export class TemplateManager {
     for (const templatePath of templates) {
       const template = await this.getTemplateStatus(templatePath);
       const isWip = await isWipTemplate(templatePath);
-      const shouldApply = await this.shouldApplyTemplate(template);
-      const content = await fs.readFile(templatePath, 'utf-8');
-      const relPath = path.relative(this.baseDir, templatePath);
 
-      // Apply changes if requested
-      if (options.apply && shouldApply) {
+      // Skip WIP templates only for file generation
+      if (isWip && options.generateFiles) {
+        logger.skip(`Skipping WIP template: ${template.name}`);
+        continue;
+      }
+
+      const relPath = path.relative(this.baseDir, templatePath);
+      const { currentHash, buildState } = template;
+      const hasChanges = buildState.lastAppliedHash !== currentHash;
+
+      if (options.apply && hasChanges) {
         const applyResult = await this.applyTemplate(template);
         result.errors.push(...applyResult.errors);
         result.applied.push(...applyResult.applied);
       }
 
-      // Generate migration files if requested
-      if (options.generateFiles && !isWip) {
+      if (options.generateFiles) {
         const loggedTemplate = this.buildLog.templates[relPath];
-        if (options.force || loggedTemplate?.lastBuildHash !== template.currentHash) {
-          await this.generateMigration(templatePath, content, template.currentHash);
+        if (options.force || loggedTemplate?.lastBuildHash !== currentHash) {
+          const content = await fs.readFile(templatePath, 'utf-8');
+          await this.generateMigration(templatePath, content, currentHash);
         }
       }
     }

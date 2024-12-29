@@ -1,7 +1,7 @@
 import React from 'react';
 import fs from 'fs/promises';
 import path from 'path';
-import { saveConfig, loadConfig } from '../utils/config.js';
+import { getConfig, saveConfig } from '../utils/config.js';
 import { CONFIG_FILE } from '../constants.js';
 import { createEmptyBuildLog } from '../utils/createEmptyBuildLog.js';
 import { ensureDirectories } from '../utils/ensureDirectories.js';
@@ -11,11 +11,10 @@ export default function Init() {
   React.useEffect(() => {
     async function doInit() {
       try {
-        const config = await loadConfig();
         const baseDir = process.cwd();
+        const config = await getConfig(baseDir);
         const configPath = path.join(baseDir, CONFIG_FILE);
 
-        // Check/create config
         if (await fileExists(configPath)) {
           console.log(`⏭️ ${CONFIG_FILE} already exists`);
         } else {
@@ -23,7 +22,6 @@ export default function Init() {
           console.log(`✅ Created ${CONFIG_FILE} with default configuration`);
         }
 
-        // Create directories
         const dirs = await ensureDirectories(baseDir);
         if (dirs.templateDir) {
           console.log('✅ Created template directory');
@@ -36,7 +34,6 @@ export default function Init() {
           console.log('⏭️ Migration directory already exists');
         }
 
-        // Create build logs if they don't exist
         const buildLogCreated = await createEmptyBuildLog(path.join(baseDir, config.buildLog));
         const localBuildLogCreated = await createEmptyBuildLog(
           path.join(baseDir, config.localBuildLog)
@@ -45,7 +42,6 @@ export default function Init() {
         if (buildLogCreated) console.log('✅ Created build log');
         if (localBuildLogCreated) console.log('✅ Created local build log');
 
-        // Update gitignore
         const gitignorePath = path.join(baseDir, '.gitignore');
         const ignoreEntry = config.localBuildLog;
 

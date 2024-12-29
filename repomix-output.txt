@@ -215,7 +215,7 @@ File: commands/init.tsx
 import React from 'react';
 import fs from 'fs/promises';
 import path from 'path';
-import { saveConfig, loadConfig } from '../utils/config.js';
+import { saveConfig, getConfig } from '../utils/config.js';
 import { CONFIG_FILE } from '../constants.js';
 import { createEmptyBuildLog } from '../utils/createEmptyBuildLog.js';
 import { ensureDirectories } from '../utils/ensureDirectories.js';
@@ -225,7 +225,7 @@ export default function Init() {
   React.useEffect(() => {
     async function doInit() {
       try {
-        const config = await loadConfig();
+        const config = await getConfig();
         const baseDir = process.cwd();
         const configPath = path.join(baseDir, CONFIG_FILE);
 
@@ -1725,7 +1725,7 @@ import { getNextTimestamp } from '../utils/getNextTimestamp.js';
 import { BuildLog, CLIArgs, CLIResult, MigrationError } from '../types.js';
 import { applyMigration } from '../utils/applyMigration.js';
 import { calculateMD5 } from '../utils/calculateMD5.js';
-import { loadConfig } from '../utils/config.js';
+import { getConfig } from '../utils/config.js';
 
 async function findTemplates(baseDir: string, filter: string): Promise<string[]> {
   return new Promise((resolve, reject) => {
@@ -1766,7 +1766,7 @@ async function applyTemplate(
 }
 
 export async function buildTemplates(args: CLIArgs = {}): Promise<CLIResult> {
-  const config = await loadConfig();
+  const config = await getConfig();
   const baseDir = args.baseDir || process.cwd();
   const filter = args.filter || '**/*.sql';
   const errors: MigrationError[] = [];
@@ -1967,7 +1967,7 @@ let config: CLIConfig;
 
 export async function getConfig(baseDir: string): Promise<CLIConfig> {
   if (!config) {
-    config = await loadConfig(baseDir);
+    config = await getConfig(baseDir);
   }
   return config;
 }
@@ -1985,7 +1985,7 @@ const defaultConfig: CLIConfig = {
   pgConnection: 'postgresql://postgres:postgres@localhost:54322/postgres',
 };
 
-export async function loadConfig(dir?: string): Promise<CLIConfig> {
+export async function getConfig(dir?: string): Promise<CLIConfig> {
   const baseDir = dir || process.cwd();
   const configPath = path.join(baseDir, CONFIG_FILE);
   try {
@@ -2078,13 +2078,13 @@ File: utils/ensureDirectories.ts
 ================
 import fs from 'fs/promises';
 import path from 'path';
-import { loadConfig } from './config.js';
+import { getConfig } from './config.js';
 import { fileExists } from './fileExists.js';
 
 export async function ensureDirectories(
   baseDir: string
 ): Promise<{ templateDir: boolean; migrationDir: boolean }> {
-  const config = await loadConfig();
+  const config = await getConfig();
   const templatePath = path.join(baseDir, config.templateDir);
   const migrationPath = path.join(baseDir, config.migrationDir);
 
@@ -2125,14 +2125,14 @@ File: utils/getMigrationFileHash.ts
 import fs from 'fs/promises';
 import path from 'path';
 import { calculateMD5 } from './calculateMD5.js';
-import { loadConfig } from './config.js';
+import { getConfig } from './config.js';
 
 export async function getMigrationFileHash(
   migrationFile: string,
   baseDir: string
 ): Promise<string | null> {
   try {
-    const config = await loadConfig();
+    const config = await getConfig();
     const fullPath = path.join(baseDir, config.migrationDir, migrationFile);
     const content = await fs.readFile(fullPath, 'utf-8');
     return calculateMD5(content);
@@ -2176,10 +2176,10 @@ export function getTimeAgo(date: Date): string {
 ================
 File: utils/isWipTemplate.ts
 ================
-import { loadConfig } from './config.js';
+import { getConfig } from './config.js';
 
 export async function isWipTemplate(templatePath: string): Promise<boolean> {
-  const config = await loadConfig();
+  const config = await getConfig();
   return templatePath.includes(config.wipIndicator);
 }
 
@@ -2189,11 +2189,11 @@ File: utils/loadBuildLog.ts
 import fs from 'fs/promises';
 import path from 'path';
 import { BuildLog } from '../types.js';
-import { loadConfig } from './config.js';
+import { getConfig } from './config.js';
 
 export async function loadBuildLog(dirname: string, which: 'local' | 'common'): Promise<BuildLog> {
   try {
-    const config = await loadConfig();
+    const config = await getConfig();
     const useType = which === 'local' ? config.localBuildLog : config.buildLog;
     const content = await fs.readFile(path.resolve(dirname, useType), 'utf-8');
     const log = JSON.parse(content);
@@ -2329,14 +2329,14 @@ File: utils/saveBuildLog.ts
 import fs from 'fs/promises';
 import path from 'path';
 import { BuildLog } from '../types.js';
-import { loadConfig } from './config.js';
+import { getConfig } from './config.js';
 
 export async function saveBuildLog(
   dirname: string,
   log: BuildLog,
   which: 'local' | 'common'
 ): Promise<void> {
-  const config = await loadConfig();
+  const config = await getConfig();
   const useLog = which === 'local' ? config.localBuildLog : config.buildLog;
   await fs.writeFile(path.resolve(dirname, useLog), JSON.stringify(log, null, 2));
 }

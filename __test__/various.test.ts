@@ -26,12 +26,12 @@ import { saveBuildLog } from '../src/utils/saveBuildLog';
 import { getNextTimestamp } from '../src/utils/getNextTimestamp';
 import { calculateMD5 } from '../src/utils/calculateMD5';
 import { BuildLog, CLIConfig } from '../src/types';
-import { loadConfig } from '../src/utils/config';
+import { getConfig } from '../src/utils/config';
 
 let config: CLIConfig;
 
 const setup = async () => {
-  config = await loadConfig();
+  config = await getConfig();
 };
 setup();
 
@@ -56,7 +56,7 @@ describe('Template Processing', () => {
   });
 
   it('should not overwrite existing migration files', async () => {
-    const { migrationDir } = await loadConfig();
+    const { migrationDir } = await getConfig();
     // Setup existing migration file
     const existingTimestamp = '20241125223247';
     const existingPath = path.join(migrationDir, `${existingTimestamp}_tmpl-test.sql`);

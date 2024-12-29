@@ -1,5 +1,14 @@
 {
   "version": "1.0",
-  "templates": {},
-  "lastTimestamp": ""
+  "lastTimestamp": "",
+  "templates": {
+    "supabase/migrations-templates/test.sql": {
+      "lastAppliedHash": "895e10b084fed5d9c69e2e1a6ec02da2",
+      "lastAppliedDate": "2024-12-29T10:18:38.986Z"
+    },
+    "supabase/migrations-templates/another.wip.sql": {
+      "lastAppliedHash": "245448f2cece28b3384d6492f563e49c",
+      "lastAppliedDate": "2024-12-29T10:23:51.541Z"
+    }
+  }
 }
