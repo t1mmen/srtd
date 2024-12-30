@@ -1,4 +1,5 @@
 src/
+build/
 .changeset/
 .github/
 .vscode/
@@ -7,5 +8,7 @@ src/
 .gitignore
 .biome.json
 lefthook.yml
+repomix.config.json
 tsconfig.json
 vitest.config.ts
+.env

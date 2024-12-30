@@ -1,5 +1,14 @@
 node_modules
 dist
 build
+logs
+*.log
+npm-debug.log*
+.DS_Store
+*.tsbuildinfo
+.npm
+.env
+
 # srtd's local logs should not be committed, as they're per-environment specific
 .srtd.buildlog.local.json
+
