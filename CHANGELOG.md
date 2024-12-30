@@ -1,5 +1,11 @@
 # srtd
 
+## 0.2.2
+
+### Patch Changes
+
+- 7b47799: Reference the correct scoped package name in README
+
 ## 0.2.1
 
 ### Patch Changes
