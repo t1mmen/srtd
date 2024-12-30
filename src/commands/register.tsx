@@ -1,10 +1,11 @@
-import React from 'react';
-import { Box, Text } from 'ink';
 import { MultiSelect } from '@inkjs/ui';
+import { Box, Text } from 'ink';
+import { argument } from 'pastel';
+import React from 'react';
+import zod from 'zod';
+import Branding from '../components/Branding.js';
 import { useTemplateState } from '../hooks/useTemplateState.js';
 import { registerTemplate } from '../utils/registerTemplate.js';
-import { argument } from 'pastel';
-import zod from 'zod';
 
 // Support both array of filenames as arguments and interactive selection
 export const args = zod
@@ -76,7 +77,7 @@ export default function Register({ args: templateArgs }: Props) {
 
     return (
       <Box flexDirection="column">
-        <Text bold>Register Templates</Text>
+        <Branding subtitle="Register templates" />
         <Text>Use arrow/space to select, then press Enter to register.</Text>
         <Box marginTop={1}>
           <Text color="white">

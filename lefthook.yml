@@ -1,0 +1,24 @@
+source_env:
+  - ~/.zshrc
+  - ~/.nvm/nvm.sh
+
+pre-commit:
+  parallel: false
+  commands:
+    format:
+      glob: "*.{js,ts,cjs,mjs,d.cts,d.mts,jsx,tsx,json,jsonc}"
+      run: |
+        . ~/.nvm/nvm.sh
+        if [ -f ".nvmrc" ]; then
+          nvm use
+          ./node_modules/.bin/biome format --write {staged_files}
+          git add {staged_files}
+        fi
+    lint:
+      glob: "*.{js,ts,cjs,mjs,d.cts,d.mts,jsx,tsx}"
+      run: |
+        . ~/.nvm/nvm.sh
+        if [ -f ".nvmrc" ]; then
+          nvm use
+          ./node_modules/.bin/biome lint {staged_files}
+        fi

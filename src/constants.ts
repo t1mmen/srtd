@@ -1,1 +1,1 @@
-export const CONFIG_FILE = '.srtdrc.json';
+export const CONFIG_FILE = 'srtd.config.json';

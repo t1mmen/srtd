@@ -1,5 +1,5 @@
-import React from 'react';
 import { Text } from 'ink';
+import React from 'react';
 
 export const TimeSince: React.FC<{ date?: string }> = ({ date }) => {
   const [now, setNow] = React.useState(new Date());

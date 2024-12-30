@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env -S node --no-warnings
 import Pastel from 'pastel';
 
 const app = new Pastel({

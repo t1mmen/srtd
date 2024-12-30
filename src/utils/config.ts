@@ -1,7 +1,7 @@
-import { CLIConfig } from '../types.js';
-import path from 'path';
-import fs from 'fs/promises';
+import fs from 'node:fs/promises';
+import path from 'node:path';
 import { CONFIG_FILE } from '../constants.js';
+import type { CLIConfig } from '../types.js';
 
 const defaultConfig: CLIConfig = {
   wipIndicator: '.wip',
@@ -11,8 +11,8 @@ const defaultConfig: CLIConfig = {
   wrapInTransaction: true,
   templateDir: 'supabase/migrations-templates',
   migrationDir: 'supabase/migrations',
-  buildLog: 'supabase/migrations-templates/.buildlog.json',
-  localBuildLog: 'supabase/migrations-templates/.buildlog.local.json',
+  buildLog: 'supabase/migrations-templates/.srtd.buildlog.json',
+  localBuildLog: 'supabase/migrations-templates/.srtd.buildlog.local.json',
   pgConnection: 'postgresql://postgres:postgres@localhost:54322/postgres',
 };
 
@@ -29,7 +29,10 @@ export async function getConfig(dir: string = process.cwd()): Promise<CLIConfig>
     cachedConfig = defaultConfig;
   }
 
-  return cachedConfig!;
+  if (!cachedConfig) {
+    throw new Error('Config not initialized');
+  }
+  return cachedConfig;
 }
 
 export async function saveConfig(baseDir: string, config: Partial<CLIConfig>): Promise<void> {

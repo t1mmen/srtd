@@ -1,9 +1,10 @@
+import path from 'node:path';
+import { Box, Text, useApp, useInput } from 'ink';
 import React from 'react';
-import { Box, Text, useInput, useApp } from 'ink';
-import path from 'path';
+import Branding from '../components/Branding.js';
+import { TimeSince } from '../components/TimeSince.js';
 import { TemplateManager } from '../lib/templateManager.js';
 import type { TemplateStatus } from '../types.js';
-import { TimeSince } from '../components/TimeSince.js';
 
 export default function Watch() {
   const { exit } = useApp();
@@ -69,7 +70,9 @@ export default function Watch() {
       }
     }
 
-    init().then(c => (cleanup = c));
+    init().then(c => {
+      cleanup = c;
+    });
     return () => cleanup?.();
   }, []);
 
@@ -80,7 +83,10 @@ export default function Watch() {
   const templatesByDir = templates.reduce(
     (acc, template) => {
       const dir = path.dirname(path.relative(process.cwd(), template.path));
-      (acc[dir] = acc[dir] || []).push(template);
+      if (!acc[dir]) {
+        acc[dir] = [];
+      }
+      acc[dir].push(template);
       return acc;
     },
     {} as Record<string, TemplateStatus[]>
@@ -90,9 +96,7 @@ export default function Watch() {
 
   return (
     <Box flexDirection="column" marginBottom={2} marginTop={2}>
-      <Box marginBottom={1}>
-        <Text bold>srtd - Watch Mode</Text>
-      </Box>
+      <Branding subtitle="Watch Mode" />
 
       {Object.entries(templatesByDir).map(([dir, dirTemplates]) => (
         <Box key={dir} flexDirection="column" marginLeft={1}>

@@ -1,6 +1,6 @@
-import fs from 'fs/promises';
-import path from 'path';
-import { BuildLog } from '../types.js';
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import type { BuildLog } from '../types.js';
 import { getConfig } from './config.js';
 
 export async function saveBuildLog(

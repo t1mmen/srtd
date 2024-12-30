@@ -1,8 +1,8 @@
-import { describe, it, expect } from 'vitest';
-import { loadBuildLog } from './loadBuildLog.js';
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import { describe, expect, it } from 'vitest';
 import { TEST_ROOT } from '../__tests__/vitest.setup.js';
-import fs from 'fs/promises';
-import path from 'path';
+import { loadBuildLog } from './loadBuildLog.js';
 
 describe('loadBuildLog', () => {
   it('should load existing build log', async () => {

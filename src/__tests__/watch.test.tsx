@@ -1,6 +1,6 @@
-import React from 'react';
-import { describe, test, expect, beforeEach, vi } from 'vitest';
 import { render } from 'ink-testing-library';
+import React from 'react';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 import Watch from '../commands/watch.js';
 
 vi.mock('ink', async importOriginal => {

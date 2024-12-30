@@ -1,7 +1,7 @@
 // hooks/useTemplateState.ts
-import { useState, useEffect } from 'react';
-import { TemplateStatus } from '../types.js';
+import { useEffect, useState } from 'react';
 import { TemplateManager } from '../lib/templateManager.js';
+import type { TemplateStatus } from '../types.js';
 
 export function useTemplateState() {
   const [loading, setLoading] = useState(true);

@@ -1,16 +1,16 @@
-import fs from 'fs/promises';
-import glob from 'glob';
-import path from 'path';
-import EventEmitter from 'events';
-import { calculateMD5 } from '../utils/calculateMD5.js';
-import { loadBuildLog } from '../utils/loadBuildLog.js';
-import { saveBuildLog } from '../utils/saveBuildLog.js';
-import { getConfig } from '../utils/config.js';
-import { isWipTemplate } from '../utils/isWipTemplate.js';
+import EventEmitter from 'node:events';
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import { glob } from 'glob';
+import type { BuildLog, CLIResult, TemplateStatus } from '../types.js';
 import { applyMigration } from '../utils/applyMigration.js';
+import { calculateMD5 } from '../utils/calculateMD5.js';
+import { getConfig } from '../utils/config.js';
 import { getNextTimestamp } from '../utils/getNextTimestamp.js';
+import { isWipTemplate } from '../utils/isWipTemplate.js';
+import { loadBuildLog } from '../utils/loadBuildLog.js';
 import { logger } from '../utils/logger.js';
-import type { BuildLog, TemplateStatus, CLIResult } from '../types.js';
+import { saveBuildLog } from '../utils/saveBuildLog.js';
 
 interface TemplateCache {
   status: TemplateStatus;
@@ -59,12 +59,8 @@ export class TemplateManager extends EventEmitter {
 
   async findTemplates(): Promise<string[]> {
     const templatePath = path.join(this.baseDir, this.config.templateDir, this.config.filter);
-    return new Promise((resolve, reject) => {
-      glob(templatePath, (err, matches) => {
-        if (err) reject(err);
-        else resolve(matches);
-      });
-    });
+    const matches = await glob(templatePath);
+    return matches;
   }
 
   async getTemplateStatus(templatePath: string): Promise<TemplateStatus> {
@@ -254,7 +250,9 @@ export class TemplateManager extends EventEmitter {
         this.log('No changes to apply');
       } else if (result.errors.length > 0) {
         this.log(`${result.errors.length} template(s) failed to apply`, 'error');
-        result.errors.forEach(err => this.log(`${err.file}: ${err.error}`, 'error'));
+        for (const err of result.errors) {
+          this.log(`${err.file}: ${err.error}`, 'error');
+        }
       } else {
         this.log(`Applied ${result.applied.length} template(s)`, 'success');
       }

@@ -1,92 +1,187 @@
-# srtd - Supabase Repeatable Template Definitions
+@@ -1,19 +1,15 @@
+# `srtd` 🪄 Supabase Repeatable Template Definitions
 
-`srtd` streamlines development and maintenance of Postgres functions, stored procedures, and RLS policies in [Supabase](https://supabase.com) projects through a template-based workflow.
+Live-reloading SQL templates for [Supabase](https://supabase.com) projects. DX supercharged! 🚀
 
-## Why This Tool Exists
 
-After years in frontend development, returning to SQL with Supabase highlighted two pain points:
+`srtd` enhances the [Supabase](https://supabase.com) development workflow by adding live-reloading SQL templates, and a single-source-of-truth template migrations system for your database functions, RLS policies, etc. Drastically simplify code reviews 💪
 
-1. Code reviews were challenging since function changes appear as complete rewrites rather than diffs
-2. Local development required tedious manual steps to test database changes
+Built specifically for projects using the standard [Supabase](https://supabase.com) stack (but probably works alright for other Postgres-based projects, too).
 
-Finding no simple solution (besides complex DSLs or expensive tools), we built `srtd` to solve these specific problems. While primarily designed to scratch our own itch, it should work with any Postgres setup using SQL files for migrations.
+## Why This Exists 🤔
 
-> [!NOTE]
-> This is a focused tool that does one thing well - making Postgres development smoother in Supabase. It's not expanding beyond Postgres, but PR's for improvements are welcome!
+While building the next-generation [Timely Memory Engine](https://www.timely.com) on [Supabase](https://supabase.com), we found ourselves facing two major annoyances:
 
-## Key Benefits
+1. Code reviews were painful - function changes showed up as complete rewrites rather than helpful diffs
+2. Designing and iterating on database changes locally meant constant friction, like the dance around copy-pasting into SQL console
 
-- **Real-time Development**: Changes to templates automatically update your local database
-- **Clear Code Reviews**: See actual changes instead of entire function redefinitions
-- **Version Control Friendly**: Track meaningful template changes in Git history
-- **Supabase Compatible**: Works alongside existing migration workflows
+After over a year of looking-but-not-finding a better way, I paired up with [Claude](https://claude.ai) to eliminate these annoyances. Say hello to `srtd`.
 
-## Installation
+## Key Features ✨
+
+- **Live Reload**: Changes to your SQL templates instantly update your local database
+- **Single Source of Truth**: Templates are the source of all (non-mutable) database objects, making code reviews a breeze
+- **Clean Migrations**: Generate standard [Supabase](https://supabase.com) migrations when you're ready to deploy
+- **Developer Friendly**: Interactive CLI with visual feedback for all operations
+
+## Requirements
+
+- Node.js v20.x or higher
+- [Supabase](https://supabase.com) CLI installed and project initialized (with `/supabase` directory)
+- Local Postgres instance running (typically via `supabase start`)
+
+## Quick Start 🚀
+
+First, install `srtd` globally or in your project:
 
 ```bash
 npm install -g srtd  # Global installation
 # or
-npm install --save-dev srtd  # Project-level installation
+npm install --save-dev srtd  # Project installation
 ```
 
-## Quick Start
+Then set up in your [Supabase](https://supabase.com) project:
 
-1. **Set up your project**:
+```bash
+cd your-supabase-project
+srtd init
+```
 
-   ```bash
-   srtd init
-   ```
+Create a template (e.g., `supabase/migrations-templates/my_function.sql`):
 
-2. **Create a template** (e.g., `supabase/migrations-templates/my_function.sql`):
+```sql
+CREATE OR REPLACE FUNCTION my_function()
+RETURNS void AS $$
+BEGIN
+  -- Your function logic here
+END;
+$$ LANGUAGE plpgsql;
+```
 
-   ```sql
-   DROP FUNCTION IF EXISTS my_function();
-   CREATE OR REPLACE FUNCTION my_function()
-   RETURNS void AS $$
-   BEGIN
-     -- Your function logic here
-   END;
-   $$ LANGUAGE plpgsql;
-   ```
+Start development mode:
 
-3. **Start development mode**:
+```bash
+srtd watch  # Changes auto-apply to local database
+```
 
-   ```bash
-   srtd watch  # Changes auto-apply to local database
-   ```
+When ready to deploy:
 
-4. **Generate migration when ready**:
-   ```bash
-   srtd build  # Creates timestamped migration file
-   supabase migrate up  # Apply using Supabase CLI
-   ```
+```bash
+srtd build  # Creates timestamped migration file
+supabase migrate up  # Apply using Supabase CLI
+```
 
-## Commands
+## Commands 🎮
 
-- `srtd init` - Create project structure and config
-- `srtd watch` - Auto-apply template changes to local database
-- `srtd build` - Generate Supabase migration files
-- `srtd apply` - Build and apply templates directly
-- `srtd register` - Register existing templates
-- `srtd status` - View template status
+Running `srtd` without arguments opens an interactive menu:
 
-## Best For
+```
+❯ 🏗️  build - Build Supabase migrations from templates
+  ▶️  apply - Apply migration templates directly to database
+  ✍️  register - Register templates as already built
+  👀  watch - Watch templates for changes, apply directly to database
+```
 
-✅ Database objects requiring full redefinition:
+Or use these commands directly:
 
-- Functions and stored procedures
-- RLS (Row-Level Security) policies
-- Custom roles and permissions
+- 🏗️  `build` - Generate [Supabase](https://supabase.com) migrations from templates
+- ▶️  `apply` - Apply templates directly to local database
+- ✍️  `register [file.sql]` - Mark templates as already built (interactive UI if no file specified)
+- 👀 `watch` - Watch templates and apply changes instantly
 
-❌ Not recommended for:
+## Perfect For 🎯
 
-- Table definitions
-- Indexes
-- Incremental changes
+Ideal for [Supabase](https://supabase.com) database objects that need full redefinition:
 
-## Configuration
+✅ Functions and stored procedures:
+```sql
+CREATE OR REPLACE FUNCTION search_products(query text, category_id uuid DEFAULT NULL)
+RETURNS SETOF products AS $$
+BEGIN
+  RETURN QUERY
+    SELECT p.* FROM products p
+    LEFT JOIN product_categories pc ON pc.product_id = p.id
+    WHERE to_tsvector('english',
+      p.name || ' ' ||
+      p.description || ' ' ||
+      p.tags || ' ' ||
+      COALESCE((
+        SELECT string_agg(c.name, ' ')
+        FROM categories c
+        WHERE c.id = ANY(p.category_ids)
+      ), '')
+    ) @@ plainto_tsquery('english', query)
+    AND (category_id IS NULL OR pc.category_id = category_id);
+END;
+$$ LANGUAGE plpgsql;
+```
 
-`.srtdrc.json` is created during initialization:
+✅ Row-Level Security (RLS) policies:
+```sql
+CREATE POLICY "users can view own data"
+  ON profiles FOR SELECT
+  USING (auth.uid() = user_id);
+```
+
+✅ Roles and permissions:
+```sql
+CREATE ROLE authenticated;
+GRANT USAGE ON SCHEMA public TO authenticated;
+GRANT SELECT ON ALL TABLES IN SCHEMA public TO authenticated;
+```
+
+Not recommended for:
+
+❌ Table structures (use regular [Supabase](https://supabase.com) migrations)
+❌ Indexes (use regular [Supabase](https://supabase.com) migrations)
+❌ Data modifications (use regular [Supabase](https://supabase.com) migrations)
+
+## The Power of Templates 💪
+
+Here's why templates make your life easier. Consider a PR that adds priority to our notification dispatch function.
+
+With templates, the change is clear and reviewable:
+
+```diff
+CREATE OR REPLACE FUNCTION dispatch_notification(
+    user_id uuid,
+    type text,
+    payload jsonb
+  ) RETURNS uuid AS $$
+  DECLARE
+    notification_id uuid;
+    user_settings jsonb;
+  BEGIN
+    -- Get user notification settings
+    SELECT settings INTO user_settings
+    FROM user_preferences
+    WHERE id = user_id;
+
+    -- Create notification record
++   -- Include priority based on notification type
+    INSERT INTO notifications (
+      id,
+      user_id,
+      type,
+      payload,
++     priority,
+      created_at
+    ) VALUES (
+      gen_random_uuid(),
+      dispatch_notification.user_id,
+      type,
+      payload,
++     COALESCE((SELECT priority FROM notification_types WHERE name = type), 'normal'),
+      CURRENT_TIMESTAMP
+    )
+    RETURNING id INTO notification_id;
+```
+
+Without templates, the same change appears as a complete new file in your PR.
+
+## Configuration 📝
+
+During initialization, `srtd` creates a `srtd.config.json`:
 
 ```json
 {
@@ -103,39 +198,78 @@ npm install --save-dev srtd  # Project-level installation
 }
 ```
 
-## Advanced Features
+## Other Features 🔧
 
-### Template Status Tracking
+### Work in Progress Templates
 
-`srtd` maintains two logs:
-
-- `.buildlog.json` - Tracks build status (commit to Git)
-- `.buildlog.local.json` - Tracks local changes (gitignored)
-
-### Work in Progress
-
-Add `.wip.sql` extension to templates under development:
+Add `.wip.sql` extension to templates under development to prevent accidental migration generation:
 
 ```bash
 my_function.wip.sql  # Won't generate migrations during build
 ```
+
+### Template State Management
+
+`srtd` maintains two logs:
+
+- `.buildlog.json` - Tracks which templates have been built into migrations (commit this)
+- `.buildlog.local.json` - Tracks local database state (add to .gitignore)
 
 ### Register Existing Objects
 
 Import existing database objects into the template system:
 
 ```bash
-srtd register my_function.sql
+srtd register my_function.sql  # Won't generate new migration until changed
+# or
+srtd register  # Opens interactive UI for selecting multiple templates
 ```
 
-## Best Practices
+## Development 🛠️
 
-1. Write idempotent templates (safe to run multiple times)
-2. One logical unit per template
-3. Use `.wip.sql` for experimental changes
-4. Never edit generated migrations directly
-5. Commit templates and migrations together
+This project uses TypeScript and modern Node.js features. To contribute:
+
+1. Set up the development environment:
+```bash
+git clone https://github.com/stokke/srtd.git
+cd srtd
+npm install
+```
+
+2. Start development:
+```bash
+npm run dev  # Watches for changes
+npm test     # Runs tests
+npm start    # Builds, links, and runs CLI
+```
+
+3. Other useful commands:
+```bash
+npm run typecheck       # Type checking
+npm run lint           # Lint and fix
+npm run test:coverage  # Test coverage
+```
+
+## Contributing 🤝
+
+This tool was built to solve specific problems in our [Supabase](https://supabase.com) development workflow. While it's considered feature-complete for our needs, we welcome improvements through pull requests, especially for:
+
+- Bug fixes and reliability improvements
+- Documentation improvements and examples
+- Test coverage
+- Performance optimizations
+
+### Contribution Guidelines
+
+1. Create a [changeset](https://github.com/changesets/changesets) (`npm run changeset`)
+2. Ensure tests pass (`npm test`)
+3. Follow existing code style
+4. Update documentation as needed
+
+Note that new features may or may not be accepted depending on whether they align with the project's focused scope. However, improvements to existing functionality, documentation, and tests are always welcome!
 
 ## License
 
-MIT License - See [LICENSE](LICENSE) for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+Made with 🪄 by [Timm Stokke](https://timm.stokke.me) & [Claude Sonnet](https://claude.ai)

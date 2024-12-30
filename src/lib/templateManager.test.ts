@@ -1,10 +1,11 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { tmpdir } from 'os';
-import { join, relative } from 'path';
-import fs from 'fs/promises';
-import { TemplateManager } from './templateManager.js';
-import { connect, disconnect } from '../utils/db.connection.js';
+import fs from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join, relative } from 'node:path';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { TEST_FN_PREFIX } from '../__tests__/vitest.setup.js';
+import { connect, disconnect } from '../utils/databaseConnection.js';
 import { ensureDirectories } from '../utils/ensureDirectories.js';
+import { TemplateManager } from './templateManager.js';
 
 describe('TemplateManager', () => {
   const testContext = {
@@ -15,7 +16,7 @@ describe('TemplateManager', () => {
 
   beforeEach(async () => {
     testContext.testDir = join(tmpdir(), `srtd-test-${testContext.timestamp}`);
-    testContext.testFunctionName = `test_func_${testContext.timestamp}`;
+    testContext.testFunctionName = `${TEST_FN_PREFIX}${testContext.timestamp}`;
 
     await ensureDirectories(testContext.testDir);
 
@@ -188,7 +189,7 @@ describe('TemplateManager', () => {
       const res = await client.query(`SELECT COUNT(*) FROM pg_proc WHERE proname = $1`, [
         testContext.testFunctionName,
       ]);
-      expect(parseInt(res.rows[0].count)).toBe(1);
+      expect(Number.parseInt(res.rows[0].count)).toBe(1);
     } finally {
       client.release();
     }
@@ -255,7 +256,7 @@ describe('TemplateManager', () => {
       const res = await client.query(`SELECT COUNT(*) FROM pg_proc WHERE proname = $1`, [
         `${testContext.testFunctionName}_good`,
       ]);
-      expect(parseInt(res.rows[0].count)).toBe(1);
+      expect(Number.parseInt(res.rows[0].count)).toBe(1);
     } finally {
       client.release();
     }
@@ -267,7 +268,7 @@ describe('TemplateManager', () => {
 
     const result = await manager.processTemplates({ apply: true });
     expect(result.errors).toHaveLength(1);
-    expect(result.errors[0]!.error).toMatch(/division by zero/i);
+    expect(result.errors[0]?.error).toMatch(/division by zero/i);
   });
 
   it('should handle file system errors', async () => {

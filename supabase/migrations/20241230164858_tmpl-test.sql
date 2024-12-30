@@ -5,10 +5,10 @@ BEGIN;
 CREATE OR REPLACE FUNCTION public.test()
 returns void as $$
 BEGIN
-  RAISE NOTICE 'Hel11111111s111lo!!';
+  RAISE NOTICE 'Hello, world!';
 END;
 $$ language plpgsql;
 
 COMMIT;
 
--- Last built: Never
+-- Last built: 2024-12-30T16:47:11.524Z

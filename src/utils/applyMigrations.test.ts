@@ -1,7 +1,8 @@
-import { describe, it, expect, beforeAll, beforeEach, afterEach } from 'vitest';
-import { applyMigration } from './applyMigration.js';
-import { connect } from './db.connection.js';
 import type { PoolClient } from 'pg';
+import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { TEST_FN_PREFIX } from '../__tests__/vitest.setup.js';
+import { applyMigration } from './applyMigration.js';
+import { connect } from './databaseConnection.js';
 
 describe('applyMigration', () => {
   let client: PoolClient;
@@ -15,7 +16,7 @@ describe('applyMigration', () => {
   });
 
   beforeEach(async () => {
-    testContext.testFunctionName = `test_func_${testContext.timestamp}`;
+    testContext.testFunctionName = `${TEST_FN_PREFIX}${testContext.timestamp}`;
     await client.query('BEGIN');
     await client.query(`DROP FUNCTION IF EXISTS ${testContext.testFunctionName}()`);
     await client.query('COMMIT');

@@ -1,11 +1,11 @@
-import { MigrationError } from '../types.js';
-import { connect } from './db.connection.js';
+import type { MigrationError } from '../types.js';
+import { connect } from './databaseConnection.js';
 import { logger } from './logger.js';
 
 export async function applyMigration(
   content: string,
   templateName: string,
-  silent: boolean = false
+  silent = false
 ): Promise<true | MigrationError> {
   const client = await connect();
   try {
