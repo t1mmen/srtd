@@ -1,6 +1,6 @@
 {
   "name": "srtd",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "license": "MIT",
   "description": "Supabase Repeatable Template Definitions (srtd) is a powerful CLI for managing repeatable SQL templates tailored for Postgres features that require full redefinition, such as functions, stored procedures, and RLS policies. Streamline your development with live reloads and simplified workflows.",
   "bin": "dist/cli.js",
@@ -38,7 +38,9 @@
     "start": "npm run build && npm link && chmod u+x ./dist/cli.js && srtd",
     "repomix": "npx repomix ./src vitest.config.ts vitest.setup.ts package.json ./__tests__ README.md"
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "dependencies": {
     "@inkjs/ui": "^2.0.0",
     "chokidar": "^4.0.3",
