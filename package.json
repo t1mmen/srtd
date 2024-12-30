@@ -32,7 +32,7 @@
     "prettier": "prettier --write .",
     "test": "vitest",
     "x": "npm run build && npm link && chmod u+x ./dist/cli.js && srtd",
-    "repomix": "npx repomix ./src package.json ./__tests__"
+    "repomix": "npx repomix ./src vitest.config.ts package.json ./__tests__"
   },
   "files": [
     "dist"

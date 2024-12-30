@@ -34,7 +34,6 @@ export default function UI() {
       label: '👀  watch - Watch templates for changes and apply directly to database',
       value: 'watch',
     },
-    { label: 'ℹ️  status - Show migration status', value: 'status' },
   ];
 
   return (
