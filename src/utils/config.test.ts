@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { getConfig, saveConfig } from './config.js';
 import path from 'path';
 import { TEST_ROOT } from '../__tests__/vitest.setup.js';
+import fs from 'fs/promises';
 
 describe('config', () => {
   beforeEach(() => {
@@ -31,21 +32,40 @@ describe('config', () => {
     });
   });
 
-  it('should call saveConfig with merged config', async () => {
-    const partialConfig = {
-      templateDir: 'custom-templates',
+  it('should save and merge with default config', async () => {
+    const userConfig = {
+      templateDir: 'custom/templates',
+      migrationDir: 'custom/migrations',
     };
 
-    const mockGetConfig = vi.mocked(getConfig);
-    mockGetConfig.mockImplementationOnce(async () => ({
-      ...(await getConfig(TEST_ROOT)),
-      ...partialConfig,
-    }));
+    await saveConfig(TEST_ROOT, userConfig);
+    const savedContent = JSON.parse(
+      await fs.readFile(path.join(TEST_ROOT, '.srtdrc.json'), 'utf-8')
+    );
 
-    await saveConfig(TEST_ROOT, partialConfig);
-    const savedConfig = await getConfig(TEST_ROOT);
-    expect(savedConfig.templateDir).toBe('custom-templates');
-    expect(savedConfig.migrationDir).toBe('test-migrations'); // Preserved from mock
+    expect(savedContent.templateDir).toBe('custom/templates');
+    expect(savedContent.migrationDir).toBe('custom/migrations');
+    expect(savedContent.wrapInTransaction).toBe(true);
+  });
+
+  it('should handle empty config object', async () => {
+    await saveConfig(TEST_ROOT, {});
+    const config = await getConfig(TEST_ROOT);
+    expect(config.templateDir).toBe('test-templates');
+  });
+
+  it('should preserve unknown fields', async () => {
+    const customConfig = {
+      templateDir: 'custom',
+      unknownField: 'value',
+    };
+
+    await saveConfig(TEST_ROOT, customConfig);
+    const savedContent = JSON.parse(
+      await fs.readFile(path.join(TEST_ROOT, '.srtdrc.json'), 'utf-8')
+    );
+
+    expect(savedContent.unknownField).toBe('value');
   });
 
   it('should handle nested paths correctly', async () => {

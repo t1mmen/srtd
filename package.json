@@ -25,13 +25,15 @@
     "supabase-cli"
   ],
   "scripts": {
-    "start": "tsx src/cli.tsx",
+    "changeset": "changeset",
+    "version": "changeset version",
+    "release": "npm run build && changeset publish",
     "build": "rm -rf dist && tsc",
     "typecheck": "tsc --noEmit",
     "dev": "tsc --watch",
     "prettier": "prettier --write .",
     "test": "vitest",
-    "x": "npm run build && npm link && chmod u+x ./dist/cli.js && srtd",
+    "run": "npm run build && npm link && chmod u+x ./dist/cli.js && srtd",
     "repomix": "npx repomix ./src vitest.config.ts vitest.setup.ts package.json ./__tests__ README.md"
   },
   "files": [
@@ -48,6 +50,7 @@
     "zod": "^3.24.1"
   },
   "devDependencies": {
+    "@changesets/cli": "^2.27.11",
     "@sindresorhus/tsconfig": "^7.0.0",
     "@types/glob": "^8.1.0",
     "@types/node": "^22.10.2",
