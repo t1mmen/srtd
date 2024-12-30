@@ -3,12 +3,22 @@ source_env:
   - ~/.nvm/nvm.sh
 
 pre-commit:
-  parallel: true
+  parallel: false
   commands:
-    check:
-      glob: '*.{js,ts,cjs,mjs,d.cts,d.mts,jsx,tsx,json,jsonc}'
+    format:
+      glob: "*.{js,ts,cjs,mjs,d.cts,d.mts,jsx,tsx,json,jsonc}"
       run: |
         . ~/.nvm/nvm.sh
-        nvm use
-        ./node_modules/.bin/biome check --write --no-errors-on-unmatched --files-ignore-unknown=true --colors=off {staged_files}
-      stage_fixed: true
+        if [ -f ".nvmrc" ]; then
+          nvm use
+          ./node_modules/.bin/biome format --write {staged_files}
+          git add {staged_files}
+        fi
+    lint:
+      glob: "*.{js,ts,cjs,mjs,d.cts,d.mts,jsx,tsx}"
+      run: |
+        . ~/.nvm/nvm.sh
+        if [ -f ".nvmrc" ]; then
+          nvm use
+          ./node_modules/.bin/biome lint {staged_files}
+        fi
