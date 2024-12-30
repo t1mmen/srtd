@@ -1,12 +1,9 @@
 import React from 'react';
 import { Box, Text } from 'ink';
 import { Select } from '@inkjs/ui';
-
-// Import the "Register" component for demonstration of navigation:
 import Register from './register.js';
 import Apply from './apply.js';
 import Build from './build.js';
-// import Status from './status.js';
 import Watch from './watch.js';
 
 export default function UI() {
@@ -24,10 +21,6 @@ export default function UI() {
   if (selectedCommand === 'build') {
     return <Build />;
   }
-
-  // if (selectedCommand === 'status') {
-  //   return <Status />;
-  // }
 
   if (selectedCommand === 'watch') {
     return <Watch />;

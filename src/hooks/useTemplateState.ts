@@ -2,7 +2,6 @@
 import { useState, useEffect } from 'react';
 import { TemplateStatus } from '../types.js';
 import { TemplateManager } from '../lib/templateManager.js';
-import path from 'path';
 
 export function useTemplateState() {
   const [loading, setLoading] = useState(true);
