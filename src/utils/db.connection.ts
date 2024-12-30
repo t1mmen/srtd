@@ -43,6 +43,7 @@ export async function disconnect(): Promise<void> {
     await pool.end();
     pool = undefined;
   }
+  return;
 }
 
 process.on('exit', async () => await disconnect());

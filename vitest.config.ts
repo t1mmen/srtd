@@ -16,7 +16,7 @@ export default defineConfig({
         '**/vitest.config.*',
       ],
     },
-    setupFiles: ['./vitest.setup.ts'],
+    setupFiles: ['./src/__tests__/vitest.setup.ts'],
     testTimeout: 10000,
   },
 });

@@ -20,13 +20,13 @@ const fsImpl = vi.hoisted(() => {
 
 vi.mock('fs/promises', () => fsImpl);
 
-import { loadBuildLog } from '../src/utils/loadBuildLog';
-import { isWipTemplate } from '../src/utils/isWipTemplate';
-import { saveBuildLog } from '../src/utils/saveBuildLog';
-import { getNextTimestamp } from '../src/utils/getNextTimestamp';
-import { calculateMD5 } from '../src/utils/calculateMD5';
-import { BuildLog, CLIConfig } from '../src/types';
-import { getConfig } from '../src/utils/config';
+import { loadBuildLog } from '../utils/loadBuildLog.js';
+import { isWipTemplate } from '../utils/isWipTemplate.js';
+import { saveBuildLog } from '../utils/saveBuildLog.js';
+import { getNextTimestamp } from '../utils/getNextTimestamp.js';
+import { calculateMD5 } from '../utils/calculateMD5.js';
+import { BuildLog, CLIConfig } from '../types.js';
+import { getConfig } from '../utils/config.js';
 
 let config: CLIConfig;
 
