@@ -32,7 +32,7 @@
     "prettier": "prettier --write .",
     "test": "vitest",
     "x": "npm run build && npm link && chmod u+x ./dist/cli.js && srtd",
-    "repomix": "npx repomix ./src vitest.config.ts package.json ./__tests__"
+    "repomix": "npx repomix ./src vitest.config.ts vitest.setup.ts package.json ./__tests__ README.md"
   },
   "files": [
     "dist"
@@ -76,7 +76,18 @@
     ],
     "parser": "@typescript-eslint/parser",
     "rules": {
-      "react/prop-types": "off"
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        {
+          "args": "all",
+          "argsIgnorePattern": "^_",
+          "caughtErrors": "all",
+          "caughtErrorsIgnorePattern": "^_",
+          "destructuredArrayIgnorePattern": "^_",
+          "varsIgnorePattern": "^_",
+          "ignoreRestSiblings": true
+        }
+      ]
     }
   }
 }
