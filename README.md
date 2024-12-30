@@ -1,4 +1,3 @@
-@@ -1,19 +1,15 @@
 # `srtd` 🪄 Supabase Repeatable Template Definitions
 
 Live-reloading SQL templates for [Supabase](https://supabase.com) projects. DX supercharged! 🚀
@@ -10,7 +9,7 @@ Built specifically for projects using the standard [Supabase](https://supabase.c
 
 ## Why This Exists 🤔
 
-While building the next-generation [Timely Memory Engine](https://www.timely.com) on [Supabase](https://supabase.com), we found ourselves facing two major annoyances:
+While building [Timely](https://www.timely.com)'s next-generation [Memory Engine](https://www.timely.com/memory-app) on [Supabase](https://supabase.com), we found ourselves facing two major annoyances:
 
 1. Code reviews were painful - function changes showed up as complete rewrites rather than helpful diffs
 2. Designing and iterating on database changes locally meant constant friction, like the dance around copy-pasting into SQL console
@@ -130,11 +129,14 @@ GRANT USAGE ON SCHEMA public TO authenticated;
 GRANT SELECT ON ALL TABLES IN SCHEMA public TO authenticated;
 ```
 
-Not recommended for:
+**Not recommended for:**
 
-❌ Table structures (use regular [Supabase](https://supabase.com) migrations)
-❌ Indexes (use regular [Supabase](https://supabase.com) migrations)
-❌ Data modifications (use regular [Supabase](https://supabase.com) migrations)
+* ❌ Table structures
+* ❌ Indexes
+* ❌ Data modifications
+* ❌ Anything that is not fully re-definable, really.
+
+In these cases, use regular [Supabase](https://supabase.com) migrations.
 
 ## The Power of Templates 💪
 
