@@ -11,7 +11,9 @@ if (process.env.CI) {
   let consoleLogMock: ReturnType<typeof vi.spyOn>;
 
   beforeAll(() => {
-    consoleLogMock = vi.spyOn(console, 'log').mockImplementation(() => void);
+    consoleLogMock = vi.spyOn(console, 'log').mockImplementation(() => {
+      // Do nothing
+    });
   });
 
   afterAll(() => {
