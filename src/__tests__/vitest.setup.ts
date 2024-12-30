@@ -7,6 +7,18 @@ import { connect, disconnect } from '../utils/databaseConnection.js';
 export const TEST_FN_PREFIX = 'srtd_scoped_test_func_';
 export const TEST_ROOT = join(tmpdir(), `srtd-test-${Date.now()}`);
 
+if (process.env.CI) {
+  let consoleLogMock: ReturnType<typeof vi.spyOn>;
+
+  beforeAll(() => {
+    consoleLogMock = vi.spyOn(console, 'log').mockImplementation(() => void);
+  });
+
+  afterAll(() => {
+    consoleLogMock.mockRestore();
+  });
+}
+
 beforeAll(async () => {
   await fs.mkdir(TEST_ROOT, { recursive: true });
 });
