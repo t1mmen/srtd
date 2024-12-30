@@ -5,7 +5,7 @@
     "module": "NodeNext",
     "target": "ES2022",
     "outDir": "dist",
-    "baseUrl": ".",
+    "baseUrl": "./src",
     "rootDir": "./src",
     "strict": true,
     "esModuleInterop": true,
@@ -14,7 +14,8 @@
     "sourceMap": true,
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,
-    "noPropertyAccessFromIndexSignature": false
+    "noPropertyAccessFromIndexSignature": false,
+    "resolveJsonModule": true
   },
   "include": ["src", "__tests__"],
   "exclude": ["node_modules", "dist"]

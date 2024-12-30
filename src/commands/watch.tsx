@@ -1,6 +1,7 @@
 import path from 'node:path';
 import { Box, Text, useApp, useInput } from 'ink';
 import React from 'react';
+import Branding from '../components/Branding.js';
 import { TimeSince } from '../components/TimeSince.js';
 import { TemplateManager } from '../lib/templateManager.js';
 import type { TemplateStatus } from '../types.js';
@@ -95,9 +96,7 @@ export default function Watch() {
 
   return (
     <Box flexDirection="column" marginBottom={2} marginTop={2}>
-      <Box marginBottom={1}>
-        <Text bold>srtd - Watch Mode</Text>
-      </Box>
+      <Branding subtitle="Watch Mode" />
 
       {Object.entries(templatesByDir).map(([dir, dirTemplates]) => (
         <Box key={dir} flexDirection="column" marginLeft={1}>

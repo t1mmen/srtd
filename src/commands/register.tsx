@@ -3,6 +3,7 @@ import { Box, Text } from 'ink';
 import { argument } from 'pastel';
 import React from 'react';
 import zod from 'zod';
+import Branding from '../components/Branding.js';
 import { useTemplateState } from '../hooks/useTemplateState.js';
 import { registerTemplate } from '../utils/registerTemplate.js';
 
@@ -76,7 +77,7 @@ export default function Register({ args: templateArgs }: Props) {
 
     return (
       <Box flexDirection="column">
-        <Text bold>Register Templates</Text>
+        <Branding subtitle="Register templates" />
         <Text>Use arrow/space to select, then press Enter to register.</Text>
         <Box marginTop={1}>
           <Text color="white">

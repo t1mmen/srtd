@@ -1,6 +1,7 @@
 import { Select } from '@inkjs/ui';
-import { Box, Text } from 'ink';
+import { Box } from 'ink';
 import React from 'react';
+import Branding from '../components/Branding.js';
 import Apply from './apply.js';
 import Build from './build.js';
 import Register from './register.js';
@@ -38,11 +39,8 @@ export default function UI() {
 
   return (
     <Box flexDirection="column">
-      <Text bold>srtd - Repeatable Template SQL Migration Tool</Text>
-      <Text>Select a command:</Text>
-      <Box marginTop={1}>
-        <Select options={menuItems} onChange={value => setSelectedCommand(value)} />
-      </Box>
+      <Branding />
+      <Select options={menuItems} onChange={value => setSelectedCommand(value)} />
     </Box>
   );
 }
