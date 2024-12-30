@@ -1,7 +1,7 @@
 import EventEmitter from 'node:events';
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import glob from 'glob';
+import { glob } from 'glob';
 import type { BuildLog, CLIResult, TemplateStatus } from '../types.js';
 import { applyMigration } from '../utils/applyMigration.js';
 import { calculateMD5 } from '../utils/calculateMD5.js';
@@ -59,12 +59,8 @@ export class TemplateManager extends EventEmitter {
 
   async findTemplates(): Promise<string[]> {
     const templatePath = path.join(this.baseDir, this.config.templateDir, this.config.filter);
-    return new Promise((resolve, reject) => {
-      glob(templatePath, (err, matches) => {
-        if (err) reject(err);
-        else resolve(matches);
-      });
-    });
+    const matches = await glob(templatePath);
+    return matches;
   }
 
   async getTemplateStatus(templatePath: string): Promise<TemplateStatus> {
