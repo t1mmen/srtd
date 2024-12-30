@@ -3,25 +3,7 @@ import { Box, Text, useInput, useApp } from 'ink';
 import path from 'path';
 import { TemplateManager } from '../lib/templateManager.js';
 import type { TemplateStatus } from '../types.js';
-
-const TimeSince: React.FC<{ date?: string }> = ({ date }) => {
-  const [now, setNow] = React.useState(new Date());
-
-  React.useEffect(() => {
-    const timer = setInterval(() => setNow(new Date()), 1000);
-    return () => clearInterval(timer);
-  }, []);
-
-  if (!date) return <Text>never</Text>;
-
-  const diff = now.getTime() - new Date(date).getTime();
-  const seconds = Math.floor(diff / 1000);
-
-  if (seconds < 60) return <Text>{seconds}s</Text>;
-  if (seconds < 3600) return <Text>{Math.floor(seconds / 60)}m</Text>;
-  if (seconds < 86400) return <Text>{Math.floor(seconds / 3600)}h</Text>;
-  return <Text>{Math.floor(seconds / 86400)}d</Text>;
-};
+import { TimeSince } from '../components/TimeSince.js';
 
 export default function Watch() {
   const { exit } = useApp();
@@ -29,7 +11,6 @@ export default function Watch() {
   const [error, setError] = React.useState<string>();
   const managerRef = React.useRef<TemplateManager>();
   const mounted = React.useRef(true);
-  const [, setNow] = React.useState(new Date());
 
   useInput((input, key) => {
     if (input.toLowerCase() === 'q' || (key.ctrl && input === 'c')) {
@@ -37,12 +18,6 @@ export default function Watch() {
       setTimeout(() => exit(), 0);
     }
   });
-
-  // Live timestamp updates
-  React.useEffect(() => {
-    const timer = setInterval(() => setNow(new Date()), 1000);
-    return () => clearInterval(timer);
-  }, []);
 
   React.useEffect(() => {
     let cleanup: (() => void) | undefined;
@@ -145,9 +120,7 @@ export default function Watch() {
                   ) : (
                     <>
                       {' '}
-                      • built
-                      <TimeSince date={template.buildState.lastBuildDate} />
-                      ago
+                      • built <TimeSince date={template.buildState.lastBuildDate} /> ago
                     </>
                   )}
                 </Text>
@@ -175,15 +148,11 @@ export default function Watch() {
       )}
 
       <Box marginY={1}>
-        <Text
-          bold
-          // color={hasErrors ? 'red' : 'green'}
-          backgroundColor={hasErrors ? 'red' : 'green'}
-        >
+        <Text bold backgroundColor={hasErrors ? 'red' : 'green'}>
           {hasErrors ? ' FAIL ' : ' OK '}
         </Text>
         <Text> </Text>
-        <Text dimColor>Waiting for file changes...</Text>
+        <Text dimColor>Watching for template changes...</Text>
       </Box>
 
       <Box>
