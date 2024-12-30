@@ -1,9 +1,9 @@
-import React from 'react';
-import { Box, Text } from 'ink';
 import { Select } from '@inkjs/ui';
-import Register from './register.js';
+import { Box, Text } from 'ink';
+import React from 'react';
 import Apply from './apply.js';
 import Build from './build.js';
+import Register from './register.js';
 import Watch from './watch.js';
 
 export default function UI() {

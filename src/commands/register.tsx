@@ -1,10 +1,10 @@
-import React from 'react';
-import { Box, Text } from 'ink';
 import { MultiSelect } from '@inkjs/ui';
+import { Box, Text } from 'ink';
+import { argument } from 'pastel';
+import React from 'react';
+import zod from 'zod';
 import { useTemplateState } from '../hooks/useTemplateState.js';
 import { registerTemplate } from '../utils/registerTemplate.js';
-import { argument } from 'pastel';
-import zod from 'zod';
 
 // Support both array of filenames as arguments and interactive selection
 export const args = zod
