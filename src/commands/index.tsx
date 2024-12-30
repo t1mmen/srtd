@@ -1,12 +1,9 @@
 import React from 'react';
 import { Box, Text } from 'ink';
 import { Select } from '@inkjs/ui';
-
-// Import the "Register" component for demonstration of navigation:
 import Register from './register.js';
 import Apply from './apply.js';
 import Build from './build.js';
-import Status from './status.js';
 import Watch from './watch.js';
 
 export default function UI() {
@@ -14,7 +11,7 @@ export default function UI() {
 
   // For now, we only demonstrate navigation to "register"
   if (selectedCommand === 'register') {
-    return <Register />;
+    return <Register args={undefined} />;
   }
 
   if (selectedCommand === 'apply') {
@@ -23,10 +20,6 @@ export default function UI() {
 
   if (selectedCommand === 'build') {
     return <Build />;
-  }
-
-  if (selectedCommand === 'status') {
-    return <Status />;
   }
 
   if (selectedCommand === 'watch') {
@@ -41,7 +34,6 @@ export default function UI() {
       label: '👀  watch - Watch templates for changes and apply directly to database',
       value: 'watch',
     },
-    { label: 'ℹ️  status - Show migration status', value: 'status' },
   ];
 
   return (

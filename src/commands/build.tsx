@@ -1,10 +1,13 @@
+// commands/build.tsx
 import React from 'react';
-import { buildTemplates } from '../lib/buildTemplates.js';
+import { TemplateManager } from '../lib/templateManager.js';
 
 export default function Build() {
   React.useEffect(() => {
     async function doBuild() {
-      await buildTemplates({});
+      const manager = await TemplateManager.create(process.cwd());
+      await manager.processTemplates({ generateFiles: true });
+      process.exit(0);
     }
     doBuild();
   }, []);

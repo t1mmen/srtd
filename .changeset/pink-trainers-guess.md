@@ -1,0 +1,5 @@
+---
+'srtd': patch
+---
+
+Initial release

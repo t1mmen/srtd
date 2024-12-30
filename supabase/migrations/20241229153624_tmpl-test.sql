@@ -1,14 +1,14 @@
 -- Generated from template: supabase/migrations-templates/test.sql
--- **DO NOT** manually edit this file.
+-- You very likely **DO NOT** want to manually edit this generated file.
 
 BEGIN;
 CREATE OR REPLACE FUNCTION public.test()
 returns void as $$
 BEGIN
-  RAISE NOTICE 'Hello, World!!!';
+  RAISE NOTICE 'Hel11111111s111lo!!';
 END;
 $$ language plpgsql;
 
 COMMIT;
 
--- Last built: 2024-12-25T07:00:53.089Z
+-- Last built: Never

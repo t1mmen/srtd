@@ -1,16 +1,19 @@
 import React from 'react';
-import { buildTemplates } from '../lib/buildTemplates.js';
+import { TemplateManager } from '../lib/templateManager.js';
 
 export default function Apply() {
   React.useEffect(() => {
     async function doApply() {
-      await buildTemplates({
-        skipFiles: true,
-        apply: true,
-      });
-      process.exit(0);
+      try {
+        const manager = await TemplateManager.create(process.cwd());
+        await manager.processTemplates({ apply: true });
+        process.exit(0);
+      } catch (err) {
+        console.error('Error:', err instanceof Error ? err.message : String(err));
+        process.exit(1);
+      }
     }
-    doApply();
+    void doApply();
   }, []);
   return null;
 }

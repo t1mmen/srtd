@@ -1,5 +1,5 @@
 src/
-tests/
+__tests__/
 .github/
 .vscode/
 tsconfig.json
@@ -8,3 +8,4 @@ tsup.config.ts
 .prettierrc
 vitest.config.ts
 .buildlog.json
+srtdrc.json
