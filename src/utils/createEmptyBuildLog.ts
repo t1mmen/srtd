@@ -1,4 +1,4 @@
-import { BuildLog } from '../types.js';
+import type { BuildLog } from '../types.js';
 import { safeCreate } from './safeCreate.js';
 
 export async function createEmptyBuildLog(filepath: string): Promise<boolean> {

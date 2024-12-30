@@ -1,9 +1,9 @@
+import path from 'node:path';
+import { Box, Text, useApp, useInput } from 'ink';
 import React from 'react';
-import { Box, Text, useInput, useApp } from 'ink';
-import path from 'path';
+import { TimeSince } from '../components/TimeSince.js';
 import { TemplateManager } from '../lib/templateManager.js';
 import type { TemplateStatus } from '../types.js';
-import { TimeSince } from '../components/TimeSince.js';
 
 export default function Watch() {
   const { exit } = useApp();

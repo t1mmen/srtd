@@ -1,8 +1,8 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { getConfig, saveConfig } from './config.js';
-import path from 'path';
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { TEST_ROOT } from '../__tests__/vitest.setup.js';
-import fs from 'fs/promises';
+import { getConfig, saveConfig } from './config.js';
 
 describe('config', () => {
   beforeEach(() => {
@@ -25,7 +25,7 @@ describe('config', () => {
       buildLog: '.buildlog-test.json',
       localBuildLog: '.buildlog-test.local.json',
       pgConnection:
-        process.env['POSTGRES_URL'] || 'postgresql://postgres:postgres@localhost:54322/postgres',
+        process.env.POSTGRES_URL || 'postgresql://postgres:postgres@localhost:54322/postgres',
       banner: 'Test banner',
       footer: 'Test footer',
       wrapInTransaction: true,

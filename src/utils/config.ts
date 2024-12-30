@@ -1,7 +1,7 @@
-import { CLIConfig } from '../types.js';
-import path from 'path';
-import fs from 'fs/promises';
+import fs from 'node:fs/promises';
+import path from 'node:path';
 import { CONFIG_FILE } from '../constants.js';
+import type { CLIConfig } from '../types.js';
 
 const defaultConfig: CLIConfig = {
   wipIndicator: '.wip',

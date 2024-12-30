@@ -8,7 +8,5 @@ export const logger = {
   error: (msg: string) => console.log(`  ❌ ${chalk.red(msg)}`),
   skip: (msg: string) => console.log(`  ⏭️  ${chalk.dim(msg)}`),
   debug: (msg: string) =>
-    process.env['DEBUG'] &&
-    process.env['DEBUG'] == 'true' &&
-    console.log(`  🔍 ${chalk.white(msg)}`),
+    process.env.DEBUG && process.env.DEBUG === 'true' && console.log(`  🔍 ${chalk.white(msg)}`),
 };

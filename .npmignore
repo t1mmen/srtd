@@ -4,8 +4,7 @@ __tests__/
 .vscode/
 tsconfig.json
 tsup.config.ts
-.eslintrc
-.prettierrc
+.biome.json
 vitest.config.ts
 .buildlog.json
 srtdrc.json

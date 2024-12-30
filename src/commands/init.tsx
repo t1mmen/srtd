@@ -1,8 +1,8 @@
+import fs from 'node:fs/promises';
+import path from 'node:path';
 import React from 'react';
-import fs from 'fs/promises';
-import path from 'path';
-import { getConfig, saveConfig } from '../utils/config.js';
 import { CONFIG_FILE } from '../constants.js';
+import { getConfig, saveConfig } from '../utils/config.js';
 import { createEmptyBuildLog } from '../utils/createEmptyBuildLog.js';
 import { ensureDirectories } from '../utils/ensureDirectories.js';
 import { fileExists } from '../utils/fileExists.js';
@@ -53,7 +53,7 @@ export default function Init() {
         }
 
         if (!content.includes(ignoreEntry)) {
-          content = content.trim() + '\n' + ignoreEntry + '\n';
+          content = `${content.trim()}\n${ignoreEntry}\n`;
           await fs.writeFile(gitignorePath, content);
           console.log('✅ Updated .gitignore');
         } else {

@@ -1,11 +1,11 @@
-import fs from 'fs/promises';
-import path from 'path';
+import fs from 'node:fs/promises';
+import path from 'node:path';
 import chalk from 'chalk';
-import { loadBuildLog } from './loadBuildLog.js';
-import { saveBuildLog } from './saveBuildLog.js';
 import { calculateMD5 } from './calculateMD5.js';
 import { getConfig } from './config.js';
 import { fileExists } from './fileExists.js';
+import { loadBuildLog } from './loadBuildLog.js';
+import { saveBuildLog } from './saveBuildLog.js';
 
 export async function registerTemplate(templatePath: string, baseDir: string): Promise<void> {
   const config = await getConfig(baseDir);

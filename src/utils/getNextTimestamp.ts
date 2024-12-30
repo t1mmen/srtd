@@ -1,4 +1,4 @@
-import { BuildLog } from '../types.js';
+import type { BuildLog } from '../types.js';
 
 export async function getNextTimestamp(buildLog: BuildLog): Promise<string> {
   const now = new Date();
