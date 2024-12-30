@@ -51,7 +51,7 @@ jobs:
         run: npm run typecheck
 
       - name: Test
-        run: npm run test
+        run: npm run test:coverage
         env:
           CI: true
           POSTGRES_URL: postgresql://postgres:postgres@localhost:54322/postgres
