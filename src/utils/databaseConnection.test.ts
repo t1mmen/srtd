@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { connect, disconnect } from './db.connection.js';
+import { connect, disconnect } from './databaseConnection.js';
 
 describe('db.connection', () => {
   afterEach(async () => {

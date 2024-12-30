@@ -11,8 +11,8 @@ const defaultConfig: CLIConfig = {
   wrapInTransaction: true,
   templateDir: 'supabase/migrations-templates',
   migrationDir: 'supabase/migrations',
-  buildLog: 'supabase/migrations-templates/.buildlog.json',
-  localBuildLog: 'supabase/migrations-templates/.buildlog.local.json',
+  buildLog: 'supabase/migrations-templates/.srtd.buildlog.json',
+  localBuildLog: 'supabase/migrations-templates/.srtd.buildlog.local.json',
   pgConnection: 'postgresql://postgres:postgres@localhost:54322/postgres',
 };
 

@@ -6,7 +6,7 @@ export const logger = {
   success: (msg: string) => console.log(`  ✅ ${chalk.green(msg)}`),
   warn: (msg: string) => console.log(`  ⚠️  ${chalk.yellow(msg)}`),
   error: (msg: string) => console.log(`  ❌ ${chalk.red(msg)}`),
-  skip: (msg: string) => console.log(`  ⏭️  ${chalk.dim(msg)}`),
+  skip: (msg: string) => console.log(`  ↪️ ${chalk.dim(msg)}`),
   debug: (msg: string) =>
     process.env.DEBUG && process.env.DEBUG === 'true' && console.log(`  🔍 ${chalk.white(msg)}`),
 };

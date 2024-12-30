@@ -2,8 +2,9 @@ import fs from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, beforeAll, vi } from 'vitest';
-import { disconnect } from '../utils/db.connection.js';
+import { connect, disconnect } from '../utils/databaseConnection.js';
 
+export const TEST_FN_PREFIX = 'srtd_scoped_test_func_';
 export const TEST_ROOT = join(tmpdir(), `srtd-test-${Date.now()}`);
 
 beforeAll(async () => {
@@ -12,6 +13,34 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await fs.rm(TEST_ROOT, { recursive: true, force: true });
+
+  // Be extra sure to clean up any test functions from db
+  const client = await connect();
+  try {
+    await client.query('BEGIN');
+    await client.query(`
+      DO $$
+      DECLARE
+        r record;
+      BEGIN
+        FOR r IN
+          SELECT quote_ident(proname) AS func_name
+          FROM pg_proc
+          WHERE proname LIKE '${TEST_FN_PREFIX}%'
+        LOOP
+          EXECUTE 'DROP FUNCTION IF EXISTS ' || r.func_name;
+        END LOOP;
+      END;
+      $$
+    `);
+    await client.query('COMMIT');
+  } catch (e) {
+    await client.query('ROLLBACK');
+    throw e;
+  } finally {
+    client.release();
+  }
+
   disconnect();
 });
 

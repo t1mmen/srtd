@@ -1,10 +1,11 @@
 src/
-__tests__/
+.changeset/
 .github/
 .vscode/
-tsconfig.json
-tsup.config.ts
+.editorconfig
+.gitattributes
+.gitignore
 .biome.json
+lefthook.yml
+tsconfig.json
 vitest.config.ts
-.buildlog.json
-srtdrc.json

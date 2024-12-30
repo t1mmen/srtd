@@ -2,7 +2,8 @@ import fs from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, relative } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { connect, disconnect } from '../utils/db.connection.js';
+import { TEST_FN_PREFIX } from '../__tests__/vitest.setup.js';
+import { connect, disconnect } from '../utils/databaseConnection.js';
 import { ensureDirectories } from '../utils/ensureDirectories.js';
 import { TemplateManager } from './templateManager.js';
 
@@ -15,7 +16,7 @@ describe('TemplateManager', () => {
 
   beforeEach(async () => {
     testContext.testDir = join(tmpdir(), `srtd-test-${testContext.timestamp}`);
-    testContext.testFunctionName = `test_func_${testContext.timestamp}`;
+    testContext.testFunctionName = `${TEST_FN_PREFIX}${testContext.timestamp}`;
 
     await ensureDirectories(testContext.testDir);
 

@@ -40,7 +40,7 @@ describe('config', () => {
 
     await saveConfig(TEST_ROOT, userConfig);
     const savedContent = JSON.parse(
-      await fs.readFile(path.join(TEST_ROOT, '.srtdrc.json'), 'utf-8')
+      await fs.readFile(path.join(TEST_ROOT, 'srtd.config.json'), 'utf-8')
     );
 
     expect(savedContent.templateDir).toBe('custom/templates');
@@ -62,7 +62,7 @@ describe('config', () => {
 
     await saveConfig(TEST_ROOT, customConfig);
     const savedContent = JSON.parse(
-      await fs.readFile(path.join(TEST_ROOT, '.srtdrc.json'), 'utf-8')
+      await fs.readFile(path.join(TEST_ROOT, 'srtd.config.json'), 'utf-8')
     );
 
     expect(savedContent.unknownField).toBe('value');

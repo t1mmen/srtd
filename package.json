@@ -42,7 +42,7 @@
   "dependencies": {
     "@inkjs/ui": "^2.0.0",
     "chokidar": "^4.0.3",
-    "glob": "^11.0.0",
+    "glob": "^10.0.0",
     "ink": "^5.1.0",
     "pastel": "^3.0.0",
     "pg": "^8.13.1",
@@ -53,8 +53,6 @@
     "@biomejs/biome": "1.9.4",
     "@changesets/cli": "^2.27.11",
     "@sindresorhus/tsconfig": "^7.0.0",
-    "@types/glob": "^8.1.0",
-    "@types/node": "^22.10.2",
     "@types/pg": "^8.11.10",
     "@types/react": "^18.3.0",
     "@vitest/coverage-v8": "^2.1.8",
@@ -63,6 +61,8 @@
     "lefthook": "^1.10.1",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2",
-    "vitest": "^2.1.8"
+    "vitest": "^2.1.8",
+    "@types/glob": "^8.1.0",
+    "@types/node": "^20.17.10"
   }
 }

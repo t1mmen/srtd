@@ -1,5 +1,5 @@
 import type { MigrationError } from '../types.js';
-import { connect } from './db.connection.js';
+import { connect } from './databaseConnection.js';
 import { logger } from './logger.js';
 
 export async function applyMigration(
