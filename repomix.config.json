@@ -1,0 +1,22 @@
+{
+  "output": {
+    "filePath": "build/srtd-repomix-output.xml",
+    "style": "xml",
+    "fileSummary": true,
+    "directoryStructure": true,
+    "removeComments": false,
+    "removeEmptyLines": false,
+    "topFilesLength": 15,
+    "showLineNumbers": false,
+    "copyToClipboard": false
+  },
+  "include": [],
+  "ignore": {
+    "useGitignore": true,
+    "useDefaultPatterns": true,
+    "customPatterns": ["node_modules", "dist", "build", "coverage", "supabase", "biome.json"]
+  },
+  "security": {
+    "enableSecurityCheck": true
+  }
+}

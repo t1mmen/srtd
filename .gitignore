@@ -1,5 +1,5 @@
 node_modules
 dist
-
+build
 # srtd's local logs should not be committed, as they're per-environment specific
 .srtd.buildlog.local.json

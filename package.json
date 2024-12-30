@@ -10,22 +10,6 @@
   "engines": {
     "node": ">=20"
   },
-  "author": {
-    "name": "Timm Stokke",
-    "email": "timm@stokke.me",
-    "url": "https://timm.stokke.me"
-  },
-  "keywords": [
-    "cli",
-    "migrations",
-    "database",
-    "postgresql",
-    "supabase",
-    "sql-templates",
-    "repeatable-migrations",
-    "database-migrations",
-    "supabase-cli"
-  ],
   "scripts": {
     "changeset": "changeset",
     "version": "changeset version",
@@ -38,10 +22,45 @@
     "test": "vitest",
     "test:coverage": "vitest run --coverage",
     "start": "npm run build && npm link && chmod u+x ./dist/cli.js && srtd",
-    "repomix": "npx repomix ./src vitest.config.ts vitest.setup.ts package.json ./__tests__ README.md"
+    "repomix": "npx repomix"
   },
   "files": [
     "dist"
+  ],
+  "author": {
+    "name": "Timm Stokke",
+    "email": "timm@stokke.me",
+    "url": "https://timm.stokke.me"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/t1mmen/srtd.git"
+  },
+  "bugs": {
+    "url": "https://github.com/t1mmen/srtd/issues"
+  },
+  "homepage": "https://github.com/t1mmen/srtd#readme",
+  "os": [
+    "darwin",
+    "linux",
+    "win32"
+  ],
+  "keywords": [
+    "cli",
+    "migrations",
+    "database",
+    "postgresql",
+    "supabase",
+    "sql-templates",
+    "live-reload",
+    "hot-reload",
+    "repeatable-migrations",
+    "database-migrations",
+    "supabase-cli"
   ],
   "dependencies": {
     "@inkjs/ui": "^2.0.0",
