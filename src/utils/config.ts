@@ -29,7 +29,10 @@ export async function getConfig(dir: string = process.cwd()): Promise<CLIConfig>
     cachedConfig = defaultConfig;
   }
 
-  return cachedConfig!;
+  if (!cachedConfig) {
+    throw new Error('Config not initialized');
+  }
+  return cachedConfig;
 }
 
 export async function saveConfig(baseDir: string, config: Partial<CLIConfig>): Promise<void> {

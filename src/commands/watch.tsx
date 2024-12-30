@@ -69,7 +69,9 @@ export default function Watch() {
       }
     }
 
-    init().then(c => (cleanup = c));
+    init().then(c => {
+      cleanup = c;
+    });
     return () => cleanup?.();
   }, []);
 
@@ -80,7 +82,10 @@ export default function Watch() {
   const templatesByDir = templates.reduce(
     (acc, template) => {
       const dir = path.dirname(path.relative(process.cwd(), template.path));
-      (acc[dir] = acc[dir] || []).push(template);
+      if (!acc[dir]) {
+        acc[dir] = [];
+      }
+      acc[dir].push(template);
       return acc;
     },
     {} as Record<string, TemplateStatus[]>

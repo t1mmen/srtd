@@ -254,7 +254,9 @@ export class TemplateManager extends EventEmitter {
         this.log('No changes to apply');
       } else if (result.errors.length > 0) {
         this.log(`${result.errors.length} template(s) failed to apply`, 'error');
-        result.errors.forEach(err => this.log(`${err.file}: ${err.error}`, 'error'));
+        for (const err of result.errors) {
+          this.log(`${err.file}: ${err.error}`, 'error');
+        }
       } else {
         this.log(`Applied ${result.applied.length} template(s)`, 'success');
       }

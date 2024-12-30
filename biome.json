@@ -12,10 +12,11 @@
     "lineWidth": 100,
     "attributePosition": "auto",
     "bracketSpacing": true,
-    "ignore": ["**/dist"]
+    "ignore": ["dist/**"]
   },
   "organizeImports": { "enabled": true },
   "linter": {
+    "ignore": ["dist/**"],
     "enabled": true,
     "rules": {
       "recommended": true,
