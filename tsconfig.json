@@ -13,7 +13,8 @@
     "declaration": true,
     "sourceMap": true,
     "forceConsistentCasingInFileNames": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "noPropertyAccessFromIndexSignature": false
   },
   "include": ["src", "__tests__"],
   "exclude": ["node_modules", "dist"]
