@@ -34,9 +34,11 @@ After over a year of looking-but-not-finding a better way, I paired up with [Cla
 First, install `srtd` globally or in your project:
 
 ```bash
-npm install -g srtd  # Global installation
+npm install -g @t1mmen/srtd  # Global installation
 # or
-npm install --save-dev srtd  # Project installation
+npm install --save-dev @t1mmen/srtd  # Project installation
+# or
+npx @t1mmen/srtd init  # Run directly
 ```
 
 Then set up in your [Supabase](https://supabase.com) project:
