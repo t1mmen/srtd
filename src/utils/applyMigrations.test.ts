@@ -1,7 +1,7 @@
-import { describe, it, expect, beforeAll, beforeEach, afterEach } from 'vitest';
+import type { PoolClient } from 'pg';
+import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { applyMigration } from './applyMigration.js';
 import { connect } from './db.connection.js';
-import type { PoolClient } from 'pg';
 
 describe('applyMigration', () => {
   let client: PoolClient;
