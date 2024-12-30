@@ -30,15 +30,14 @@
     "release": "npm run build && changeset publish",
     "build": "rm -rf dist && tsc",
     "typecheck": "tsc --noEmit",
+    "lint": "biome lint .",
+    "format": "biome format . --write",
     "dev": "tsc --watch",
-    "prettier": "prettier --write .",
     "test": "vitest",
     "run": "npm run build && npm link && chmod u+x ./dist/cli.js && srtd",
     "repomix": "npx repomix ./src vitest.config.ts vitest.setup.ts package.json ./__tests__ README.md"
   },
-  "files": [
-    "dist"
-  ],
+  "files": ["dist"],
   "dependencies": {
     "@inkjs/ui": "^2.0.0",
     "chokidar": "^4.0.3",
@@ -50,47 +49,19 @@
     "zod": "^3.24.1"
   },
   "devDependencies": {
+    "@biomejs/biome": "1.9.4",
     "@changesets/cli": "^2.27.11",
     "@sindresorhus/tsconfig": "^7.0.0",
     "@types/glob": "^8.1.0",
     "@types/node": "^22.10.2",
     "@types/pg": "^8.11.10",
     "@types/react": "^18.0.0",
-    "@typescript-eslint/eslint-plugin": "^6.0.0",
-    "@typescript-eslint/parser": "^6.0.0",
     "chalk": "^5.3.0",
     "eslint": "^8.0.0",
-    "eslint-config-prettier": "^9.0.0",
-    "eslint-plugin-react": "^7.37.2",
-    "eslint-plugin-react-hooks": "^5.1.0",
     "ink-testing-library": "^4.0.0",
-    "prettier": "^3.4.2",
+    "lefthook": "^1.10.1",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2",
     "vitest": "^1.0.0"
-  },
-  "eslintConfig": {
-    "extends": [
-      "eslint:recommended",
-      "plugin:@typescript-eslint/recommended",
-      "plugin:react/recommended",
-      "plugin:react-hooks/recommended",
-      "prettier"
-    ],
-    "parser": "@typescript-eslint/parser",
-    "rules": {
-      "@typescript-eslint/no-unused-vars": [
-        "error",
-        {
-          "args": "all",
-          "argsIgnorePattern": "^_",
-          "caughtErrors": "all",
-          "caughtErrorsIgnorePattern": "^_",
-          "destructuredArrayIgnorePattern": "^_",
-          "varsIgnorePattern": "^_",
-          "ignoreRestSiblings": true
-        }
-      ]
-    }
   }
 }
