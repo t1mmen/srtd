@@ -12,7 +12,7 @@ async function createPool(): Promise<pg.Pool> {
   const config = await getConfig(process.cwd());
   return new pg.Pool({
     connectionString: config.pgConnection,
-    connectionTimeoutMillis: 5000,
+    connectionTimeoutMillis: 500,
   });
 }
 
@@ -43,6 +43,11 @@ export async function connect(params?: { silent?: boolean }): Promise<pg.PoolCli
 
 export async function disconnect(): Promise<void> {
   if (pool) {
+    // Add poolPendingCount check to avoid hanging on
+    // pending queries during shutdown
+    if (pool.totalCount !== pool.idleCount) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
     await pool.end();
     pool = undefined;
   }

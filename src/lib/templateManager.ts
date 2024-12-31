@@ -6,7 +6,7 @@ import type { BuildLog, ProcessedTemplateResult, TemplateStatus } from '../types
 import { applyMigration } from '../utils/applyMigration.js';
 import { calculateMD5 } from '../utils/calculateMD5.js';
 import { getConfig } from '../utils/config.js';
-import { testConnection } from '../utils/databaseConnection.js';
+import { disconnect, testConnection } from '../utils/databaseConnection.js';
 import { getNextTimestamp } from '../utils/getNextTimestamp.js';
 import { isWipTemplate } from '../utils/isWipTemplate.js';
 import { loadBuildLog } from '../utils/loadBuildLog.js';
@@ -125,7 +125,7 @@ export class TemplateManager extends EventEmitter {
     const templatePath = path.join(this.baseDir, this.config.templateDir);
 
     const watcher = chokidar.watch(templatePath, {
-      ignoreInitial: true,
+      ignoreInitial: false,
       depth: 0,
       ignored: /(^|[\\])\../,
     });
@@ -293,6 +293,8 @@ export class TemplateManager extends EventEmitter {
         this.log('No new changes to build', 'skip');
       }
     }
+    // Always disconnect after processing
+    disconnect();
 
     return result;
   }
