@@ -332,3 +332,5 @@ MIT License - see [LICENSE](LICENSE) file.
 ---
 
 Made with 🪄 by [Timm Stokke](https://timm.stokke.me) & [Claude Sonnet](https://claude.ai)
+
+[!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://www.buymeacoffee.com/t1mmen)
