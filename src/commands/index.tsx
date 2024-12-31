@@ -1,6 +1,6 @@
 // commands/index.tsx
 import { Select, Spinner } from '@inkjs/ui';
-import { Box, Text, useApp } from 'ink';
+import { Box, Text } from 'ink';
 import React from 'react';
 import Branding from '../components/Branding.js';
 import Quittable from '../components/Quittable.js';
@@ -11,7 +11,6 @@ import Register from './register.js';
 import Watch from './watch.js';
 
 export default function UI() {
-  const { exit } = useApp();
   const { error, isChecking, isConnected } = useDatabaseConnection();
   const [selectedCommand, setSelectedCommand] = React.useState<string | null>(null);
 
@@ -64,7 +63,7 @@ export default function UI() {
           <Spinner label="Checking database connection..." />
         </Box>
       ) : (
-        <Quittable onQuit={exit} />
+        <Quittable />
       )}
     </Box>
   );
