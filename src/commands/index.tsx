@@ -16,7 +16,7 @@ export default function UI() {
   }
 
   if (selectedCommand === 'apply') {
-    return <Apply />;
+    return <Apply options={{ force: false }} />;
   }
 
   if (selectedCommand === 'build') {

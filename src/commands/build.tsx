@@ -1,5 +1,5 @@
-import { useApp } from 'ink';
 // commands/build.tsx
+import { useApp } from 'ink';
 import { option } from 'pastel';
 import React from 'react';
 import zod from 'zod';
