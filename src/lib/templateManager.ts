@@ -293,8 +293,6 @@ export class TemplateManager extends EventEmitter {
         this.log('No new changes to build', 'skip');
       }
     }
-    // Always disconnect after processing
-    disconnect();
 
     return result;
   }
