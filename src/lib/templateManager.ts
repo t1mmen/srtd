@@ -9,7 +9,7 @@ import { getConfig } from '../utils/config.js';
 import { getNextTimestamp } from '../utils/getNextTimestamp.js';
 import { isWipTemplate } from '../utils/isWipTemplate.js';
 import { loadBuildLog } from '../utils/loadBuildLog.js';
-import { logger } from '../utils/logger.js';
+import { type LogLevel, logger } from '../utils/logger.js';
 import { saveBuildLog } from '../utils/saveBuildLog.js';
 
 interface TemplateCache {
@@ -213,12 +213,9 @@ export class TemplateManager extends EventEmitter {
     this.emit('templateBuilt', template);
   }
 
-  private log(msg: string, type: 'info' | 'error' | 'success' | 'skip' = 'info') {
+  private log(msg: string, logLevel: LogLevel = 'info') {
     if (this.silent) return;
-    if (type === 'error') logger.error(msg);
-    else if (type === 'success') logger.success(msg);
-    else if (type === 'skip') logger.skip(msg);
-    else logger.info(msg);
+    logger[logLevel](msg);
   }
   async processTemplates(options: {
     apply?: boolean;

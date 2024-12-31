@@ -3,7 +3,7 @@
 Live-reloading SQL templates for [Supabase](https://supabase.com) projects. DX supercharged! 🚀
 
 
-`srtd` enhances the [Supabase](https://supabase.com) development workflow by adding live-reloading SQL templates, and a single-source-of-truth template migrations system for your database functions, RLS policies, etc. Drastically simplify code reviews 💪
+`srtd` enhances the [Supabase](https://supabase.com) DX by adding live-reloading SQL templates. The single-source-of-truth template ➡️ migrations system brings sanity to code reviews, and the workflow of iterating on database functions, RLS policies, etc.
 
 Built specifically for projects using the standard [Supabase](https://supabase.com) stack (but probably works alright for other Postgres-based projects, too).
 
@@ -19,8 +19,8 @@ After over a year of looking-but-not-finding a better way, I paired up with [Cla
 ## Key Features ✨
 
 - **Live Reload**: Changes to your SQL templates instantly update your local database
-- **Single Source of Truth**: Templates are the source of all (non-mutable) database objects, making code reviews a breeze
-- **Clean Migrations**: Generate standard [Supabase](https://supabase.com) migrations when you're ready to deploy
+- **Single Source of Truth**: Templates are the source of all (non-mutable) database objects, making changes _and_ code reviews a breeze
+- **Just SQL**: Templates build as standard [Supabase](https://supabase.com) migrations when you're ready to deploy
 - **Developer Friendly**: Interactive CLI with visual feedback for all operations
 
 ## Requirements
@@ -38,7 +38,7 @@ npm install -g @t1mmen/srtd  # Global installation
 # or
 npm install --save-dev @t1mmen/srtd  # Project installation
 # or
-npx @t1mmen/srtd init  # Run directly
+npx @t1mmen/srtd  # Run directly
 ```
 
 Then set up in your [Supabase](https://supabase.com) project:
@@ -62,13 +62,13 @@ $$ LANGUAGE plpgsql;
 Start development mode:
 
 ```bash
-srtd watch  # Changes auto-apply to local database
+npx @t1mmen/srtd watch  # Changes auto-apply to local database
 ```
 
 When ready to deploy:
 
 ```bash
-srtd build  # Creates timestamped migration file
+npx @t1mmen/srtd build  # Creates timestamped migration file
 supabase migrate up  # Apply using Supabase CLI
 ```
 
@@ -126,7 +126,6 @@ CREATE POLICY "users can view own data"
 
 ✅ Roles and permissions:
 ```sql
-CREATE ROLE authenticated;
 GRANT USAGE ON SCHEMA public TO authenticated;
 GRANT SELECT ON ALL TABLES IN SCHEMA public TO authenticated;
 ```
@@ -217,7 +216,7 @@ my_function.wip.sql  # Won't generate migrations during build
 `srtd` maintains two logs:
 
 - `.buildlog.json` - Tracks which templates have been built into migrations (commit this)
-- `.buildlog.local.json` - Tracks local database state (add to .gitignore)
+- `.buildlog.local.json` - Tracks local database state (add to `.gitignore`)
 
 ### Register Existing Objects
 
