@@ -1,5 +1,5 @@
 import { Alert, ThemeProvider, defaultTheme, extendTheme } from '@inkjs/ui';
-import { Box, Static, type TextProps } from 'ink';
+import { Box, Static, Text, type TextProps } from 'ink';
 import type { AppProps } from 'pastel';
 import React from 'react';
 import { useDbConnection } from '../hooks/useDbConnection.js';
@@ -25,7 +25,12 @@ export default function App({ Component, commandProps }: AppProps) {
         <Static items={[error]}>
           {error => (
             <Box key={error}>
-              <Alert variant="error">{error}</Alert>
+              <Alert variant="error">
+                <Text bold color="red">
+                  Error:{''}
+                </Text>
+                {error}
+              </Alert>
             </Box>
           )}
         </Static>

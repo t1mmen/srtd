@@ -92,7 +92,7 @@ export default function Register({ args: templateArgs }: Props) {
           />
         </Box>
         {!!errorMessage && <Text color="red">{errorMessage}</Text>}
-        {!!successMessage && <Text color="green">{successMessage}</Text>}
+        {!!successMessage && <Text color="#3ecf8e">{successMessage}</Text>}
       </Box>
     );
   }
@@ -100,7 +100,7 @@ export default function Register({ args: templateArgs }: Props) {
   return (
     <Box flexDirection="column" marginTop={1}>
       {!!errorMessage && <Text color="red">{errorMessage}</Text>}
-      {!!successMessage && <Text color="green">{successMessage}</Text>}
+      {!!successMessage && <Text color="#3ecf8e">{successMessage}</Text>}
     </Box>
   );
 }

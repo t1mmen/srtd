@@ -1,5 +1,5 @@
 import path from 'node:path';
-import { Box, Text, useApp, useInput } from 'ink';
+import { Box, Text } from 'ink';
 import React from 'react';
 import Branding from '../components/Branding.js';
 import Quittable from '../components/Quittable.js';
@@ -8,22 +8,14 @@ import { TemplateManager } from '../lib/templateManager.js';
 import type { TemplateStatus } from '../types.js';
 
 export default function Watch() {
-  const { exit } = useApp();
   const [templates, setTemplates] = React.useState<TemplateStatus[]>([]);
   const [error, setError] = React.useState<string>();
   const managerRef = React.useRef<TemplateManager>();
   const mounted = React.useRef(true);
 
-  useInput((input, key) => {
-    if (input.toLowerCase() === 'q' || (key.ctrl && input === 'c')) {
-      mounted.current = false;
-      setTimeout(() => exit(), 0);
-    }
-  });
-
   React.useEffect(() => {
     let cleanup: (() => void) | undefined;
-    console.clear();
+    // console.clear();
 
     async function init(): Promise<() => void> {
       try {
@@ -105,7 +97,7 @@ export default function Watch() {
   const hasErrors = templates.some(t => t.buildState.lastAppliedError);
 
   return (
-    <Box flexDirection="column" marginBottom={2} marginTop={2}>
+    <Box flexDirection="column" marginBottom={2}>
       <Branding subtitle="👀 Watch Mode" />
 
       {Object.entries(templatesByDir).map(([dir, dirTemplates]) => (
