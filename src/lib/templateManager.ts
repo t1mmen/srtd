@@ -125,7 +125,7 @@ export class TemplateManager extends EventEmitter {
     const templatePath = path.join(this.baseDir, this.config.templateDir);
 
     const watcher = chokidar.watch(templatePath, {
-      ignoreInitial: true,
+      ignoreInitial: false,
       depth: 0,
       ignored: /(^|[\\])\../,
     });

@@ -22,6 +22,5 @@ describe('Watch Command', () => {
 
     const output = lastFrame();
     expect(output).toContain('Watch Mode');
-    expect(output).toContain('Watching for template changes');
   });
 });

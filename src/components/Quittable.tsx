@@ -1,17 +1,35 @@
-import { Box, Text, useApp, useInput } from 'ink';
+import process from 'node:process';
+import { Box, Text, useInput } from 'ink';
 import React from 'react';
 
-type Props = {
+interface QuittableProps {
   onQuit?: () => void;
-};
+}
 
-export default function Quittable(props?: Props) {
-  const { exit } = useApp();
+export default function Quittable(props: QuittableProps) {
+  // Use ref to track if component is mounted
+  const mounted = React.useRef(true);
+
+  React.useEffect(() => {
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
 
   useInput((input, key) => {
+    if (!mounted.current) return;
+
     if (input.toLowerCase() === 'q' || (key.ctrl && input === 'c')) {
-      props?.onQuit?.();
-      setTimeout(() => exit(), 0);
+      try {
+        if (props?.onQuit) {
+          props.onQuit();
+        }
+        // Exit synchronously
+        process.exit(0);
+      } catch (error) {
+        console.error('Failed to exit cleanly:', error);
+        process.exit(1);
+      }
     }
   });
 

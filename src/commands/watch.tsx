@@ -1,175 +1,204 @@
+// src/components/watch.tsx
 import path from 'node:path';
 import { Badge } from '@inkjs/ui';
-import { Box, Text } from 'ink';
-import React from 'react';
+import { Box, Text, useInput } from 'ink';
+import React, { useMemo } from 'react';
 import Branding from '../components/Branding.js';
 import Quittable from '../components/Quittable.js';
 import { TimeSince } from '../components/TimeSince.js';
 import { useDatabaseConnection } from '../hooks/useDatabaseConnection.js';
-import { TemplateManager } from '../lib/templateManager.js';
+import { useTemplateManager } from '../hooks/useTemplateManager.js';
+import type { TemplateUpdate } from '../hooks/useTemplateManager.js';
 import type { TemplateStatus } from '../types.js';
 
-export default function Watch() {
-  const [templates, setTemplates] = React.useState<TemplateStatus[]>([]);
-  const [error, setError] = React.useState<string>();
-  const managerRef = React.useRef<TemplateManager>();
-  const mounted = React.useRef(true);
-  const { isConnected } = useDatabaseConnection();
+const MAX_FILES = 30;
+const PATH_DISPLAY_LENGTH = 15;
 
-  React.useEffect(() => {
-    let cleanup: (() => void) | undefined;
-    // console.clear();
+function StatBadge({ label, value, color }: { label: string; value: number; color: string }) {
+  return (
+    <Box marginRight={1}>
+      <Badge color={color}>
+        {' '}
+        {label}: {value}{' '}
+      </Badge>
+    </Box>
+  );
+}
 
-    async function init(): Promise<() => void> {
-      try {
-        managerRef.current = await TemplateManager.create(process.cwd(), { silent: true });
+function formatTemplateDisplay(templatePath: string, templateDir: string): string {
+  const parts = templatePath.split(path.sep);
+  const filename = parts.pop() || '';
+  const dirPath = parts.join(path.sep);
 
-        // Initial template load
-        const initialTemplates = await managerRef.current.findTemplates();
-        for (const templatePath of initialTemplates) {
-          const status = await managerRef.current.getTemplateStatus(templatePath);
-          if (mounted.current) {
-            setTemplates(prev => [...prev.filter(t => t.path !== status.path), status]);
-          }
-        }
-
-        // Watch and handle changes
-        const watcher = await managerRef.current.watch();
-
-        // Update UI on template changes
-        const updateTemplate = async (template: TemplateStatus) => {
-          if (!mounted.current) return;
-          const status = await managerRef.current?.getTemplateStatus(template.path);
-          if (status) {
-            setTemplates(prev => [...prev.filter(t => t.path !== status.path), status]);
-          }
-        };
-
-        managerRef.current.on('templateChanged', updateTemplate);
-        managerRef.current.on('templateApplied', updateTemplate);
-        managerRef.current.on('templateError', ({ template }) => updateTemplate(template));
-
-        // Initial apply for any out-of-date templates
-        await managerRef.current.processTemplates({ apply: true });
-
-        return () => {
-          mounted.current = false;
-          watcher.close();
-        };
-      } catch (err) {
-        if (mounted.current) {
-          setError(err instanceof Error ? err.message : String(err));
-        }
-        return () => {
-          mounted.current = false;
-        };
-      }
+  if (dirPath && templateDir && dirPath.includes(templateDir)) {
+    const relativePath = dirPath.substring(dirPath.indexOf(templateDir) + templateDir.length + 1);
+    if (relativePath) {
+      const truncatedPath = relativePath.slice(-PATH_DISPLAY_LENGTH);
+      return `${truncatedPath}/${filename}`;
     }
+  }
+  return filename;
+}
 
-    init().then(c => {
-      cleanup = c;
-    });
-    return () => cleanup?.();
-  }, []);
+const TemplateRow = React.memo(
+  ({
+    template,
+    isLatest,
+    templateDir,
+  }: {
+    template: TemplateStatus;
+    isLatest: boolean;
+    templateDir?: string;
+  }) => {
+    const displayName = formatTemplateDisplay(template.path, templateDir ?? '');
 
-  const handleQuit = () => {
-    if (mounted.current) mounted.current = false;
-  };
-
-  if (error) {
     return (
-      <>
-        <Text color="red">Error: {error}</Text>
-        <Quittable onQuit={handleQuit} />
-      </>
+      <Box marginLeft={2}>
+        <Box width={2}>
+          <Text>{template.buildState.lastAppliedError ? '❌' : isLatest ? '⚡️' : '✓'}</Text>
+        </Box>
+        <Box width={35}>
+          <Text>{displayName}</Text>
+        </Box>
+        <Box>
+          <Text dimColor>
+            applied <TimeSince date={template.buildState.lastAppliedDate} /> ago
+            {!template.buildState.lastBuildDate ||
+            template.currentHash !== template.buildState.lastBuildHash ? (
+              <> • needs build</>
+            ) : (
+              <>
+                {' '}
+                • built <TimeSince date={template.buildState.lastBuildDate} /> ago
+              </>
+            )}
+          </Text>
+        </Box>
+      </Box>
+    );
+  }
+);
+
+TemplateRow.displayName = 'TemplateRow';
+
+const UpdateLog = React.memo(
+  ({
+    updates,
+    templateDir,
+  }: {
+    updates: TemplateUpdate[];
+    templateDir?: string;
+  }) => {
+    const sortedUpdates = useMemo(() => [...updates].reverse().slice(0, 5), [updates]);
+
+    return (
+      <Box flexDirection="column" marginTop={1}>
+        <Text bold>Recent Updates:</Text>
+        {sortedUpdates.map(update => (
+          <Box key={`${update.template.path}-${update.timestamp}`} marginLeft={2}>
+            <Text
+              color={update.type === 'error' ? 'red' : update.type === 'applied' ? 'green' : 'blue'}
+            >
+              {update.type === 'error' ? '❌' : update.type === 'applied' ? '✨' : '📝'}{' '}
+              {formatTemplateDisplay(update.template.path, templateDir ?? '')}:{' '}
+              {update.type === 'error'
+                ? update.error
+                : update.type === 'applied'
+                  ? 'applied successfully'
+                  : 'changed and reapplied'}
+            </Text>
+          </Box>
+        ))}
+      </Box>
+    );
+  }
+);
+
+UpdateLog.displayName = 'UpdateLog';
+
+export default function Watch() {
+  const { isConnected } = useDatabaseConnection();
+  const { templates, updates, stats, isLoading, errors, latestPath, templateDir } =
+    useTemplateManager();
+  const [showUpdates, setShowUpdates] = React.useState(true);
+  const activeTemplates = useMemo(() => templates.slice(-MAX_FILES), [templates]);
+  const hasErrors = errors.size > 0;
+
+  useInput(input => {
+    if (input === 'u') {
+      setShowUpdates(s => !s);
+    }
+  });
+
+  if (!isConnected) {
+    return (
+      <Box flexDirection="column">
+        <Text color="red">Unable to connect to database. Is Supabase running?</Text>
+        <Quittable />
+      </Box>
     );
   }
 
-  const templatesByDir = templates.reduce(
-    (acc, template) => {
-      const dir = path.dirname(path.relative(process.cwd(), template.path));
-      if (!acc[dir]) {
-        acc[dir] = [];
-      }
-      acc[dir].push(template);
-      return acc;
-    },
-    {} as Record<string, TemplateStatus[]>
-  );
-
-  const hasErrors = templates.some(t => t.buildState.lastAppliedError);
-
   return (
-    <Box flexDirection="column" marginBottom={2}>
+    <Box flexDirection="column">
       <Branding subtitle="👀 Watch Mode" />
 
-      {Object.entries(templatesByDir).map(([dir, dirTemplates]) => (
-        <Box key={dir} flexDirection="column" marginLeft={1}>
-          <Text dimColor>{dir}</Text>
-          {dirTemplates.map(template => (
-            <Box key={template.path} marginLeft={2}>
-              <Box width={2}>
-                <Text>
-                  {template.buildState.lastAppliedError
-                    ? '❌'
-                    : template === templates[templates.length - 1]
-                      ? '⚡️'
-                      : '✓'}
-                </Text>
-              </Box>
-              <Box width={20}>
-                <Text>{path.basename(template.path)}</Text>
-              </Box>
-              <Box>
-                <Text dimColor>
-                  applied <TimeSince date={template.buildState.lastAppliedDate} /> ago
-                  {!template.buildState.lastBuildDate ||
-                  template.currentHash !== template.buildState.lastBuildHash ? (
-                    <> • needs build</>
-                  ) : (
-                    <>
-                      {' '}
-                      • built <TimeSince date={template.buildState.lastBuildDate} /> ago
-                    </>
-                  )}
-                </Text>
-              </Box>
-            </Box>
-          ))}
-        </Box>
-      ))}
+      <Box marginY={1}>
+        <StatBadge label="Total" value={stats.total} color="#3ecf8e" />
+        {stats.needsBuild > 0 && (
+          <StatBadge label="Needs Build" value={stats.needsBuild} color="yellow" />
+        )}
+        {stats.recentlyChanged > 0 && (
+          <StatBadge label="Recent Changes" value={stats.recentlyChanged} color="blue" />
+        )}
+        {hasErrors && <StatBadge label="Errors" value={stats.errors} color="red" />}
+      </Box>
 
-      {hasErrors && (
-        <Box flexDirection="column" marginY={1}>
-          <Text bold color="red">
-            Errors
-          </Text>
-          {templates
-            .filter(t => t.buildState.lastAppliedError)
-            .map(t => (
-              <Box key={t.name} marginLeft={2}>
-                <Text color="red">
-                  • {t.name}: {t.buildState.lastAppliedError}
-                </Text>
-              </Box>
-            ))}
-          <Quittable onQuit={handleQuit} />
-        </Box>
-      )}
-
-      {!isConnected ? (
-        <Box marginTop={1}>
-          <Badge color="red"> ERROR </Badge>
-          <Text> Database not reachable </Text>
-        </Box>
+      {isLoading ? (
+        <Text>🔍 Finding templates...</Text>
       ) : (
-        <Box marginTop={1}>
-          <Badge color={hasErrors ? 'red' : '#3ecf8e'}>{hasErrors ? ' FAIL ' : ' OK '}</Badge>
-          <Text dimColor>Watching for template changes...</Text>
+        <Box flexDirection="column">
+          {activeTemplates.map(template => (
+            <TemplateRow
+              key={template.path}
+              template={template}
+              isLatest={template.path === latestPath}
+              templateDir={templateDir}
+            />
+          ))}
+
+          {showUpdates && updates.length > 0 && (
+            <UpdateLog updates={updates} templateDir={templateDir} />
+          )}
+
+          {!showUpdates && hasErrors && (
+            <Box flexDirection="column" marginTop={1}>
+              <Text bold color="red">
+                Errors:
+              </Text>
+              {Array.from(errors.entries()).map(([path, error]) => (
+                <Box key={path} marginLeft={2} marginTop={1}>
+                  <Text color="red" wrap="wrap">
+                    {formatTemplateDisplay(path, templateDir ?? '')}: {error}
+                  </Text>
+                </Box>
+              ))}
+            </Box>
+          )}
         </Box>
       )}
 
-      <Quittable onQuit={handleQuit} />
+      <Box marginY={1} flexDirection="row" gap={1}>
+        <Box marginY={1}>
+          <Text dimColor>press </Text>
+          <Text underline={showUpdates}>u</Text>
+          <Text dimColor> to toggle updates</Text>
+        </Box>
+        <Box marginY={1}>
+          <Text dimColor>•</Text>
+        </Box>
+        <Quittable />
+      </Box>
     </Box>
   );
 }
