@@ -1,5 +1,15 @@
 # srtd
 
+## 0.2.3
+
+### Patch Changes
+
+- 748a1c8: Add update-notifier to notify users of new available versions
+- 748a1c8: Notify in CLI if connection to database cannot be established
+- 748a1c8: Support customizing migration filename prefix
+- 748a1c8: Support forcibly building templates, irrespective of current build status.
+- 748a1c8: Support forcibly applying templates directly to local db, irrespective of apply state
+
 ## 0.2.2
 
 ### Patch Changes
