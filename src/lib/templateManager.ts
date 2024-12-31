@@ -2,7 +2,7 @@ import EventEmitter from 'node:events';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { glob } from 'glob';
-import type { BuildLog, CLIResult, TemplateStatus } from '../types.js';
+import type { BuildLog, ProcessedTemplateResult, TemplateStatus } from '../types.js';
 import { applyMigration } from '../utils/applyMigration.js';
 import { calculateMD5 } from '../utils/calculateMD5.js';
 import { getConfig } from '../utils/config.js';
@@ -138,7 +138,7 @@ export class TemplateManager extends EventEmitter {
     return watcher;
   }
 
-  async applyTemplate(templatePath: string): Promise<CLIResult> {
+  async applyTemplate(templatePath: string): Promise<ProcessedTemplateResult> {
     const template = await this.getTemplateStatus(templatePath);
     const content = await fs.readFile(templatePath, 'utf-8');
     const result = await applyMigration(content, template.name, this.silent);
@@ -221,9 +221,9 @@ export class TemplateManager extends EventEmitter {
     apply?: boolean;
     generateFiles?: boolean;
     force?: boolean;
-  }): Promise<CLIResult> {
+  }): Promise<ProcessedTemplateResult> {
     const templates = await this.findTemplates();
-    const result: CLIResult = { errors: [], applied: [] };
+    const result: ProcessedTemplateResult = { errors: [], applied: [] };
 
     if (options.apply) {
       this.log('Applying changes...');

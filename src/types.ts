@@ -36,7 +36,7 @@ export interface CLIConfig {
   pgConnection: string;
 }
 
-export interface CLIResult {
+export interface ProcessedTemplateResult {
   errors: MigrationError[];
   applied: string[];
 }
