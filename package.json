@@ -11,6 +11,7 @@
     "node": ">=20"
   },
   "scripts": {
+    "clean": "rm -rf dist; rm -rf build; rm -rf coverage; npm run supabase:stop",
     "changeset": "changeset",
     "version": "changeset version",
     "release": "npm run build && changeset publish",
@@ -22,7 +23,9 @@
     "test": "vitest",
     "test:coverage": "vitest run --coverage",
     "start": "npm run build && npm link --force && chmod u+x ./dist/cli.js && srtd",
-    "repomix": "npx repomix"
+    "repomix": "npx repomix",
+    "supabase:start": "npx supabase start",
+    "supabase:stop": "npx supabase stop"
   },
   "files": [
     "dist"
