@@ -10,8 +10,14 @@ interface ExecuteCommandOptions {
 export async function executeCommand(
   command: string,
   args: string[] = [],
-  options: ExecuteCommandOptions = { silent: true }
-): Promise<boolean> {
+  options: ExecuteCommandOptions = { silent: true, timeout?: number }
+): Promise {
+  const timeout = options.timeout || 30000; // 30 second default timeout
+  const timeoutPromise = new Promise((_, reject) => {
+    setTimeout(() => reject(new Error(`Command timed out after ${timeout}ms`)), timeout);
+  });
+  return Promise.race([executeCommandImpl(command, args, options), timeoutPromise]);
+}
   return new Promise(resolve => {
     if (!options.silent) {
       logger.info(`Running: ${command} ${args.join(' ')}`);
