@@ -1,7 +1,6 @@
-// hooks/useDbConnection.ts
+// hooks/useDatabaseConnection.ts
 import { useEffect, useState } from 'react';
-import { RETRY_DELAY, connect, disconnect } from '../utils/databaseConnection.js';
-import { logger } from '../utils/logger.js';
+import { RETRY_DELAY, testConnection } from '../utils/databaseConnection.js';
 
 interface DbConnectionState {
   isConnected: boolean;
@@ -22,7 +21,7 @@ function parseDbError(error: unknown): string {
   return String(error);
 }
 
-export function useDbConnection(checkInterval = 5000): DbConnectionState {
+export function useDatabaseConnection(checkInterval = 5000): DbConnectionState {
   const [state, setState] = useState<DbConnectionState>({
     isConnected: false,
     isChecking: true,
@@ -31,38 +30,25 @@ export function useDbConnection(checkInterval = 5000): DbConnectionState {
   useEffect(() => {
     let mounted = true;
     let timeoutId: NodeJS.Timeout;
+    let intervalId: NodeJS.Timeout | undefined = undefined;
 
     async function checkConnection() {
-      // Reset checking state for each attempt
-      if (mounted) {
-        setState(prev => ({ ...prev, isChecking: true }));
-      }
+      if (!mounted) return;
+      setState(prev => ({ ...prev, isChecking: true }));
 
       try {
-        // Set a timeout for the connection attempt
-        const connectionPromise = new Promise<void>((resolve, reject) => {
-          connect()
-            .then(client => {
-              return client
-                .query('SELECT 1')
-                .then(() => client.release())
-                .then(resolve)
-                .catch(reject);
-            })
-            .catch(reject);
-        });
-
+        const connectionPromise = testConnection();
         const timeoutPromise = new Promise<never>((_, reject) => {
           timeoutId = setTimeout(() => {
             reject(new Error('Connection attempt timed out'));
           }, RETRY_DELAY);
         });
 
-        await Promise.race([connectionPromise, timeoutPromise]);
+        const isConnected = await Promise.race([connectionPromise, timeoutPromise]);
 
         if (mounted) {
           setState({
-            isConnected: true,
+            isConnected,
             error: undefined,
             isChecking: false,
           });
@@ -74,7 +60,6 @@ export function useDbConnection(checkInterval = 5000): DbConnectionState {
             error: parseDbError(err),
             isChecking: false,
           });
-          logger.debug(`DB connection error: ${err}`);
         }
       } finally {
         clearTimeout(timeoutId);
@@ -82,15 +67,12 @@ export function useDbConnection(checkInterval = 5000): DbConnectionState {
     }
 
     checkConnection();
-    const intervalId = setInterval(checkConnection, checkInterval);
+    intervalId = setInterval(checkConnection, checkInterval);
 
     return () => {
       mounted = false;
       clearTimeout(timeoutId);
       clearInterval(intervalId);
-      disconnect().catch(() => {
-        // Ignore disconnection errors on cleanup
-      });
     };
   }, [checkInterval]);
 

@@ -4,7 +4,7 @@ import { Box, Text, useApp } from 'ink';
 import React from 'react';
 import Branding from '../components/Branding.js';
 import Quittable from '../components/Quittable.js';
-import { useDbConnection } from '../hooks/useDbConnection.js';
+import { useDatabaseConnection } from '../hooks/useDatabaseConnection.js';
 import Apply from './apply.js';
 import Build from './build.js';
 import Register from './register.js';
@@ -12,7 +12,7 @@ import Watch from './watch.js';
 
 export default function UI() {
   const { exit } = useApp();
-  const { error, isChecking, isConnected } = useDbConnection();
+  const { error, isChecking, isConnected } = useDatabaseConnection();
   const [selectedCommand, setSelectedCommand] = React.useState<string | null>(null);
 
   const handleOnChange = async (value: string) => {

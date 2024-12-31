@@ -5,7 +5,7 @@ import React from 'react';
 import Branding from '../components/Branding.js';
 import Quittable from '../components/Quittable.js';
 import { TimeSince } from '../components/TimeSince.js';
-import { useDbConnection } from '../hooks/useDbConnection.js';
+import { useDatabaseConnection } from '../hooks/useDatabaseConnection.js';
 import { TemplateManager } from '../lib/templateManager.js';
 import type { TemplateStatus } from '../types.js';
 
@@ -14,7 +14,7 @@ export default function Watch() {
   const [error, setError] = React.useState<string>();
   const managerRef = React.useRef<TemplateManager>();
   const mounted = React.useRef(true);
-  const { isConnected } = useDbConnection();
+  const { isConnected } = useDatabaseConnection();
 
   React.useEffect(() => {
     let cleanup: (() => void) | undefined;

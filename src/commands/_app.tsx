@@ -2,7 +2,7 @@ import { Alert, ThemeProvider, defaultTheme, extendTheme } from '@inkjs/ui';
 import { Box, Static, Text, type TextProps } from 'ink';
 import type { AppProps } from 'pastel';
 import React from 'react';
-import { useDbConnection } from '../hooks/useDbConnection.js';
+import { useDatabaseConnection } from '../hooks/useDatabaseConnection.js';
 
 const customTheme = extendTheme(defaultTheme, {
   components: {
@@ -17,7 +17,7 @@ const customTheme = extendTheme(defaultTheme, {
 });
 
 export default function App({ Component, commandProps }: AppProps) {
-  const { error } = useDbConnection();
+  const { error } = useDatabaseConnection();
 
   return (
     <ThemeProvider theme={customTheme}>

@@ -1,4 +1,4 @@
-// utils/db.connection.ts
+// utils/databaseConnection.ts
 import pg from 'pg';
 import { getConfig } from './config.js';
 import { logger } from './logger.js';
@@ -16,11 +16,7 @@ async function createPool(): Promise<pg.Pool> {
   });
 }
 
-type Params = {
-  silent?: boolean;
-};
-
-async function retryConnection(params?: Params): Promise<pg.PoolClient> {
+async function retryConnection(params?: { silent?: boolean }): Promise<pg.PoolClient> {
   const { silent = true } = params || {};
   connectionAttempts++;
   logger.debug(`Connection attempt ${connectionAttempts}`);
@@ -40,7 +36,7 @@ async function retryConnection(params?: Params): Promise<pg.PoolClient> {
   }
 }
 
-export async function connect(params?: Params): Promise<pg.PoolClient> {
+export async function connect(params?: { silent?: boolean }): Promise<pg.PoolClient> {
   connectionAttempts = 0;
   return retryConnection(params);
 }
@@ -51,6 +47,17 @@ export async function disconnect(): Promise<void> {
     pool = undefined;
   }
   return;
+}
+
+export async function testConnection(): Promise<boolean> {
+  try {
+    const client = await connect();
+    await client.query('SELECT 1');
+    client.release();
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 process.on('exit', async () => await disconnect());

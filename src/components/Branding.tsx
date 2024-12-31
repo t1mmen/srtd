@@ -2,14 +2,14 @@ import { Badge } from '@inkjs/ui';
 import { Box, Text } from 'ink';
 import React from 'react';
 import packageJson from '../../package.json' assert { type: 'json' };
-import { useDbConnection } from '../hooks/useDbConnection.js';
+import { useDatabaseConnection } from '../hooks/useDatabaseConnection.js';
 
 type Props = {
   subtitle?: string;
 };
 
 export default function Branding({ subtitle }: Props) {
-  const { error, isConnected } = useDbConnection();
+  const { error, isConnected } = useDatabaseConnection();
 
   const badgeColor = error ? 'red' : isConnected ? '#3ecf8e' : 'yellow';
   return (

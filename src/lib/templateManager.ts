@@ -6,6 +6,7 @@ import type { BuildLog, ProcessedTemplateResult, TemplateStatus } from '../types
 import { applyMigration } from '../utils/applyMigration.js';
 import { calculateMD5 } from '../utils/calculateMD5.js';
 import { getConfig } from '../utils/config.js';
+import { testConnection } from '../utils/databaseConnection.js';
 import { getNextTimestamp } from '../utils/getNextTimestamp.js';
 import { isWipTemplate } from '../utils/isWipTemplate.js';
 import { loadBuildLog } from '../utils/loadBuildLog.js';
@@ -225,9 +226,19 @@ export class TemplateManager extends EventEmitter {
     const templates = await this.findTemplates();
     const result: ProcessedTemplateResult = { errors: [], applied: [] };
 
+    this.log('\n');
+
     if (options.apply) {
+      const isConnected = await testConnection();
+
+      if (isConnected) {
+        this.log('Connected to database', 'success');
+      } else {
+        this.log('Failed to connect to database, cannot proceed. Is Supabase running?', 'error');
+        return result;
+      }
+
       const action = options.force ? 'Force applying' : 'Applying';
-      console.log('\n');
       this.log(`${action} changed templates to local database...`, 'success');
       let hasChanges = false;
 
@@ -261,6 +272,8 @@ export class TemplateManager extends EventEmitter {
       let built = 0;
       let skipped = 0;
 
+      this.log('Building migration files from templates...', 'success');
+
       for (const templatePath of templates) {
         const isWip = await isWipTemplate(templatePath);
         if (!isWip) {
@@ -277,7 +290,7 @@ export class TemplateManager extends EventEmitter {
       if (built > 0) {
         this.log(`Generated ${built} migration file(s)`, 'success');
       } else if (skipped > 0) {
-        this.log('No changes to build', 'skip');
+        this.log('No new changes to build', 'skip');
       }
     }
 
