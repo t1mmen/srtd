@@ -1,5 +1,18 @@
 # srtd
 
+## 0.3.0
+
+### Minor Changes
+
+- fbe4240: Hopefully fix watch mode performance issues, tweak UI feedback, etc.
+
+  (There does seem to be some timeout/hangup issues for apply/build, but shipping this anyway to fix the breaking bugs)
+
+### Patch Changes
+
+- fbe4240: Fix menu getting disabled when connection was established
+- fbe4240: Improve reliability of q for quitting
+
 ## 0.2.3
 
 ### Patch Changes
