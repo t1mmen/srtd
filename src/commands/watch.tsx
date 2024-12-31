@@ -1,9 +1,11 @@
 import path from 'node:path';
+import { Badge } from '@inkjs/ui';
 import { Box, Text } from 'ink';
 import React from 'react';
 import Branding from '../components/Branding.js';
 import Quittable from '../components/Quittable.js';
 import { TimeSince } from '../components/TimeSince.js';
+import { useDbConnection } from '../hooks/useDbConnection.js';
 import { TemplateManager } from '../lib/templateManager.js';
 import type { TemplateStatus } from '../types.js';
 
@@ -12,6 +14,7 @@ export default function Watch() {
   const [error, setError] = React.useState<string>();
   const managerRef = React.useRef<TemplateManager>();
   const mounted = React.useRef(true);
+  const { isConnected } = useDbConnection();
 
   React.useEffect(() => {
     let cleanup: (() => void) | undefined;
@@ -154,13 +157,17 @@ export default function Watch() {
         </Box>
       )}
 
-      <Box marginY={1}>
-        <Text bold backgroundColor={hasErrors ? 'red' : 'green'}>
-          {hasErrors ? ' FAIL ' : ' OK '}
-        </Text>
-        <Text> </Text>
-        <Text dimColor>Watching for template changes...</Text>
-      </Box>
+      {!isConnected ? (
+        <Box marginTop={1}>
+          <Badge color="red"> ERROR </Badge>
+          <Text> Database not reachable </Text>
+        </Box>
+      ) : (
+        <Box marginTop={1}>
+          <Badge color={hasErrors ? 'red' : '#3ecf8e'}>{hasErrors ? ' FAIL ' : ' OK '}</Badge>
+          <Text dimColor>Watching for template changes...</Text>
+        </Box>
+      )}
 
       <Quittable onQuit={handleQuit} />
     </Box>

@@ -226,7 +226,9 @@ export class TemplateManager extends EventEmitter {
     const result: ProcessedTemplateResult = { errors: [], applied: [] };
 
     if (options.apply) {
-      this.log('Applying changes...');
+      const action = options.force ? 'Force applying' : 'Applying';
+      console.log('\n');
+      this.log(`${action} changed templates to local database...`, 'success');
       let hasChanges = false;
 
       for (const templatePath of templates) {
@@ -244,7 +246,7 @@ export class TemplateManager extends EventEmitter {
       }
 
       if (!hasChanges) {
-        this.log('No changes to apply');
+        this.log('No changes to apply', 'skip');
       } else if (result.errors.length > 0) {
         this.log(`${result.errors.length} template(s) failed to apply`, 'error');
         for (const err of result.errors) {
@@ -275,7 +277,7 @@ export class TemplateManager extends EventEmitter {
       if (built > 0) {
         this.log(`Generated ${built} migration file(s)`, 'success');
       } else if (skipped > 0) {
-        this.log('No changes to build');
+        this.log('No changes to build', 'skip');
       }
     }
 

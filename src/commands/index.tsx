@@ -58,13 +58,14 @@ export default function UI() {
       ) : (
         <Select options={menuItems} isDisabled={isConnected} onChange={handleOnChange} />
       )}
-      <Box marginTop={1}>
-        {isChecking ? (
+
+      {isChecking ? (
+        <Box marginTop={1}>
           <Spinner label="Checking database connection..." />
-        ) : (
-          <Quittable onQuit={exit} />
-        )}
-      </Box>
+        </Box>
+      ) : (
+        <Quittable onQuit={exit} />
+      )}
     </Box>
   );
 }

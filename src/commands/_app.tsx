@@ -27,7 +27,7 @@ export default function App({ Component, commandProps }: AppProps) {
             <Box key={error}>
               <Alert variant="error">
                 <Text bold color="red">
-                  Error:{''}
+                  Error:{' '}
                 </Text>
                 {error}
               </Alert>

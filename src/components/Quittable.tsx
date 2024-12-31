@@ -16,7 +16,7 @@ export default function Quittable(props?: Props) {
   });
 
   return (
-    <Box>
+    <Box marginY={1}>
       <Text dimColor>press </Text>
       <Text>q</Text>
       <Text dimColor> or </Text>
