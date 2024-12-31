@@ -11,6 +11,7 @@
     "node": ">=20"
   },
   "scripts": {
+    "clean": "rm -rf dist; rm -rf build; rm -rf coverage; npm run supabase:stop",
     "changeset": "changeset",
     "version": "changeset version",
     "release": "npm run build && changeset publish",
@@ -20,9 +21,11 @@
     "format": "biome format . --write",
     "dev": "tsc --watch",
     "test": "vitest",
-    "test:coverage": "vitest run --coverage",
-    "start": "npm run build && npm link && chmod u+x ./dist/cli.js && srtd",
-    "repomix": "npx repomix"
+    "test:coverage": "vitest run --coverage --reporter=junit --outputFile=test-report.junit.xml",
+    "start": "npm run build && npm link --force && chmod u+x ./dist/cli.js && srtd",
+    "repomix": "mkdir build; npx repomix",
+    "supabase:start": "npx supabase start",
+    "supabase:stop": "npx supabase stop"
   },
   "files": [
     "dist"
@@ -70,22 +73,24 @@
     "pastel": "^3.0.0",
     "pg": "^8.13.1",
     "react": "^18.3.0",
+    "update-notifier": "^7.3.1",
     "zod": "^3.24.1"
   },
   "devDependencies": {
     "@biomejs/biome": "1.9.4",
     "@changesets/cli": "^2.27.11",
     "@sindresorhus/tsconfig": "^7.0.0",
+    "@types/glob": "^8.1.0",
+    "@types/node": "^20.17.10",
     "@types/pg": "^8.11.10",
     "@types/react": "^18.3.0",
+    "@types/update-notifier": "^6.0.8",
     "@vitest/coverage-v8": "^2.1.8",
     "chalk": "^5.4.1",
     "ink-testing-library": "^4.0.0",
     "lefthook": "^1.10.1",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2",
-    "vitest": "^2.1.8",
-    "@types/glob": "^8.1.0",
-    "@types/node": "^20.17.10"
+    "vitest": "^2.1.8"
   }
 }

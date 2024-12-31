@@ -5,6 +5,7 @@ import type { CLIConfig } from '../types.js';
 
 const defaultConfig: CLIConfig = {
   wipIndicator: '.wip',
+  migrationPrefix: 'srtd',
   filter: '**/*.sql',
   banner: 'You very likely **DO NOT** want to manually edit this generated file.',
   footer: '',

@@ -1,19 +1,21 @@
+import { Badge } from '@inkjs/ui';
 import { Box, Text } from 'ink';
 import React from 'react';
 import packageJson from '../../package.json' assert { type: 'json' };
+import { useDatabaseConnection } from '../hooks/useDatabaseConnection.js';
 
 type Props = {
   subtitle?: string;
 };
 
 export default function Branding({ subtitle }: Props) {
+  const { error, isConnected } = useDatabaseConnection();
+
+  const badgeColor = error ? 'red' : isConnected ? '#3ecf8e' : 'yellow';
   return (
     <Box marginBottom={1} marginTop={1} gap={1} flexDirection="column">
       <Box gap={1}>
-        <Text bold backgroundColor="#3ecf8e">
-          {' '}
-          srtd{' '}
-        </Text>
+        <Badge color={badgeColor}> srtd </Badge>
         {subtitle ? (
           <Text>{subtitle}</Text>
         ) : (

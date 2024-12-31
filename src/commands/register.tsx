@@ -4,6 +4,7 @@ import { argument } from 'pastel';
 import React from 'react';
 import zod from 'zod';
 import Branding from '../components/Branding.js';
+import Quittable from '../components/Quittable.js';
 import { useTemplateState } from '../hooks/useTemplateState.js';
 import { registerTemplate } from '../utils/registerTemplate.js';
 
@@ -78,11 +79,12 @@ export default function Register({ args: templateArgs }: Props) {
     return (
       <Box flexDirection="column">
         <Branding subtitle="Register templates" />
-        <Text>Use arrow/space to select, then press Enter to register.</Text>
-        <Box marginTop={1}>
-          <Text color="white">
+
+        <Box gap={2}>
+          <Text>
             {selectedValues.length} / {options.length} selected
           </Text>
+          <Text dimColor>Use arrow/space to select, then press Enter to register.</Text>
         </Box>
         <Box marginTop={1} marginBottom={1}>
           <MultiSelect
@@ -92,7 +94,8 @@ export default function Register({ args: templateArgs }: Props) {
           />
         </Box>
         {!!errorMessage && <Text color="red">{errorMessage}</Text>}
-        {!!successMessage && <Text color="green">{successMessage}</Text>}
+        {!!successMessage && <Text color="#3ecf8e">{successMessage}</Text>}
+        <Quittable />
       </Box>
     );
   }
@@ -100,7 +103,8 @@ export default function Register({ args: templateArgs }: Props) {
   return (
     <Box flexDirection="column" marginTop={1}>
       {!!errorMessage && <Text color="red">{errorMessage}</Text>}
-      {!!successMessage && <Text color="green">{successMessage}</Text>}
+      {!!successMessage && <Text color="#3ecf8e">{successMessage}</Text>}
+      <Quittable />
     </Box>
   );
 }

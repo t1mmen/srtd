@@ -1,28 +1,24 @@
 import path from 'node:path';
-import { Box, Text, useApp, useInput } from 'ink';
+import { Badge } from '@inkjs/ui';
+import { Box, Text } from 'ink';
 import React from 'react';
 import Branding from '../components/Branding.js';
+import Quittable from '../components/Quittable.js';
 import { TimeSince } from '../components/TimeSince.js';
+import { useDatabaseConnection } from '../hooks/useDatabaseConnection.js';
 import { TemplateManager } from '../lib/templateManager.js';
 import type { TemplateStatus } from '../types.js';
 
 export default function Watch() {
-  const { exit } = useApp();
   const [templates, setTemplates] = React.useState<TemplateStatus[]>([]);
   const [error, setError] = React.useState<string>();
   const managerRef = React.useRef<TemplateManager>();
   const mounted = React.useRef(true);
-
-  useInput((input, key) => {
-    if (input.toLowerCase() === 'q' || (key.ctrl && input === 'c')) {
-      mounted.current = false;
-      setTimeout(() => exit(), 0);
-    }
-  });
+  const { isConnected } = useDatabaseConnection();
 
   React.useEffect(() => {
     let cleanup: (() => void) | undefined;
-    console.clear();
+    // console.clear();
 
     async function init(): Promise<() => void> {
       try {
@@ -76,8 +72,17 @@ export default function Watch() {
     return () => cleanup?.();
   }, []);
 
+  const handleQuit = () => {
+    if (mounted.current) mounted.current = false;
+  };
+
   if (error) {
-    return <Text color="red">Error: {error}</Text>;
+    return (
+      <>
+        <Text color="red">Error: {error}</Text>
+        <Quittable onQuit={handleQuit} />
+      </>
+    );
   }
 
   const templatesByDir = templates.reduce(
@@ -95,8 +100,8 @@ export default function Watch() {
   const hasErrors = templates.some(t => t.buildState.lastAppliedError);
 
   return (
-    <Box flexDirection="column" marginBottom={2} marginTop={2}>
-      <Branding subtitle="Watch Mode" />
+    <Box flexDirection="column" marginBottom={2}>
+      <Branding subtitle="👀 Watch Mode" />
 
       {Object.entries(templatesByDir).map(([dir, dirTemplates]) => (
         <Box key={dir} flexDirection="column" marginLeft={1}>
@@ -108,8 +113,8 @@ export default function Watch() {
                   {template.buildState.lastAppliedError
                     ? '❌'
                     : template === templates[templates.length - 1]
-                      ? '✓'
-                      : ' '}
+                      ? '⚡️'
+                      : '✓'}
                 </Text>
               </Box>
               <Box width={20}>
@@ -148,24 +153,23 @@ export default function Watch() {
                 </Text>
               </Box>
             ))}
+          <Quittable onQuit={handleQuit} />
         </Box>
       )}
 
-      <Box marginY={1}>
-        <Text bold backgroundColor={hasErrors ? 'red' : 'green'}>
-          {hasErrors ? ' FAIL ' : ' OK '}
-        </Text>
-        <Text> </Text>
-        <Text dimColor>Watching for template changes...</Text>
-      </Box>
+      {!isConnected ? (
+        <Box marginTop={1}>
+          <Badge color="red"> ERROR </Badge>
+          <Text> Database not reachable </Text>
+        </Box>
+      ) : (
+        <Box marginTop={1}>
+          <Badge color={hasErrors ? 'red' : '#3ecf8e'}>{hasErrors ? ' FAIL ' : ' OK '}</Badge>
+          <Text dimColor>Watching for template changes...</Text>
+        </Box>
+      )}
 
-      <Box>
-        <Text dimColor>press </Text>
-        <Text>q</Text>
-        <Text dimColor> or </Text>
-        <Text>Ctrl+c</Text>
-        <Text dimColor> to quit</Text>
-      </Box>
+      <Quittable onQuit={handleQuit} />
     </Box>
   );
 }

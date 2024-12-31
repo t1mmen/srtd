@@ -1,4 +1,4 @@
-// utils/db.connection.ts
+// utils/databaseConnection.ts
 import pg from 'pg';
 import { getConfig } from './config.js';
 import { logger } from './logger.js';
@@ -6,7 +6,7 @@ import { logger } from './logger.js';
 let pool: pg.Pool | undefined;
 let connectionAttempts = 0;
 const MAX_RETRIES = 3;
-const RETRY_DELAY = 1000;
+export const RETRY_DELAY = 1000;
 
 async function createPool(): Promise<pg.Pool> {
   const config = await getConfig(process.cwd());
@@ -16,7 +16,8 @@ async function createPool(): Promise<pg.Pool> {
   });
 }
 
-async function retryConnection(): Promise<pg.PoolClient> {
+async function retryConnection(params?: { silent?: boolean }): Promise<pg.PoolClient> {
+  const { silent = true } = params || {};
   connectionAttempts++;
   logger.debug(`Connection attempt ${connectionAttempts}`);
 
@@ -25,17 +26,19 @@ async function retryConnection(): Promise<pg.PoolClient> {
     return await pool.connect();
   } catch (err) {
     if (connectionAttempts < MAX_RETRIES) {
-      logger.warn(`Connection failed, retrying in ${RETRY_DELAY}ms...`);
+      if (!silent) {
+        logger.warn(`Connection failed, retrying in ${RETRY_DELAY}ms...`);
+      }
       await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
-      return retryConnection();
+      return retryConnection(params);
     }
     throw new Error(`Database connection failed after ${MAX_RETRIES} attempts: ${err}`);
   }
 }
 
-export async function connect(): Promise<pg.PoolClient> {
+export async function connect(params?: { silent?: boolean }): Promise<pg.PoolClient> {
   connectionAttempts = 0;
-  return retryConnection();
+  return retryConnection(params);
 }
 
 export async function disconnect(): Promise<void> {
@@ -44,6 +47,17 @@ export async function disconnect(): Promise<void> {
     pool = undefined;
   }
   return;
+}
+
+export async function testConnection(): Promise<boolean> {
+  try {
+    const client = await connect();
+    await client.query('SELECT 1');
+    client.release();
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 process.on('exit', async () => await disconnect());

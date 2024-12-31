@@ -2,14 +2,15 @@ import EventEmitter from 'node:events';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { glob } from 'glob';
-import type { BuildLog, CLIResult, TemplateStatus } from '../types.js';
+import type { BuildLog, ProcessedTemplateResult, TemplateStatus } from '../types.js';
 import { applyMigration } from '../utils/applyMigration.js';
 import { calculateMD5 } from '../utils/calculateMD5.js';
 import { getConfig } from '../utils/config.js';
+import { testConnection } from '../utils/databaseConnection.js';
 import { getNextTimestamp } from '../utils/getNextTimestamp.js';
 import { isWipTemplate } from '../utils/isWipTemplate.js';
 import { loadBuildLog } from '../utils/loadBuildLog.js';
-import { logger } from '../utils/logger.js';
+import { type LogLevel, logger } from '../utils/logger.js';
 import { saveBuildLog } from '../utils/saveBuildLog.js';
 
 interface TemplateCache {
@@ -138,7 +139,7 @@ export class TemplateManager extends EventEmitter {
     return watcher;
   }
 
-  async applyTemplate(templatePath: string): Promise<CLIResult> {
+  async applyTemplate(templatePath: string): Promise<ProcessedTemplateResult> {
     const template = await this.getTemplateStatus(templatePath);
     const content = await fs.readFile(templatePath, 'utf-8');
     const result = await applyMigration(content, template.name, this.silent);
@@ -186,16 +187,16 @@ export class TemplateManager extends EventEmitter {
     }
 
     const timestamp = await getNextTimestamp(this.buildLog);
-    const migrationName = `${timestamp}_tmpl-${template.name}.sql`;
+    const prefix = this.config.migrationPrefix ? `${this.config.migrationPrefix}-` : '';
+    const migrationName = `${timestamp}_${prefix}${template.name}.sql`;
     const migrationPath = path.join(this.config.migrationDir, migrationName);
 
-    const header = `-- Generated from template: ${this.config.templateDir}/${template.name}.sql\n`;
+    const header = `-- Generated with srtd from template: ${this.config.templateDir}/${template.name}.sql\n`;
     const banner = this.config.banner ? `-- ${this.config.banner}\n` : '\n';
-    const footer = `${this.config.footer}\n-- Last built: ${
-      this.buildLog.templates[relPath]?.lastBuildDate || 'Never'
-    }`;
+    const lastBuildAt = this.buildLog.templates[relPath]?.lastMigrationFile;
+    const footer = `${this.config.footer}\n-- Last built: ${lastBuildAt || 'Never'}\n-- Built with https://github.com/t1mmen/srtd\n`;
 
-    const safeContent = this.config.wrapInTransaction ? `BEGIN;\n${content}\nCOMMIT;` : content;
+    const safeContent = this.config.wrapInTransaction ? `BEGIN;\n\n${content}\n\nCOMMIT;` : content;
     const migrationContent = `${header}${banner}\n${safeContent}\n${footer}`;
 
     await fs.writeFile(path.resolve(this.baseDir, migrationPath), migrationContent);
@@ -213,23 +214,32 @@ export class TemplateManager extends EventEmitter {
     this.emit('templateBuilt', template);
   }
 
-  private log(msg: string, type: 'info' | 'error' | 'success' | 'skip' = 'info') {
+  private log(msg: string, logLevel: LogLevel = 'info') {
     if (this.silent) return;
-    if (type === 'error') logger.error(msg);
-    else if (type === 'success') logger.success(msg);
-    else if (type === 'skip') logger.skip(msg);
-    else logger.info(msg);
+    logger[logLevel](msg);
   }
   async processTemplates(options: {
     apply?: boolean;
     generateFiles?: boolean;
     force?: boolean;
-  }): Promise<CLIResult> {
+  }): Promise<ProcessedTemplateResult> {
     const templates = await this.findTemplates();
-    const result: CLIResult = { errors: [], applied: [] };
+    const result: ProcessedTemplateResult = { errors: [], applied: [] };
+
+    this.log('\n');
 
     if (options.apply) {
-      this.log('Applying changes...');
+      const isConnected = await testConnection();
+
+      if (isConnected) {
+        this.log('Connected to database', 'success');
+      } else {
+        this.log('Failed to connect to database, cannot proceed. Is Supabase running?', 'error');
+        return result;
+      }
+
+      const action = options.force ? 'Force applying' : 'Applying';
+      this.log(`${action} changed templates to local database...`, 'success');
       let hasChanges = false;
 
       for (const templatePath of templates) {
@@ -247,7 +257,7 @@ export class TemplateManager extends EventEmitter {
       }
 
       if (!hasChanges) {
-        this.log('No changes to apply');
+        this.log('No changes to apply', 'skip');
       } else if (result.errors.length > 0) {
         this.log(`${result.errors.length} template(s) failed to apply`, 'error');
         for (const err of result.errors) {
@@ -261,6 +271,8 @@ export class TemplateManager extends EventEmitter {
     if (options.generateFiles) {
       let built = 0;
       let skipped = 0;
+
+      this.log('Building migration files from templates...', 'success');
 
       for (const templatePath of templates) {
         const isWip = await isWipTemplate(templatePath);
@@ -278,7 +290,7 @@ export class TemplateManager extends EventEmitter {
       if (built > 0) {
         this.log(`Generated ${built} migration file(s)`, 'success');
       } else if (skipped > 0) {
-        this.log('No changes to build');
+        this.log('No new changes to build', 'skip');
       }
     }
 

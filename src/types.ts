@@ -31,12 +31,13 @@ export interface CLIConfig {
   footer: string;
   templateDir: string;
   migrationDir: string;
+  migrationPrefix?: string;
   buildLog: string;
   localBuildLog: string;
   pgConnection: string;
 }
 
-export interface CLIResult {
+export interface ProcessedTemplateResult {
   errors: MigrationError[];
   applied: string[];
 }

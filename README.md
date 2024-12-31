@@ -2,10 +2,16 @@
 
 Live-reloading SQL templates for [Supabase](https://supabase.com) projects. DX supercharged! 🚀
 
+[![npm version](https://badge.fury.io/js/@t1mmen%2Fsrtd.svg)](https://www.npmjs.com/package/@t1mmen/srtd)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![CI/CD](https://github.com/t1mmen/srtd/actions/workflows/ci.yml/badge.svg)](https://github.com/t1mmen/srtd/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/t1mmen/srtd/graph/badge.svg?token=CIMAZ55KCJ)](https://codecov.io/gh/t1mmen/srtd)
 
-`srtd` enhances the [Supabase](https://supabase.com) development workflow by adding live-reloading SQL templates, and a single-source-of-truth template migrations system for your database functions, RLS policies, etc. Drastically simplify code reviews 💪
+`srtd` enhances the [Supabase](https://supabase.com) DX by adding live-reloading SQL templates into local db. The single-source-of-truth template ➡️ migrations system brings sanity to code reviews, making `git blame` useful.
 
 Built specifically for projects using the standard [Supabase](https://supabase.com) stack (but probably works alright for other Postgres-based projects, too).
+
+**Read the introductory blog post: [Introducing `srtd`: Live-Reloading SQL Templates for Supabase](https://timm.stokke.me/blog/srtd-live-reloading-and-sql-templates-for-supabase)**
 
 ## Why This Exists 🤔
 
@@ -19,8 +25,8 @@ After over a year of looking-but-not-finding a better way, I paired up with [Cla
 ## Key Features ✨
 
 - **Live Reload**: Changes to your SQL templates instantly update your local database
-- **Single Source of Truth**: Templates are the source of all (non-mutable) database objects, making code reviews a breeze
-- **Clean Migrations**: Generate standard [Supabase](https://supabase.com) migrations when you're ready to deploy
+- **Single Source of Truth**: Templates are the source of all (non-mutable) database objects, improving code-review clarity
+- **Just SQL**: Templates build as standard [Supabase](https://supabase.com) migrations when you're ready to deploy
 - **Developer Friendly**: Interactive CLI with visual feedback for all operations
 
 ## Requirements
@@ -31,24 +37,29 @@ After over a year of looking-but-not-finding a better way, I paired up with [Cla
 
 ## Quick Start 🚀
 
-First, install `srtd` globally or in your project:
+### Installation
 
 ```bash
-npm install -g @t1mmen/srtd  # Global installation
-# or
-npm install --save-dev @t1mmen/srtd  # Project installation
-# or
-npx @t1mmen/srtd init  # Run directly
+# Global installation
+npm install -g @t1mmen/srtd
+
+# Project installation
+npm install --save-dev @t1mmen/srtd
+
+# Or run directly
+npx @t1mmen/srtd
 ```
 
-Then set up in your [Supabase](https://supabase.com) project:
+### Setup
 
 ```bash
 cd your-supabase-project
 srtd init
 ```
 
-Create a template (e.g., `supabase/migrations-templates/my_function.sql`):
+### Create Your First Template
+
+Create `supabase/migrations-templates/my_function.sql`:
 
 ```sql
 CREATE OR REPLACE FUNCTION my_function()
@@ -59,20 +70,22 @@ END;
 $$ LANGUAGE plpgsql;
 ```
 
-Start development mode:
+### Development Workflow
 
+1. Start watch mode:
 ```bash
 srtd watch  # Changes auto-apply to local database
 ```
 
-When ready to deploy:
-
+2. When ready to deploy:
 ```bash
-srtd build  # Creates timestamped migration file
-supabase migrate up  # Apply using Supabase CLI
+srtd build        # Creates timestamped migration file
+supabase migration up  # Apply using Supabase CLI
 ```
 
 ## Commands 🎮
+
+### Interactive Mode
 
 Running `srtd` without arguments opens an interactive menu:
 
@@ -83,68 +96,101 @@ Running `srtd` without arguments opens an interactive menu:
   👀  watch - Watch templates for changes, apply directly to database
 ```
 
-Or use these commands directly:
+### CLI Mode
 
-- 🏗️  `build` - Generate [Supabase](https://supabase.com) migrations from templates
-- ▶️  `apply` - Apply templates directly to local database
-- ✍️  `register [file.sql]` - Mark templates as already built (interactive UI if no file specified)
-- 👀 `watch` - Watch templates and apply changes instantly
+- 🏗️  `build [--force]` - Generate migrations from templates
+- ▶️  `apply [--force]` - Apply templates directly to local database
+- ✍️  `register [file.sql]` - Mark templates as already built
+- 👀 `watch` - Watch and auto-apply changes
+
+> [!IMPORTANT]
+> `watch` and `apply` commands modify your local database directly and don't clean up after themselves. Use with caution!
 
 ## Perfect For 🎯
 
-Ideal for [Supabase](https://supabase.com) database objects that need full redefinition:
+### Ideal Use Cases
 
-✅ Functions and stored procedures:
+✅ Database functions:
 ```sql
-CREATE OR REPLACE FUNCTION search_products(query text, category_id uuid DEFAULT NULL)
-RETURNS SETOF products AS $$
+-- Reusable auth helper
+CREATE OR REPLACE FUNCTION auth.user_id()
+RETURNS uuid AS $$
+  SELECT auth.uid()::uuid;
+$$ LANGUAGE sql SECURITY DEFINER;
+
+-- Event notifications
+CREATE OR REPLACE FUNCTION notify_changes()
+RETURNS trigger AS $$
 BEGIN
-  RETURN QUERY
-    SELECT p.* FROM products p
-    LEFT JOIN product_categories pc ON pc.product_id = p.id
-    WHERE to_tsvector('english',
-      p.name || ' ' ||
-      p.description || ' ' ||
-      p.tags || ' ' ||
-      COALESCE((
-        SELECT string_agg(c.name, ' ')
-        FROM categories c
-        WHERE c.id = ANY(p.category_ids)
-      ), '')
-    ) @@ plainto_tsquery('english', query)
-    AND (category_id IS NULL OR pc.category_id = category_id);
+  PERFORM pg_notify(
+    'changes',
+    json_build_object('table', TG_TABLE_NAME, 'id', NEW.id)::text
+  );
+  RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 ```
 
-✅ Row-Level Security (RLS) policies:
+✅ Row-Level Security (RLS):
 ```sql
-CREATE POLICY "users can view own data"
-  ON profiles FOR SELECT
-  USING (auth.uid() = user_id);
+-- Replace/update policies safely
+DROP POLICY IF EXISTS "workspace_access" ON resources;
+CREATE POLICY "workspace_access" ON resources
+  USING (workspace_id IN (
+    SELECT id FROM workspaces
+    WHERE organization_id = auth.organization_id()
+  ));
 ```
 
-✅ Roles and permissions:
+✅ Views for data abstraction:
 ```sql
-CREATE ROLE authenticated;
+CREATE OR REPLACE VIEW active_subscriptions AS
+SELECT
+  s.*,
+  p.name as plan_name,
+  p.features
+FROM subscriptions s
+JOIN plans p ON p.id = s.plan_id
+WHERE s.status = 'active'
+  AND s.expires_at > CURRENT_TIMESTAMP;
+```
+
+✅ Roles and Permissions:
+```sql
+-- Revoke all first for clean state
+REVOKE ALL ON ALL TABLES IN SCHEMA public FROM public;
+
+-- Grant specific access
 GRANT USAGE ON SCHEMA public TO authenticated;
 GRANT SELECT ON ALL TABLES IN SCHEMA public TO authenticated;
 ```
 
-**Not recommended for:**
+✅ Safe Type Extensions:
+```sql
+DO $$
+BEGIN
+  -- Add new enum values idempotently
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'notification_type') THEN
+    CREATE TYPE notification_type AS ENUM ('email', 'sms');
+  END IF;
+
+  -- Extend existing enum safely
+  ALTER TYPE notification_type ADD VALUE IF NOT EXISTS 'push';
+END $$;
+```
+
+### Not Recommended For
 
 * ❌ Table structures
 * ❌ Indexes
 * ❌ Data modifications
-* ❌ Anything that is not fully re-definable, really.
+* ❌ Non-idempotent operations
 
-In these cases, use regular [Supabase](https://supabase.com) migrations.
+Use regular [Supabase](https://supabase.com) migrations for these cases.
 
 ## The Power of Templates 💪
 
-Here's why templates make your life easier. Consider a PR that adds priority to our notification dispatch function.
-
-With templates, the change is clear and reviewable:
+Templates make code reviews meaningful. Consider this PR adding priority to a notification function:
 
 ```diff
 CREATE OR REPLACE FUNCTION dispatch_notification(
@@ -181,23 +227,37 @@ CREATE OR REPLACE FUNCTION dispatch_notification(
     RETURNING id INTO notification_id;
 ```
 
-Without templates, the same change appears as a complete new file in your PR.
+Without templates, this would appear as a complete rewrite in your PR.
 
 ## Configuration 📝
 
-During initialization, `srtd` creates a `srtd.config.json`:
+`srtd.config.json` created during initialization:
 
-```json
+```jsonc
 {
+  // Prevents building templates with this extension
   "wipIndicator": ".wip",
+
+  // Migration file naming: 20211001000000_srtd-my_function.sql
+  "migrationPrefix": "srtd",
+
+  // Template discovery
   "filter": "**/*.sql",
+
+  // Migration file comments
   "banner": "You very likely **DO NOT** want to manually edit this generated file.",
   "footer": "",
+
+  // Wrap migrations in transaction
   "wrapInTransaction": true,
+
+  // File paths
   "templateDir": "supabase/migrations-templates",
   "migrationDir": "supabase/migrations",
   "buildLog": "supabase/migrations-templates/.buildlog.json",
   "localBuildLog": "supabase/migrations-templates/.buildlog.local.json",
+
+  // Database connection
   "pgConnection": "postgresql://postgres:postgres@localhost:54322/postgres"
 }
 ```
@@ -206,74 +266,73 @@ During initialization, `srtd` creates a `srtd.config.json`:
 
 ### Work in Progress Templates
 
-Add `.wip.sql` extension to templates under development to prevent accidental migration generation:
-
+Add `.wip.sql` extension to prevent migration generation:
 ```bash
-my_function.wip.sql  # Won't generate migrations during build
+my_function.wip.sql  # Only applied locally, never built
 ```
 
 ### Template State Management
 
-`srtd` maintains two logs:
-
-- `.buildlog.json` - Tracks which templates have been built into migrations (commit this)
-- `.buildlog.local.json` - Tracks local database state (add to .gitignore)
+Two state tracking files:
+- `.buildlog.json` - Migration build state (commit this)
+- `.buildlog.local.json` - Local database state (add to `.gitignore`)
 
 ### Register Existing Objects
 
-Import existing database objects into the template system:
-
+Import existing database objects:
 ```bash
-srtd register my_function.sql  # Won't generate new migration until changed
-# or
-srtd register  # Opens interactive UI for selecting multiple templates
+# Register specific template
+srtd register my_function.sql
+
+# Interactive multi-select UI
+srtd register
 ```
 
 ## Development 🛠️
 
-This project uses TypeScript and modern Node.js features. To contribute:
+### Local Setup
 
-1. Set up the development environment:
 ```bash
+# Clone and install
 git clone https://github.com/stokke/srtd.git
 cd srtd
 npm install
-```
 
-2. Start development:
-```bash
-npm run dev  # Watches for changes
-npm test     # Runs tests
-npm start    # Builds, links, and runs CLI
-```
+# Development
+npm run dev    # Watch mode
+npm test       # Run tests
+npm start      # Build, link, run
 
-3. Other useful commands:
-```bash
-npm run typecheck       # Type checking
-npm run lint           # Lint and fix
-npm run test:coverage  # Test coverage
+# Quality Checks
+npm run typecheck        # Type checking
+npm run lint            # Lint and fix
+npm run test:coverage   # Test coverage
 ```
 
 ## Contributing 🤝
 
-This tool was built to solve specific problems in our [Supabase](https://supabase.com) development workflow. While it's considered feature-complete for our needs, we welcome improvements through pull requests, especially for:
+While feature-complete for our needs, we welcome:
 
-- Bug fixes and reliability improvements
-- Documentation improvements and examples
-- Test coverage
-- Performance optimizations
+- 🐛 Bug fixes and reliability improvements
+- 📚 Documentation improvements
+- ✅ Test coverage enhancements
+- ⚡️ Performance optimizations
 
-### Contribution Guidelines
+### Contribution Process
 
 1. Create a [changeset](https://github.com/changesets/changesets) (`npm run changeset`)
 2. Ensure tests pass (`npm test`)
 3. Follow existing code style
-4. Update documentation as needed
+4. Update documentation
 
-Note that new features may or may not be accepted depending on whether they align with the project's focused scope. However, improvements to existing functionality, documentation, and tests are always welcome!
+Note: New features are evaluated based on alignment with project scope.
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+MIT License - see [LICENSE](LICENSE) file.
+
+---
 
 Made with 🪄 by [Timm Stokke](https://timm.stokke.me) & [Claude Sonnet](https://claude.ai)
+
+[!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://www.buymeacoffee.com/t1mmen)
