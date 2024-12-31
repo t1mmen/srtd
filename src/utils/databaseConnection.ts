@@ -46,7 +46,7 @@ export async function disconnect(): Promise<void> {
     // Add poolPendingCount check to avoid hanging on
     // pending queries during shutdown
     if (pool.totalCount !== pool.idleCount) {
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
     }
     await pool.end();
     pool = undefined;
