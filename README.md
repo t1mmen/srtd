@@ -11,6 +11,8 @@ Live-reloading SQL templates for [Supabase](https://supabase.com) projects. DX s
 
 Built specifically for projects using the standard [Supabase](https://supabase.com) stack (but probably works alright for other Postgres-based projects, too).
 
+**Read the introductory blog post: [Introducing `srtd`: Live-Reloading SQL Templates for Supabase](https://timm.stokke.me/blog/srtd-live-reloading-and-sql-templates-for-supabase)**
+
 ## Why This Exists 🤔
 
 While building [Timely](https://www.timely.com)'s next-generation [Memory Engine](https://www.timely.com/memory-app) on [Supabase](https://supabase.com), we found ourselves facing two major annoyances:
