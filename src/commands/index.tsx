@@ -56,7 +56,7 @@ export default function UI() {
           <Text>Check your database connection and try again.</Text>
         </Box>
       ) : (
-        <Select options={menuItems} isDisabled={isConnected} onChange={handleOnChange} />
+        <Select options={menuItems} isDisabled={!isConnected} onChange={handleOnChange} />
       )}
 
       {isChecking ? (
