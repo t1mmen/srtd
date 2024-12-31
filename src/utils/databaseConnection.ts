@@ -16,7 +16,12 @@ async function createPool(): Promise<pg.Pool> {
   });
 }
 
-async function retryConnection(): Promise<pg.PoolClient> {
+type Params = {
+  silent?: boolean;
+};
+
+async function retryConnection(params?: Params): Promise<pg.PoolClient> {
+  const { silent = true } = params || {};
   connectionAttempts++;
   logger.debug(`Connection attempt ${connectionAttempts}`);
 
@@ -25,17 +30,19 @@ async function retryConnection(): Promise<pg.PoolClient> {
     return await pool.connect();
   } catch (err) {
     if (connectionAttempts < MAX_RETRIES) {
-      logger.warn(`Connection failed, retrying in ${RETRY_DELAY}ms...`);
+      if (!silent) {
+        logger.warn(`Connection failed, retrying in ${RETRY_DELAY}ms...`);
+      }
       await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
-      return retryConnection();
+      return retryConnection(params);
     }
     throw new Error(`Database connection failed after ${MAX_RETRIES} attempts: ${err}`);
   }
 }
 
-export async function connect(): Promise<pg.PoolClient> {
+export async function connect(params?: Params): Promise<pg.PoolClient> {
   connectionAttempts = 0;
-  return retryConnection();
+  return retryConnection(params);
 }
 
 export async function disconnect(): Promise<void> {
