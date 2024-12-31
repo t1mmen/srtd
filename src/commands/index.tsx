@@ -20,7 +20,7 @@ export default function UI() {
   }
 
   if (selectedCommand === 'build') {
-    return <Build />;
+    return <Build options={{ force: false }} />;
   }
 
   if (selectedCommand === 'watch') {

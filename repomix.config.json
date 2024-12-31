@@ -6,7 +6,7 @@
     "directoryStructure": true,
     "removeComments": false,
     "removeEmptyLines": false,
-    "topFilesLength": 15,
+    "topFilesLength": 25,
     "showLineNumbers": false,
     "copyToClipboard": false
   },
@@ -14,7 +14,16 @@
   "ignore": {
     "useGitignore": true,
     "useDefaultPatterns": true,
-    "customPatterns": ["node_modules", "dist", "build", "coverage", "supabase", "biome.json"]
+    "customPatterns": [
+      "node_modules",
+      "dist",
+      "build",
+      "coverage",
+      "supabase",
+      "biome.json",
+      "LICENSE",
+      "CONTRIBUTING.md"
+    ]
   },
   "security": {
     "enableSecurityCheck": true

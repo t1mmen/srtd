@@ -21,7 +21,7 @@
     "dev": "tsc --watch",
     "test": "vitest",
     "test:coverage": "vitest run --coverage",
-    "start": "npm run build && npm link && chmod u+x ./dist/cli.js && srtd",
+    "start": "npm run build && npm link --force && chmod u+x ./dist/cli.js && srtd",
     "repomix": "npx repomix"
   },
   "files": [
