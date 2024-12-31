@@ -1,6 +1,6 @@
 // hooks/useDbConnection.ts
 import { useEffect, useState } from 'react';
-import { connect, disconnect } from '../utils/databaseConnection.js';
+import { RETRY_DELAY, connect, disconnect } from '../utils/databaseConnection.js';
 import { logger } from '../utils/logger.js';
 
 interface DbConnectionState {
@@ -55,7 +55,7 @@ export function useDbConnection(checkInterval = 5000): DbConnectionState {
         const timeoutPromise = new Promise<never>((_, reject) => {
           timeoutId = setTimeout(() => {
             reject(new Error('Connection attempt timed out'));
-          }, 3000); // 3 second timeout
+          }, RETRY_DELAY);
         });
 
         await Promise.race([connectionPromise, timeoutPromise]);

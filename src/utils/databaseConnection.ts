@@ -6,7 +6,7 @@ import { logger } from './logger.js';
 let pool: pg.Pool | undefined;
 let connectionAttempts = 0;
 const MAX_RETRIES = 3;
-const RETRY_DELAY = 1000;
+export const RETRY_DELAY = 1000;
 
 async function createPool(): Promise<pg.Pool> {
   const config = await getConfig(process.cwd());
