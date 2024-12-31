@@ -5,6 +5,8 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+    paths-ignore:
+      - '**/*.md'
 
 permissions:
   contents: write
@@ -20,7 +22,7 @@ jobs:
     runs-on: ubuntu-latest
     services:
       postgres:
-        image: postgres:15
+        image: postgres:15-alpine
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
@@ -36,9 +38,11 @@ jobs:
     strategy:
       matrix:
         node-version: [20.x]
+      fail-fast: true
 
     steps:
       - uses: actions/checkout@v4
+
       - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v4
         with:
@@ -47,6 +51,8 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+        env:
+          NODE_ENV: development
 
       - name: Setup Biome
         uses: biomejs/setup-biome@v2
@@ -60,12 +66,13 @@ jobs:
         run: npm run typecheck
 
       - name: Test
+        id: test
         run: npm run test:coverage
         env:
           CI: true
           POSTGRES_URL: postgresql://postgres:postgres@localhost:54322/postgres
 
-      - name: Upload coverage reports to Codecov
+      - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
@@ -84,6 +91,7 @@ jobs:
         with:
           node-version: 20
           cache: 'npm'
+          registry-url: 'https://registry.npmjs.org'
 
       - name: Install Dependencies
         run: npm ci
