@@ -21,7 +21,7 @@
     "format": "biome format . --write",
     "dev": "tsc --watch",
     "test": "vitest",
-    "test:coverage": "vitest run --coverage",
+    "test:coverage": "vitest run --coverage --reporter=junit --outputFile=test-report.junit.xml",
     "start": "npm run build && npm link --force && chmod u+x ./dist/cli.js && srtd",
     "repomix": "npx repomix",
     "supabase:start": "npx supabase start",

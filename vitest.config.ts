@@ -6,7 +6,7 @@ export default defineConfig({
     environment: 'node',
     coverage: {
       provider: 'v8',
-      reporter: ['text', 'json', 'junit'],
+      reporter: ['text', 'json', 'html'],
       exclude: [
         'coverage/**',
         'dist/**',
