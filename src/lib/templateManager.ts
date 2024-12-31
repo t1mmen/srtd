@@ -186,16 +186,16 @@ export class TemplateManager extends EventEmitter {
     }
 
     const timestamp = await getNextTimestamp(this.buildLog);
-    const migrationName = `${timestamp}_tmpl-${template.name}.sql`;
+    const prefix = this.config.migrationPrefix ? `${this.config.migrationPrefix}-` : '';
+    const migrationName = `${timestamp}_${prefix}${template.name}.sql`;
     const migrationPath = path.join(this.config.migrationDir, migrationName);
 
-    const header = `-- Generated from template: ${this.config.templateDir}/${template.name}.sql\n`;
+    const header = `-- Generated with srtd from template: ${this.config.templateDir}/${template.name}.sql\n`;
     const banner = this.config.banner ? `-- ${this.config.banner}\n` : '\n';
-    const footer = `${this.config.footer}\n-- Last built: ${
-      this.buildLog.templates[relPath]?.lastBuildDate || 'Never'
-    }`;
+    const lastBuildAt = this.buildLog.templates[relPath]?.lastMigrationFile;
+    const footer = `${this.config.footer}\n-- Last built: ${lastBuildAt || 'Never'}\n-- Built with https://github.com/t1mmen/srtd\n`;
 
-    const safeContent = this.config.wrapInTransaction ? `BEGIN;\n${content}\nCOMMIT;` : content;
+    const safeContent = this.config.wrapInTransaction ? `BEGIN;\n\n${content}\n\nCOMMIT;` : content;
     const migrationContent = `${header}${banner}\n${safeContent}\n${footer}`;
 
     await fs.writeFile(path.resolve(this.baseDir, migrationPath), migrationContent);

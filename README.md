@@ -186,13 +186,14 @@ Without templates, the same change appears as a complete new file in your PR.
 
 During initialization, `srtd` creates a `srtd.config.json`:
 
-```json
+```jsonc
 {
-  "wipIndicator": ".wip",
-  "filter": "**/*.sql",
+  "wipIndicator": ".wip", // Prevents generation of templates with this extension
+  "migrationPrefix": "srtd", // 20211001000000_srtd-my_function.sql
+  "filter": "**/*.sql", // Glob pattern for templates
   "banner": "You very likely **DO NOT** want to manually edit this generated file.",
   "footer": "",
-  "wrapInTransaction": true,
+  "wrapInTransaction": true, // BEGIN; ... COMMIT;
   "templateDir": "supabase/migrations-templates",
   "migrationDir": "supabase/migrations",
   "buildLog": "supabase/migrations-templates/.buildlog.json",
