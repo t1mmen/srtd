@@ -41,7 +41,7 @@ export default function Clear() {
 
   return (
     <>
-      <Branding subtitle="Clear build logs" />
+      <Branding subtitle="🧹 Maintenance" />
       <Select options={clearOptions} onChange={handleSelect} />
       {isResetting ? (
         <Box marginY={1}>

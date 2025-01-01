@@ -47,7 +47,7 @@ export default function UI() {
     { label: '▶️  apply - Apply templates directly to db', value: 'apply' },
     { label: '🏗️  build - Build templates as Supabase migrations', value: 'build' },
     { label: '✍️  register - Register templates as already built', value: 'register' },
-    { label: '🧹 clear - Clear build logs and reset config', value: 'clear' },
+    { label: '🧹 maintenance - Clear build logs and reset config', value: 'clear' },
   ];
 
   return (
