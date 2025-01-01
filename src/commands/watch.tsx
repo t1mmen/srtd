@@ -11,7 +11,7 @@ import { useTemplateManager } from '../hooks/useTemplateManager.js';
 import type { TemplateUpdate } from '../hooks/useTemplateManager.js';
 import type { TemplateStatus } from '../types.js';
 
-const MAX_FILES = 30;
+const MAX_FILES = 20;
 const PATH_DISPLAY_LENGTH = 15;
 
 function StatBadge({ label, value, color }: { label: string; value: number; color: string }) {

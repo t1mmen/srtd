@@ -1,6 +1,7 @@
 import EventEmitter from 'node:events';
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import type { FSWatcher } from 'chokidar';
 import { glob } from 'glob';
 import type { BuildLog, ProcessedTemplateResult, TemplateStatus } from '../types.js';
 import { applyMigration } from '../utils/applyMigration.js';
@@ -18,7 +19,8 @@ interface TemplateCache {
   lastChecked: number;
 }
 
-export class TemplateManager extends EventEmitter {
+export class TemplateManager extends EventEmitter implements Disposable {
+  private watcher: FSWatcher | null = null;
   private baseDir: string;
   private buildLog: BuildLog;
   private localBuildLog: BuildLog;
@@ -44,6 +46,14 @@ export class TemplateManager extends EventEmitter {
     this.buildLog = buildLog;
     this.localBuildLog = localBuildLog;
     this.config = config;
+  }
+
+  [Symbol.dispose](): void {
+    if (this.watcher) {
+      void this.watcher.close();
+      this.watcher = null;
+    }
+    this.removeAllListeners();
   }
 
   static async create(baseDir: string, options: { silent?: boolean } = {}) {
@@ -159,12 +169,12 @@ export class TemplateManager extends EventEmitter {
     }
   }
 
-  async watch(): Promise<{ close: () => void }> {
+  async watch(): Promise<{ close: () => Promise<void> }> {
     const chokidar = await import('chokidar');
     const templatePath = path.join(this.baseDir, this.config.templateDir);
 
     const watcher = chokidar.watch(templatePath, {
-      ignoreInitial: true, // Changed to true since we'll handle initial files ourselves
+      ignoreInitial: true,
       ignored: ['**/!(*.sql)'],
       persistent: true,
       awaitWriteFinish: {
@@ -177,15 +187,20 @@ export class TemplateManager extends EventEmitter {
     const existingFiles = await glob(path.join(templatePath, this.config.filter));
     await Promise.all(existingFiles.map(file => this.handleTemplateChange(file)));
 
-    // Then start watching for changes
     const handleEvent = async (filepath: string) => {
       if (path.extname(filepath) === '.sql') {
         await this.handleTemplateChange(filepath);
       }
     };
 
-    watcher.on('add', handleEvent).on('change', handleEvent);
+    watcher
+      .on('add', handleEvent)
+      .on('change', handleEvent)
+      .on('error', error => {
+        this.log(`Watcher error: ${error}`, 'error');
+      });
 
+    this.watcher = watcher;
     return watcher;
   }
 

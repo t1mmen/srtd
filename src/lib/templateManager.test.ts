@@ -558,4 +558,52 @@ describe('TemplateManager', () => {
     expect(inProgress.size).toBe(0);
     expect(failed.size).toBe(0);
   });
+
+  it('should cleanup resources when disposed', async () => {
+    const manager = await TemplateManager.create(testContext.testDir);
+    const changes: string[] = [];
+
+    manager.on('templateChanged', template => {
+      changes.push(template.name);
+    });
+
+    await manager.watch();
+
+    // Create template before disposal
+    await createTemplateWithFunc(`test-before-dispose-${testContext.timestamp}.sql`);
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    // Dispose and verify cleanup
+    manager[Symbol.dispose]();
+
+    // Try creating template after disposal
+    await createTemplateWithFunc(`test-after-dispose-${testContext.timestamp}.sql`);
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    expect(changes).toHaveLength(1);
+    expect(changes[0]).toBe(`test-before-dispose-${testContext.timestamp}`);
+  });
+
+  it('should auto-cleanup with using statement', async () => {
+    const changes: string[] = [];
+
+    await (async () => {
+      using manager = await TemplateManager.create(testContext.testDir);
+
+      manager.on('templateChanged', template => {
+        changes.push(template.name);
+      });
+
+      await manager.watch();
+      await createTemplateWithFunc(`test-during-scope-${testContext.timestamp}.sql`);
+      await new Promise(resolve => setTimeout(resolve, 100));
+    })();
+
+    // After scope exit, create another template
+    await createTemplateWithFunc(`test-after-scope-${testContext.timestamp}.sql`);
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    expect(changes).toHaveLength(1);
+    expect(changes[0]).toBe(`test-during-scope-${testContext.timestamp}`);
+  });
 });
