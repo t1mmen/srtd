@@ -780,4 +780,117 @@ describe('TemplateManager', () => {
       expect(buildLog.templates[relPath].lastAppliedHash).toBe(hash);
     }
   });
+
+  it('should process unapplied templates on startup', async () => {
+    // Create template but don't process it
+    await createTemplateWithFunc(`startup-test-${testContext.timestamp}.sql`);
+
+    // Create a new manager instance
+    const manager = await TemplateManager.create(testContext.testDir);
+
+    const changes: string[] = [];
+    const applied: string[] = [];
+
+    manager.on('templateChanged', t => changes.push(t.name));
+    manager.on('templateApplied', t => applied.push(t.name));
+
+    // Start watching - this should process the template
+    await manager.watch();
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    expect(changes).toHaveLength(1);
+    expect(applied).toHaveLength(1);
+    expect(changes[0]).toBe(`startup-test-${testContext.timestamp}`);
+    expect(applied[0]).toBe(`startup-test-${testContext.timestamp}`);
+  });
+
+  it('should handle error state transitions correctly', async () => {
+    const templatePath = await createTemplateWithFunc(
+      `error-state-${testContext.timestamp}.sql`,
+      '_error_test'
+    );
+    const manager = await TemplateManager.create(testContext.testDir);
+
+    const states: Array<{ type: string; error?: string }> = [];
+
+    manager.on('templateChanged', () => states.push({ type: 'changed' }));
+    manager.on('templateApplied', () => states.push({ type: 'applied' }));
+    manager.on('templateError', ({ error }) =>
+      states.push({ type: 'error', error: String(error) })
+    );
+
+    // First apply should succeed
+    await manager.processTemplates({ apply: true });
+
+    // Modify template to be invalid
+    await fs.writeFile(templatePath, 'INVALID SQL;');
+    await manager.processTemplates({ apply: true });
+
+    // Fix template with valid SQL
+    await fs.writeFile(
+      templatePath,
+      `CREATE OR REPLACE FUNCTION ${testContext.testFunctionName}() RETURNS void AS $$ BEGIN NULL; END; $$ LANGUAGE plpgsql;`
+    );
+    await manager.processTemplates({ apply: true });
+
+    expect(states).toEqual([
+      { type: 'changed' },
+      { type: 'applied' },
+      { type: 'changed' },
+      { type: 'error', error: expect.stringMatching(/syntax error/) },
+      { type: 'changed' },
+      { type: 'applied' },
+    ]);
+  });
+
+  it('should maintain correct state through manager restarts', async () => {
+    const templatePath = await createTemplateWithFunc(`restart-test-${testContext.timestamp}.sql`);
+
+    // First manager instance
+    const manager1 = await TemplateManager.create(testContext.testDir);
+    await manager1.processTemplates({ apply: true });
+
+    // Get initial state
+    const status1 = await manager1.getTemplateStatus(templatePath);
+    const initialHash = status1.buildState.lastAppliedHash;
+
+    // Modify template
+    await fs.writeFile(templatePath, `${await fs.readFile(templatePath, 'utf-8')}\n-- Modified`);
+
+    // Create new manager instance
+    const manager2 = await TemplateManager.create(testContext.testDir);
+    const changes: string[] = [];
+    const applied: string[] = [];
+
+    manager2.on('templateChanged', t => changes.push(t.name));
+    manager2.on('templateApplied', t => applied.push(t.name));
+
+    await manager2.watch();
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    // Verify state was maintained and change was detected
+    const status2 = await manager2.getTemplateStatus(templatePath);
+    expect(status2.buildState.lastAppliedHash).not.toBe(initialHash);
+    expect(changes).toContain(`restart-test-${testContext.timestamp}`);
+    expect(applied).toContain(`restart-test-${testContext.timestamp}`);
+  });
+
+  it('should properly format and propagate error messages', async () => {
+    const templatePath = await createTemplateWithFunc(`error-format-${testContext.timestamp}.sql`);
+    const manager = await TemplateManager.create(testContext.testDir);
+
+    const errors: Array<{ error: unknown }> = [];
+    manager.on('templateError', err => errors.push(err));
+
+    // Create invalid SQL
+    await fs.writeFile(templatePath, 'SELECT * FROM nonexistent_table;');
+
+    await manager.processTemplates({ apply: true });
+
+    expect(errors).toHaveLength(1);
+    const error = errors[0]?.error;
+    expect(typeof error).toBe('string');
+    expect(error).not.toMatch(/\[object Object\]/);
+    expect(error).toMatch(/relation.*does not exist/i);
+  });
 });

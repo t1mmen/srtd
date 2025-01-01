@@ -142,7 +142,6 @@ export class TemplateManager extends EventEmitter implements Disposable {
       const template = await this.getTemplateStatus(templatePath);
       const relPath = path.relative(this.baseDir, templatePath);
 
-      // Check if template needs processing
       const needsProcessing =
         force ||
         !this.localBuildLog.templates[relPath]?.lastAppliedHash ||
@@ -153,9 +152,9 @@ export class TemplateManager extends EventEmitter implements Disposable {
         const result = await this.applyTemplate(templatePath);
 
         if (result.errors.length) {
-          // Format error before emitting
           const error = result.errors[0];
-          const formattedError = typeof error === 'string' ? error : error.error;
+          const formattedError = typeof error === 'string' ? error : error?.error;
+
           this.emit('templateError', { template, error: formattedError });
         } else {
           const updatedTemplate = await this.getTemplateStatus(templatePath);
