@@ -353,7 +353,11 @@ export class TemplateManager extends EventEmitter implements Disposable {
     this.log('\n');
 
     if (options.apply) {
-      const isConnected = await testConnection();
+      const connectionTimeout = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Database connection timeout')), 5000)
+      );
+      const isConnected = await Promise.race([testConnection(), connectionTimeout]);
+
       if (!isConnected) {
         this.log('Failed to connect to database, cannot proceed. Is Supabase running?', 'error');
         return result;

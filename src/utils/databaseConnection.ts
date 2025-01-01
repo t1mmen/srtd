@@ -69,8 +69,9 @@ function cleanup() {
   // Sync disconnect since exit handlers must be synchronous
   try {
     void disconnect();
-  } catch {
-    // Ignore errors during shutdown
+  } catch (e) {
+    logger.error(`Error disconnecting from database: ${String(e)}`);
+    process.exit(1);
   }
   process.exit(0);
 }

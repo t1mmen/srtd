@@ -203,15 +203,19 @@ export default function Watch() {
       )}
 
       <Box marginY={1} flexDirection="row" gap={1}>
-        <Box marginY={1}>
-          <Text dimColor>press </Text>
-          <Text underline={showUpdates}>u</Text>
-          <Text dimColor> to toggle updates</Text>
-        </Box>
-        <Box marginY={1}>
-          <Text dimColor>•</Text>
-        </Box>
         <Quittable />
+        {updates.length > 0 && (
+          <>
+            <Box marginY={1}>
+              <Text dimColor>•</Text>
+            </Box>
+            <Box marginY={1}>
+              <Text dimColor>press </Text>
+              <Text underline={showUpdates}>u</Text>
+              <Text dimColor> to toggle updates</Text>
+            </Box>
+          </>
+        )}
       </Box>
     </Box>
   );
