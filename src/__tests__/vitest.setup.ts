@@ -42,19 +42,19 @@ afterAll(async () => {
   try {
     await client.query('BEGIN');
     await client.query(`
-      DO $$
-      DECLARE
-        r record;
-      BEGIN
-        FOR r IN
-          SELECT quote_ident(proname) AS func_name
-          FROM pg_proc
-          WHERE proname LIKE '${TEST_FN_PREFIX}%'
-        LOOP
-          EXECUTE 'DROP FUNCTION IF EXISTS ' || r.func_name;
-        END LOOP;
-      END;
-      $$
+    DO $$
+    DECLARE
+      r record;
+    BEGIN
+      FOR r IN
+        SELECT quote_ident(proname) AS func_name
+        FROM pg_proc
+        WHERE proname LIKE '${TEST_FN_PREFIX}%'
+      LOOP
+        EXECUTE 'DROP FUNCTION IF EXISTS ' || r.func_name;
+      END LOOP;
+    END;
+    $$;
     `);
     await client.query('COMMIT');
   } catch (e) {

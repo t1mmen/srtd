@@ -483,7 +483,7 @@ describe('TemplateManager', () => {
     ]);
 
     // Give enough time for all changes to be detected
-    await new Promise(resolve => setTimeout(resolve, count * 100));
+    await new Promise(resolve => setTimeout(resolve, count * 100 * 1.1));
     watcher.close();
 
     expect(changes.size).toBe(count); // Should detect all 5 templates

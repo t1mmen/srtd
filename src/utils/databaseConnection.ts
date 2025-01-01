@@ -65,4 +65,15 @@ export async function testConnection(): Promise<boolean> {
   }
 }
 
-process.on('exit', async () => await disconnect());
+function cleanup() {
+  // Sync disconnect since exit handlers must be synchronous
+  try {
+    void disconnect();
+  } catch {
+    // Ignore errors during shutdown
+  }
+  process.exit(0);
+}
+
+process.on('SIGTERM', cleanup);
+process.on('SIGINT', cleanup);
