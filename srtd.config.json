@@ -1,5 +1,6 @@
 {
   "wipIndicator": ".wip",
+  "migrationPrefix": "srtd",
   "filter": "**/*.sql",
   "banner": "You very likely **DO NOT** want to manually edit this generated file.",
   "footer": "",

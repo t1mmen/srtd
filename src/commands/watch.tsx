@@ -11,7 +11,8 @@ import { useTemplateManager } from '../hooks/useTemplateManager.js';
 import type { TemplateUpdate } from '../hooks/useTemplateManager.js';
 import type { TemplateStatus } from '../types.js';
 
-const MAX_FILES = 30;
+const MAX_FILES = 10;
+const MAX_CHANGES = 15;
 const PATH_DISPLAY_LENGTH = 15;
 
 function StatBadge({ label, value, color }: { label: string; value: number; color: string }) {
@@ -89,11 +90,24 @@ const UpdateLog = React.memo(
     updates: TemplateUpdate[];
     templateDir?: string;
   }) => {
-    const sortedUpdates = useMemo(() => [...updates].reverse().slice(0, 5), [updates]);
+    const sortedUpdates = useMemo(() => {
+      return [...updates]
+        .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
+        .slice(0, MAX_CHANGES);
+    }, [updates]);
+
+    const formatError = (error: unknown) => {
+      if (error instanceof Error) return error.message;
+      if (typeof error === 'string') return error;
+      if (typeof error === 'object' && error && 'error' in error) {
+        return String(error.error);
+      }
+      return String(error);
+    };
 
     return (
       <Box flexDirection="column" marginTop={1}>
-        <Text bold>Recent Updates:</Text>
+        <Text bold>Changelog:</Text>
         {sortedUpdates.map(update => (
           <Box key={`${update.template.path}-${update.timestamp}`} marginLeft={2}>
             <Text
@@ -102,7 +116,7 @@ const UpdateLog = React.memo(
               {update.type === 'error' ? '❌' : update.type === 'applied' ? '✨' : '📝'}{' '}
               {formatTemplateDisplay(update.template.path, templateDir ?? '')}:{' '}
               {update.type === 'error'
-                ? update.error
+                ? formatError(update.error)
                 : update.type === 'applied'
                   ? 'applied successfully'
                   : 'changed and reapplied'}
@@ -144,7 +158,7 @@ export default function Watch() {
       <Branding subtitle="👀 Watch Mode" />
 
       <Box marginY={1}>
-        <StatBadge label="Total" value={stats.total} color="#3ecf8e" />
+        <StatBadge label="Total" value={stats.total} color="green" />
         {stats.needsBuild > 0 && (
           <StatBadge label="Needs Build" value={stats.needsBuild} color="yellow" />
         )}
@@ -171,7 +185,7 @@ export default function Watch() {
             <UpdateLog updates={updates} templateDir={templateDir} />
           )}
 
-          {!showUpdates && hasErrors && (
+          {hasErrors && (
             <Box flexDirection="column" marginTop={1}>
               <Text bold color="red">
                 Errors:
@@ -179,7 +193,7 @@ export default function Watch() {
               {Array.from(errors.entries()).map(([path, error]) => (
                 <Box key={path} marginLeft={2} marginTop={1}>
                   <Text color="red" wrap="wrap">
-                    {formatTemplateDisplay(path, templateDir ?? '')}: {error}
+                    {formatTemplateDisplay(path, templateDir ?? '')}: {String(error)}
                   </Text>
                 </Box>
               ))}
@@ -189,15 +203,19 @@ export default function Watch() {
       )}
 
       <Box marginY={1} flexDirection="row" gap={1}>
-        <Box marginY={1}>
-          <Text dimColor>press </Text>
-          <Text underline={showUpdates}>u</Text>
-          <Text dimColor> to toggle updates</Text>
-        </Box>
-        <Box marginY={1}>
-          <Text dimColor>•</Text>
-        </Box>
         <Quittable />
+        {updates.length > 0 && (
+          <>
+            <Box marginY={1}>
+              <Text dimColor>•</Text>
+            </Box>
+            <Box marginY={1}>
+              <Text dimColor>press </Text>
+              <Text underline={showUpdates}>u</Text>
+              <Text dimColor> to toggle updates</Text>
+            </Box>
+          </>
+        )}
       </Box>
     </Box>
   );

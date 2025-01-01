@@ -7,6 +7,7 @@ import Quittable from '../components/Quittable.js';
 import { useDatabaseConnection } from '../hooks/useDatabaseConnection.js';
 import Apply from './apply.js';
 import Build from './build.js';
+import Clear from './clear.js';
 import Register from './register.js';
 import Watch from './watch.js';
 
@@ -34,14 +35,19 @@ export default function UI() {
     return <Watch />;
   }
 
+  if (selectedCommand === 'clear') {
+    return <Clear />;
+  }
+
   const menuItems = [
-    { label: '🏗️ build - Build Supabase migrations from templates', value: 'build' },
-    { label: '▶️ apply - Apply migration templates directly to database', value: 'apply' },
-    { label: '✍️ register - Register templates as already built', value: 'register' },
     {
-      label: '👀 watch - Watch templates for changes and apply directly to database',
+      label: '👀 watch - Watch for changes, apply directly to db',
       value: 'watch',
     },
+    { label: '▶️  apply - Apply templates directly to db', value: 'apply' },
+    { label: '🏗️  build - Build templates as Supabase migrations', value: 'build' },
+    { label: '✍️  register - Register templates as already built', value: 'register' },
+    { label: '🧹 maintenance - Clear build logs and reset config', value: 'clear' },
   ];
 
   return (

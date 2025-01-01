@@ -7,22 +7,35 @@ import { connect, disconnect } from '../utils/databaseConnection.js';
 export const TEST_FN_PREFIX = 'srtd_scoped_test_func_';
 export const TEST_ROOT = join(tmpdir(), `srtd-test-${Date.now()}`);
 
-if (process.env.CI) {
-  let consoleLogMock: ReturnType<typeof vi.spyOn>;
-
-  beforeAll(() => {
-    consoleLogMock = vi.spyOn(console, 'log').mockImplementation(() => {
-      // Do nothing
-    });
-  });
-
-  afterAll(() => {
-    consoleLogMock.mockRestore();
-  });
-}
+vi.mock('../utils/logger', () => ({
+  logger: {
+    info: () => {
+      /** noop */
+    },
+    success: () => {
+      /** noop */
+    },
+    warn: () => {
+      /** noop */
+    },
+    error: () => {
+      /** noop */
+    },
+    skip: () => {
+      /** noop */
+    },
+    debug: () => {
+      /** noop */
+    },
+  },
+}));
 
 beforeAll(async () => {
-  await fs.mkdir(TEST_ROOT, { recursive: true });
+  try {
+    await fs.mkdir(TEST_ROOT, { recursive: true });
+  } catch (error) {
+    console.error('Error creating test root:', error, ', retrying once.');
+  }
 });
 
 afterAll(async () => {
@@ -33,19 +46,19 @@ afterAll(async () => {
   try {
     await client.query('BEGIN');
     await client.query(`
-      DO $$
-      DECLARE
-        r record;
-      BEGIN
-        FOR r IN
-          SELECT quote_ident(proname) AS func_name
-          FROM pg_proc
-          WHERE proname LIKE '${TEST_FN_PREFIX}%'
-        LOOP
-          EXECUTE 'DROP FUNCTION IF EXISTS ' || r.func_name;
-        END LOOP;
-      END;
-      $$
+    DO $$
+    DECLARE
+      r record;
+    BEGIN
+      FOR r IN
+        SELECT quote_ident(proname) AS func_name
+        FROM pg_proc
+        WHERE proname LIKE '${TEST_FN_PREFIX}%'
+      LOOP
+        EXECUTE 'DROP FUNCTION IF EXISTS ' || r.func_name;
+      END LOOP;
+    END;
+    $$;
     `);
     await client.query('COMMIT');
   } catch (e) {

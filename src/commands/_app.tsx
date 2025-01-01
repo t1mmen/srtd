@@ -21,21 +21,31 @@ export default function App({ Component, commandProps }: AppProps) {
 
   return (
     <ThemeProvider theme={customTheme}>
-      {!!error && (
-        <Static items={[error]}>
-          {error => (
-            <Box key={error}>
-              <Alert variant="error">
-                <Text bold color="red">
-                  Error:{' '}
-                </Text>
-                {error}
-              </Alert>
-            </Box>
-          )}
-        </Static>
-      )}
-      <Component {...commandProps} />
+      <Box flexDirection="column" padding={1}>
+        {!!error && (
+          <Static items={[error]}>
+            {error => (
+              <Box key={error}>
+                <Alert variant="error">
+                  <Text bold color="red">
+                    Error:{' '}
+                  </Text>
+                  {error}
+                </Alert>
+              </Box>
+            )}
+          </Static>
+        )}
+        <Component {...commandProps} />
+      </Box>
     </ThemeProvider>
   );
 }
+
+// Mimick fullscreen behavior
+const enterAltScreenCommand = '\x1b[?1049h';
+const leaveAltScreenCommand = '\x1b[?1049l';
+process.stdout.write(enterAltScreenCommand);
+process.on('exit', () => {
+  process.stdout.write(leaveAltScreenCommand);
+});
