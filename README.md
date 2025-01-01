@@ -15,16 +15,18 @@
 `srtd` enhances the [Supabase](https://supabase.com) DX by adding live-reloading SQL templates into local db. The single-source-of-truth template ➡️ migrations system brings sanity to code reviews, making `git blame` useful.
 
 
-**Read the introductory blog post: [Introducing `srtd`: Live-Reloading SQL Templates for Supabase](https://timm.stokke.me/blog/srtd-live-reloading-and-sql-templates-for-supabase)**
+📖 Blog: [Introducing `srtd`: Live-Reloading SQL Templates for Supabase](https://timm.stokke.me/blog/srtd-live-reloading-and-sql-templates-for-supabase)
 
 ## Why This Exists 🤔
 
 While building [Timely](https://www.timely.com)'s next-generation [Memory Engine](https://www.timely.com/memory-app) on [Supabase](https://supabase.com), we found ourselves facing two major annoyances:
 
 1. Code reviews were painful - function changes showed up as complete rewrites, `git blame` was useless
-2. Designing and iterating on database changes locally meant constant friction, like the dance around copy-pasting into SQL console
+2. Designing and iterating on database changes locally was full of friction, no matter which workflow we tried
 
-After over a year of looking-but-not-finding a better way, I paired up with [Claude](https://claude.ai) to eliminate these annoyances. Say hello to `srtd`.
+I spent [nearly two years looking](https://news.ycombinator.com/item?id=37755076) for something pre-existing, to no avail. Sufficiently fed up, I paired with [Claude](https://claude.ai) to eliminate these annoyances.
+
+Say hello to `srtd`.
 
 ## Key Features ✨
 
@@ -89,22 +91,6 @@ srtd build        # Creates timestamped migration file
 supabase migration up  # Apply using Supabase CLI
 ```
 
-## Commands 🎮
-
-### Interactive Mode
-
-Running `srtd` without arguments opens an interactive menu:
-
-### CLI Mode
-
-- 🏗️  `srtd build [--force]` - Generate migrations from templates
-- ▶️  `srtd apply [--force]` - Apply templates directly to local database
-- ✍️  `srtd register [file.sql]` - Mark templates as already built
-- 👀 `srtd watch` - Watch and auto-apply changes
-- 🧹 `srtd clean` - Remove all logs and reset config
-
-> [!IMPORTANT]
-> `watch` and `apply` commands modify your local database directly and don't clean up after themselves. Use with caution!
 
 ## The Power of Templates 💪
 
@@ -193,6 +179,24 @@ Without templates, this would appear as a complete rewrite in your PR.
 * ❌ Non-idempotent operations
 
 Use regular [Supabase](https://supabase.com) migrations for these cases.
+
+
+## Commands 🎮
+
+### Interactive Mode
+
+Running `srtd` without arguments opens an interactive menu:
+
+### CLI Mode
+
+- 🏗️  `srtd build [--force]` - Generate migrations from templates
+- ▶️  `srtd apply [--force]` - Apply templates directly to local database
+- ✍️  `srtd register [file.sql]` - Mark templates as already built
+- 👀 `srtd watch` - Watch and auto-apply changes
+- 🧹 `srtd clean` - Remove all logs and reset config
+
+> [!IMPORTANT]
+> `watch` and `apply` commands modify your local database directly and don't clean up after themselves. Use with caution!
 
 ## Configuration 📝
 
