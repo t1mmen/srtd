@@ -14,7 +14,6 @@
 
 `srtd` enhances the [Supabase](https://supabase.com) DX by adding live-reloading SQL templates into local db. The single-source-of-truth template ➡️ migrations system brings sanity to code reviews, making `git blame` useful.
 
-Built specifically for projects using the standard [Supabase](https://supabase.com) stack (but probably works alright for other Postgres-based projects, too).
 
 **Read the introductory blog post: [Introducing `srtd`: Live-Reloading SQL Templates for Supabase](https://timm.stokke.me/blog/srtd-live-reloading-and-sql-templates-for-supabase)**
 
@@ -33,6 +32,8 @@ After over a year of looking-but-not-finding a better way, I paired up with [Cla
 - **Single Source of Truth**: Templates are the source of all (non-mutable) database objects, improving code-review clarity
 - **Just SQL**: Templates build as standard [Supabase](https://supabase.com) migrations when you're ready to deploy
 - **Developer Friendly**: Interactive CLI with visual feedback for all operations
+
+Built specifically for projects using the standard [Supabase](https://supabase.com) stack (but probably works alright for other Postgres-based projects, too).
 
 ## Requirements
 
@@ -105,9 +106,14 @@ Running `srtd` without arguments opens an interactive menu:
 > [!IMPORTANT]
 > `watch` and `apply` commands modify your local database directly and don't clean up after themselves. Use with caution!
 
-## Perfect For 🎯
+## The Power of Templates 💪
 
-### Ideal Use Cases
+
+Templates make code reviews meaningful. Consider this PR adding priority to a notification function:
+
+Without templates, this would appear as a complete rewrite in your PR.
+
+### Perfect For 🎯
 
 ✅ Database functions:
 ```diff
@@ -163,7 +169,7 @@ Running `srtd` without arguments opens an interactive menu:
 ```
 
 ✅ Safe Type Extensions:
-```diff-sql
+```diff
  DO $$
  BEGIN
    -- Add new enum values idempotently
@@ -187,47 +193,6 @@ Running `srtd` without arguments opens an interactive menu:
 * ❌ Non-idempotent operations
 
 Use regular [Supabase](https://supabase.com) migrations for these cases.
-
-## The Power of Templates 💪
-
-Templates make code reviews meaningful. Consider this PR adding priority to a notification function:
-
-```diff
-CREATE OR REPLACE FUNCTION dispatch_notification(
-    user_id uuid,
-    type text,
-    payload jsonb
-  ) RETURNS uuid AS $$
-  DECLARE
-    notification_id uuid;
-    user_settings jsonb;
-  BEGIN
-    -- Get user notification settings
-    SELECT settings INTO user_settings
-    FROM user_preferences
-    WHERE id = user_id;
-
-    -- Create notification record
-+   -- Include priority based on notification type
-    INSERT INTO notifications (
-      id,
-      user_id,
-      type,
-      payload,
-+     priority,
-      created_at
-    ) VALUES (
-      gen_random_uuid(),
-      dispatch_notification.user_id,
-      type,
-      payload,
-+     COALESCE((SELECT priority FROM notification_types WHERE name = type), 'normal'),
-      CURRENT_TIMESTAMP
-    )
-    RETURNING id INTO notification_id;
-```
-
-Without templates, this would appear as a complete rewrite in your PR.
 
 ## Configuration 📝
 
