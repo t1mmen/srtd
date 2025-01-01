@@ -1,11 +1,16 @@
 # `srtd` 🪄 Supabase Repeatable Template Definitions
 
-Live-reloading SQL templates for [Supabase](https://supabase.com) projects. DX supercharged! 🚀
+
+
+> Live-reloading SQL templates for [Supabase](https://supabase.com) projects. DX supercharged! 🚀
 
 [![npm version](https://badge.fury.io/js/@t1mmen%2Fsrtd.svg)](https://www.npmjs.com/package/@t1mmen/srtd)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![CI/CD](https://github.com/t1mmen/srtd/actions/workflows/ci.yml/badge.svg)](https://github.com/t1mmen/srtd/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/t1mmen/srtd/graph/badge.svg?token=CIMAZ55KCJ)](https://codecov.io/gh/t1mmen/srtd)
+
+
+[![screenshot of srtd](./readme-screenshot.png)](./readme-screenshot.png)
 
 `srtd` enhances the [Supabase](https://supabase.com) DX by adding live-reloading SQL templates into local db. The single-source-of-truth template ➡️ migrations system brings sanity to code reviews, making `git blame` useful.
 
@@ -17,7 +22,7 @@ Built specifically for projects using the standard [Supabase](https://supabase.c
 
 While building [Timely](https://www.timely.com)'s next-generation [Memory Engine](https://www.timely.com/memory-app) on [Supabase](https://supabase.com), we found ourselves facing two major annoyances:
 
-1. Code reviews were painful - function changes showed up as complete rewrites rather than helpful diffs
+1. Code reviews were painful - function changes showed up as complete rewrites, `git blame` was useless
 2. Designing and iterating on database changes locally meant constant friction, like the dance around copy-pasting into SQL console
 
 After over a year of looking-but-not-finding a better way, I paired up with [Claude](https://claude.ai) to eliminate these annoyances. Say hello to `srtd`.
@@ -89,19 +94,13 @@ supabase migration up  # Apply using Supabase CLI
 
 Running `srtd` without arguments opens an interactive menu:
 
-```
-❯ 🏗️  build - Build Supabase migrations from templates
-  ▶️  apply - Apply migration templates directly to database
-  ✍️  register - Register templates as already built
-  👀  watch - Watch templates for changes, apply directly to database
-```
-
 ### CLI Mode
 
-- 🏗️  `build [--force]` - Generate migrations from templates
-- ▶️  `apply [--force]` - Apply templates directly to local database
-- ✍️  `register [file.sql]` - Mark templates as already built
-- 👀 `watch` - Watch and auto-apply changes
+- 🏗️  `srtd build [--force]` - Generate migrations from templates
+- ▶️  `srtd apply [--force]` - Apply templates directly to local database
+- ✍️  `srtd register [file.sql]` - Mark templates as already built
+- 👀 `srtd watch` - Watch and auto-apply changes
+- 🧹 `srtd clean` - Remove all logs and reset config
 
 > [!IMPORTANT]
 > `watch` and `apply` commands modify your local database directly and don't clean up after themselves. Use with caution!
@@ -111,72 +110,73 @@ Running `srtd` without arguments opens an interactive menu:
 ### Ideal Use Cases
 
 ✅ Database functions:
-```sql
--- Reusable auth helper
-CREATE OR REPLACE FUNCTION auth.user_id()
-RETURNS uuid AS $$
-  SELECT auth.uid()::uuid;
-$$ LANGUAGE sql SECURITY DEFINER;
-
+```sql-diff
 -- Event notifications
-CREATE OR REPLACE FUNCTION notify_changes()
-RETURNS trigger AS $$
-BEGIN
-  PERFORM pg_notify(
-    'changes',
-    json_build_object('table', TG_TABLE_NAME, 'id', NEW.id)::text
-  );
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
+  CREATE OR REPLACE FUNCTION notify_changes()
+  RETURNS trigger AS $$
+  BEGIN
+    PERFORM pg_notify(
+      'changes',
+      json_build_object('table', TG_TABLE_NAME, 'id', NEW.id)::text
+    );
++   RAISE NOTICE 'Notified changes for %', TG_TABLE_NAME; -- Debug logging
+    RETURN NEW;
+  END;
+  $$ LANGUAGE plpgsql;
 ```
 
 ✅ Row-Level Security (RLS):
-```sql
--- Replace/update policies safely
-DROP POLICY IF EXISTS "workspace_access" ON resources;
-CREATE POLICY "workspace_access" ON resources
-  USING (workspace_id IN (
-    SELECT id FROM workspaces
-    WHERE organization_id = auth.organization_id()
-  ));
+```sql-diff
+  -- Replace/update policies safely
+  DROP POLICY IF EXISTS "workspace_access" ON resources;
+  CREATE POLICY "workspace_access" ON resources
+    USING (workspace_id IN (
+      SELECT id FROM workspaces
+      WHERE organization_id = auth.organization_id()
++       AND auth.user_role() NOT IN ('pending')
+    ));
 ```
 
 ✅ Views for data abstraction:
-```sql
-CREATE OR REPLACE VIEW active_subscriptions AS
-SELECT
-  s.*,
-  p.name as plan_name,
-  p.features
-FROM subscriptions s
-JOIN plans p ON p.id = s.plan_id
-WHERE s.status = 'active'
-  AND s.expires_at > CURRENT_TIMESTAMP;
+```sql-diff
+  CREATE OR REPLACE VIEW active_subscriptions AS
+  SELECT
+    s.*,
+    p.name as plan_name,
+    p.features
+  FROM subscriptions s
+  JOIN plans p ON p.id = s.plan_id
+-  WHERE s.status = 'active';
++  WHERE s.status = 'active'
++    AND s.expires_at > CURRENT_TIMESTAMP;
 ```
 
 ✅ Roles and Permissions:
-```sql
--- Revoke all first for clean state
-REVOKE ALL ON ALL TABLES IN SCHEMA public FROM public;
+```sql-diff
+  -- Revoke all first for clean state
+  REVOKE ALL ON ALL TABLES IN SCHEMA public FROM public;
 
--- Grant specific access
-GRANT USAGE ON SCHEMA public TO authenticated;
-GRANT SELECT ON ALL TABLES IN SCHEMA public TO authenticated;
+  -- Grant specific access
+  GRANT USAGE ON SCHEMA public TO authenticated;
+  GRANT SELECT ON ALL TABLES IN SCHEMA public TO authenticated;
++ GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO admin;
 ```
 
 ✅ Safe Type Extensions:
-```sql
-DO $$
-BEGIN
-  -- Add new enum values idempotently
-  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'notification_type') THEN
-    CREATE TYPE notification_type AS ENUM ('email', 'sms');
-  END IF;
+```diff-sql
+ DO $$
+ BEGIN
+   -- Add new enum values idempotently
+   IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'notification_type') THEN
+     CREATE TYPE notification_type AS ENUM ('email', 'sms');
+   END IF;
 
-  -- Extend existing enum safely
-  ALTER TYPE notification_type ADD VALUE IF NOT EXISTS 'push';
-END $$;
+   -- Extend existing enum safely
+   ALTER TYPE notification_type ADD VALUE IF NOT EXISTS 'push';
+   ALTER TYPE notification_type ADD VALUE IF NOT EXISTS 'pusher';
+   ALTER TYPE notification_type ADD VALUE IF NOT EXISTS 'webhook';
++  ALTER TYPE notification_type ADD VALUE IF NOT EXISTS 'email';
+ END $$;
 ```
 
 ### Not Recommended For
