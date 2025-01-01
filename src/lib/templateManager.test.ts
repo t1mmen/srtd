@@ -1,6 +1,6 @@
 import fs from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { join, relative } from 'node:path';
+import { default as path, join, relative } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { TEST_FN_PREFIX } from '../__tests__/vitest.setup.js';
 import { connect, disconnect } from '../utils/databaseConnection.js';
@@ -48,16 +48,19 @@ describe('TemplateManager', () => {
     disconnect();
   });
 
-  const createTemplate = async (name: string, content: string) => {
-    const path = join(testContext.testDir, 'test-templates', name);
-    await fs.writeFile(path, content);
-    return path;
+  const createTemplate = async (name: string, content: string, dir?: string) => {
+    const fullPath = dir
+      ? join(testContext.testDir, 'test-templates', dir, name)
+      : join(testContext.testDir, 'test-templates', name);
+    await fs.mkdir(path.dirname(fullPath), { recursive: true });
+    await fs.writeFile(fullPath, content);
+    return fullPath;
   };
 
-  const createTemplateWithFunc = async (name: string, funcSuffix = '') => {
+  const createTemplateWithFunc = async (name: string, funcSuffix = '', dir?: string) => {
     const funcName = `${testContext.testFunctionName}${funcSuffix}`;
     const content = `CREATE FUNCTION ${funcName}() RETURNS void AS $$ BEGIN NULL; END; $$ LANGUAGE plpgsql;`;
-    return createTemplate(name, content);
+    return createTemplate(name, content, dir);
   };
 
   it('should create migration file when template changes', async () => {
@@ -374,5 +377,80 @@ describe('TemplateManager', () => {
     const manager2 = await TemplateManager.create(testContext.testDir);
     const status = await manager2.getTemplateStatus(template);
     expect(status.buildState.lastBuildHash).toBeDefined();
+  });
+
+  it('should handle template additions in watch mode', async () => {
+    const manager = await TemplateManager.create(testContext.testDir);
+    const changes: string[] = [];
+
+    manager.on('templateChanged', template => {
+      changes.push(template.name);
+    });
+
+    const watcher = await manager.watch();
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    // Add new template after watch started
+    await createTemplateWithFunc(`test-new-${testContext.timestamp}.sql`);
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    watcher.close();
+    expect(changes).toContain(`test-new-${testContext.timestamp}`);
+  });
+
+  it('should handle templates in deep subdirectories', async () => {
+    // Create nested directory structure
+    const depth = 5;
+    const templatePaths: string[] = [];
+
+    for (let i = 1; i <= depth; i++) {
+      const dir = [...Array(i)].map((_, idx) => `level${idx + 1}`).join('/');
+      const templatePath = await createTemplateWithFunc(
+        `test-${i}-${testContext.timestamp}.sql`,
+        `_${i}`,
+        dir
+      );
+      templatePaths.push(templatePath);
+    }
+
+    const manager = await TemplateManager.create(testContext.testDir);
+    const changes: string[] = [];
+
+    manager.on('templateChanged', template => {
+      changes.push(template.name);
+    });
+
+    const watcher = await manager.watch();
+    await new Promise(resolve => setTimeout(resolve, 500));
+    watcher.close();
+
+    expect(changes.length).toBe(depth);
+    // Verify each template was detected
+    for (let i = 1; i <= depth; i++) {
+      expect(changes).toContain(`test-${i}-${testContext.timestamp}`);
+    }
+  });
+
+  it('should only watch SQL files', async () => {
+    const manager = await TemplateManager.create(testContext.testDir);
+    const changes: string[] = [];
+
+    manager.on('templateChanged', template => {
+      changes.push(template.name);
+    });
+
+    const watcher = await manager.watch();
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    // Create various file types
+    await fs.writeFile(join(testContext.testDir, 'test-templates/test.txt'), 'not sql');
+    await fs.writeFile(join(testContext.testDir, 'test-templates/test.md'), 'not sql');
+    await createTemplateWithFunc(`test-sql-${testContext.timestamp}.sql`);
+
+    await new Promise(resolve => setTimeout(resolve, 500));
+    watcher.close();
+
+    expect(changes).toHaveLength(1);
+    expect(changes[0]).toBe(`test-sql-${testContext.timestamp}`);
   });
 });

@@ -22,7 +22,7 @@
     "dev": "tsc --watch",
     "test": "vitest",
     "test:coverage": "vitest run --coverage --reporter=junit --outputFile=test-report.junit.xml",
-    "start": "npm run build && npm link --force && chmod u+x ./dist/cli.js && srtd",
+    "start": "tsx src/cli.tsx",
     "repomix": "mkdir build; npx repomix",
     "supabase:start": "npx supabase start",
     "supabase:stop": "npx supabase stop"

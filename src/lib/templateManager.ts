@@ -126,15 +126,21 @@ export class TemplateManager extends EventEmitter {
 
     const watcher = chokidar.watch(templatePath, {
       ignoreInitial: false,
-      depth: 0,
-      ignored: /(^|[\\])\../,
+      ignored: ['**/!(*.sql)'],
+      persistent: true,
     });
 
-    watcher.on('change', async (filepath: string) => {
-      if (path.extname(filepath) === '.sql') {
-        await this.handleTemplateChange(filepath);
-      }
-    });
+    watcher
+      .on('add', async (filepath: string) => {
+        if (path.extname(filepath) === '.sql') {
+          await this.handleTemplateChange(filepath);
+        }
+      })
+      .on('change', async (filepath: string) => {
+        if (path.extname(filepath) === '.sql') {
+          await this.handleTemplateChange(filepath);
+        }
+      });
 
     return watcher;
   }
