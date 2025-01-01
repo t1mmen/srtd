@@ -1,5 +1,5 @@
 // src/hooks/useTemplateManager.ts
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { TemplateManager } from '../lib/templateManager.js';
 import type { TemplateStatus } from '../types.js';
 import { getConfig } from '../utils/config.js';
@@ -9,20 +9,17 @@ export type TemplateUpdate = {
   template: TemplateStatus;
   timestamp: string;
   error?: string;
-  path: string;
 };
-
-export interface TemplateStats {
-  total: number;
-  needsBuild: number;
-  recentlyChanged: number;
-  errors: number;
-}
 
 export interface UseTemplateManager {
   templates: TemplateStatus[];
   updates: TemplateUpdate[];
-  stats: TemplateStats;
+  stats: {
+    total: number;
+    needsBuild: number;
+    recentlyChanged: number;
+    errors: number;
+  };
   isLoading: boolean;
   errors: Map<string, string>;
   latestPath?: string;
@@ -31,27 +28,22 @@ export interface UseTemplateManager {
 
 export function useTemplateManager(cwd: string = process.cwd()): UseTemplateManager {
   const [templates, setTemplates] = useState<TemplateStatus[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [errors, setErrors] = useState<Map<string, string>>(new Map());
   const [updates, setUpdates] = useState<TemplateUpdate[]>([]);
+  const [errors, setErrors] = useState<Map<string, string>>(new Map());
+  const [isLoading, setIsLoading] = useState(true);
   const [templateDir, setTemplateDir] = useState<string>();
+  const [latestPath, setLatestPath] = useState<string>();
   const managerRef = useRef<TemplateManager>();
-  const latestPath = useRef<string>();
-  const mounted = useRef(true);
-  const updateTimeoutRef = useRef<NodeJS.Timeout>();
 
-  const sortedTemplates = useMemo(() => {
-    return [...templates].sort((a, b) => {
-      const dateA = a.buildState.lastAppliedDate || '';
-      const dateB = b.buildState.lastAppliedDate || '';
-      if (dateA !== dateB) {
+  const sortedTemplates = useMemo(
+    () =>
+      [...templates].sort((a, b) => {
+        const dateA = a.buildState.lastAppliedDate || '';
+        const dateB = b.buildState.lastAppliedDate || '';
         return dateA.localeCompare(dateB);
-      }
-      const folderA = a.path.split('/').slice(0, -1).join('/');
-      const folderB = b.path.split('/').slice(0, -1).join('/');
-      return folderA.localeCompare(folderB);
-    });
-  }, [templates]);
+      }),
+    [templates]
+  );
 
   const stats = useMemo(
     () => ({
@@ -69,123 +61,108 @@ export function useTemplateManager(cwd: string = process.cwd()): UseTemplateMana
     [templates, updates, errors]
   );
 
-  const updateTemplate = useCallback(
-    async (template: TemplateStatus, type: TemplateUpdate['type'], errorMsg?: string) => {
-      if (!mounted.current || !managerRef.current) return;
-
-      if (updateTimeoutRef.current) {
-        clearTimeout(updateTimeoutRef.current);
-      }
-
-      updateTimeoutRef.current = setTimeout(async () => {
-        try {
-          const status = await managerRef.current?.getTemplateStatus(template.path);
-          if (status) {
-            latestPath.current = status.path;
-            setTemplates(prev => {
-              const rest = prev.filter(t => t.path !== status.path);
-              return [...rest, status];
-            });
-
-            if (type === 'error' && errorMsg) {
-              setErrors(prev => new Map(prev).set(template.path, errorMsg));
-            } else if (type === 'applied') {
-              setErrors(prev => {
-                const next = new Map(prev);
-                next.delete(template.path);
-                return next;
-              });
-            }
-
-            const update: TemplateUpdate = {
-              type,
-              template: status,
-              timestamp: new Date().toISOString(),
-              error: errorMsg,
-              path: template.path,
-            };
-
-            setUpdates(prev =>
-              [update, ...prev]
-                .filter(
-                  (u, i, arr) => i === arr.findIndex(t => t.path === u.path && t.type === u.type)
-                )
-                .slice(0, 50)
-            );
-          }
-        } catch (err) {
-          const errorMessage = err instanceof Error ? err.message : String(err);
-          console.error('Failed to update template:', errorMessage);
-        }
-      }, 500); // Todo: performance should be looked at here, likely
-    },
-    []
-  );
-
   useEffect(() => {
-    let watcher: { close: () => void } | undefined;
+    let mounted = true;
 
-    async function init(): Promise<void> {
+    async function init() {
       try {
-        setIsLoading(true);
         const config = await getConfig(cwd);
         setTemplateDir(config.templateDir);
 
         managerRef.current = await TemplateManager.create(cwd, { silent: true });
 
-        async function loadTemplates() {
-          const initialTemplates = await managerRef.current?.findTemplates();
-          const statuses = await Promise.all(
-            initialTemplates?.map(t => managerRef.current?.getTemplateStatus(t)) ?? []
+        // Setup event handlers
+        managerRef.current.on('templateChanged', template => {
+          if (!mounted) return;
+          setLatestPath(template.path);
+          setUpdates(prev =>
+            [
+              {
+                type: 'changed' as const,
+                template,
+                timestamp: new Date().toISOString(),
+              },
+              ...prev,
+            ].slice(0, 50)
           );
+        });
 
-          const validStatuses = statuses.filter((s): s is TemplateStatus => s !== null);
-          const needsApply = validStatuses.some(
-            t => !t.buildState.lastAppliedHash || t.currentHash !== t.buildState.lastAppliedHash
+        managerRef.current.on('templateApplied', template => {
+          if (!mounted) return;
+          setLatestPath(template.path);
+          setTemplates(prev => {
+            const rest = prev.filter(t => t.path !== template.path);
+            return [...rest, template];
+          });
+          setUpdates(prev =>
+            [
+              {
+                type: 'applied' as const,
+                template,
+                timestamp: new Date().toISOString(),
+              },
+              ...prev,
+            ].slice(0, 50)
           );
+          setErrors(prev => {
+            const next = new Map(prev);
+            next.delete(template.path);
+            return next;
+          });
+        });
 
-          if (mounted.current) {
-            setTemplates(validStatuses);
-            setIsLoading(false);
+        managerRef.current.on('templateError', ({ template, error: err }) => {
+          if (!mounted) return;
+          // Ensure error is properly stringified
+          const errorMsg =
+            typeof err === 'object'
+              ? err instanceof Error
+                ? err.message
+                : JSON.stringify(err)
+              : String(err);
 
-            if (needsApply) {
-              await managerRef.current?.processTemplates({ apply: true });
-            }
-          }
+          setErrors(prev => new Map(prev).set(template.path, errorMsg));
+          setUpdates(prev =>
+            [
+              {
+                type: 'error' as const,
+                template,
+                timestamp: new Date().toISOString(),
+                error: errorMsg,
+              },
+              ...prev,
+            ].slice(0, 50)
+          );
+        });
+
+        // Initial load
+        const initialTemplates = await managerRef.current.findTemplates();
+        const statuses = await Promise.all(
+          initialTemplates.map(t => managerRef.current?.getTemplateStatus(t))
+        );
+
+        if (mounted) {
+          setTemplates(statuses.filter((s): s is TemplateStatus => s !== null));
+          setIsLoading(false);
         }
 
-        await loadTemplates();
-        watcher = await managerRef.current?.watch();
-
-        managerRef.current?.on('templateAdded', () => void loadTemplates());
-        managerRef.current?.on('templateChanged', t => void updateTemplate(t, 'changed'));
-        managerRef.current?.on('templateApplied', t => void updateTemplate(t, 'applied'));
-        managerRef.current?.on('templateError', ({ template, error: err }) => {
-          const errorMsg =
-            err instanceof Error
-              ? err.message
-              : typeof err === 'object' && err !== null
-                ? JSON.stringify(err)
-                : String(err);
-          void updateTemplate(template, 'error', errorMsg);
-        });
+        // Start watching
+        await managerRef.current.watch();
       } catch (err) {
-        if (mounted.current) {
-          setErrors(new Map().set('global', err instanceof Error ? err.message : String(err)));
+        if (mounted) {
+          setErrors(new Map().set('global', String(err)));
           setIsLoading(false);
         }
       }
     }
 
     void init();
+
     return () => {
-      mounted.current = false;
-      watcher?.close();
-      if (updateTimeoutRef.current) {
-        clearTimeout(updateTimeoutRef.current);
-      }
+      mounted = false;
+      managerRef.current?.[Symbol.dispose]();
     };
-  }, [cwd, updateTemplate]);
+  }, [cwd]);
 
   return {
     templates: sortedTemplates,
@@ -193,7 +170,7 @@ export function useTemplateManager(cwd: string = process.cwd()): UseTemplateMana
     stats,
     isLoading,
     errors,
-    latestPath: latestPath.current,
+    latestPath,
     templateDir,
   };
 }

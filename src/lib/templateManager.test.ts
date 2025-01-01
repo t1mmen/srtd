@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os';
 import { default as path, join, relative } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { TEST_FN_PREFIX } from '../__tests__/vitest.setup.js';
+import { calculateMD5 } from '../utils/calculateMD5.js';
 import { connect, disconnect } from '../utils/databaseConnection.js';
 import { ensureDirectories } from '../utils/ensureDirectories.js';
 import { TemplateManager } from './templateManager.js';
@@ -59,7 +60,7 @@ describe('TemplateManager', () => {
 
   const createTemplateWithFunc = async (name: string, funcSuffix = '', dir?: string) => {
     const funcName = `${testContext.testFunctionName}${funcSuffix}`;
-    const content = `CREATE FUNCTION ${funcName}() RETURNS void AS $$ BEGIN NULL; END; $$ LANGUAGE plpgsql;`;
+    const content = `CREATE OR REPLACE FUNCTION ${funcName}() RETURNS void AS $$ BEGIN NULL; END; $$ LANGUAGE plpgsql;`;
     return createTemplate(name, content, dir);
   };
 
@@ -146,7 +147,7 @@ describe('TemplateManager', () => {
       'test-templates',
       `test-${testContext.timestamp}.sql`
     );
-    const baseContent = `CREATE FUNCTION ${testContext.testFunctionName}() RETURNS void AS $$ BEGIN NULL; END; $$ LANGUAGE plpgsql;`;
+    const baseContent = `CREATE OR REPLACE FUNCTION ${testContext.testFunctionName}() RETURNS void AS $$ BEGIN NULL; END; $$ LANGUAGE plpgsql;`;
 
     await fs.writeFile(templatePath, baseContent);
 
@@ -605,5 +606,178 @@ describe('TemplateManager', () => {
 
     expect(changes).toHaveLength(1);
     expect(changes[0]).toBe(`test-during-scope-${testContext.timestamp}`);
+  });
+
+  it('should not process unchanged templates', async () => {
+    const templatePath = await createTemplateWithFunc(
+      `test-unchanged-${testContext.timestamp}.sql`
+    );
+    const manager = await TemplateManager.create(testContext.testDir);
+    await manager.watch();
+
+    // First processing
+    await manager.processTemplates({ apply: true });
+
+    // Get the status after first processing
+    const statusAfterFirstRun = await manager.getTemplateStatus(templatePath);
+
+    const changes: string[] = [];
+    manager.on('templateChanged', template => {
+      changes.push(template.name);
+    });
+
+    // Process again without changes
+    await manager.processTemplates({ apply: true });
+
+    // Get status after second run
+    const statusAfterSecondRun = await manager.getTemplateStatus(templatePath);
+
+    expect(changes).toHaveLength(0);
+    expect(statusAfterSecondRun.buildState.lastBuildHash).toBe(
+      statusAfterFirstRun.buildState.lastBuildHash
+    );
+    expect(statusAfterSecondRun.buildState.lastAppliedHash).toBe(
+      statusAfterFirstRun.buildState.lastAppliedHash
+    );
+  });
+
+  it('should only process modified templates in batch', async () => {
+    // Create two templates
+    const template1 = await createTemplateWithFunc(
+      `modified_tmpl_1-${testContext.timestamp}.sql`,
+      'mod_1'
+    );
+    await createTemplateWithFunc(`modified_tmpl_2-${testContext.timestamp}.sql`, 'mod_2');
+
+    const manager = await TemplateManager.create(testContext.testDir);
+
+    // First processing of both
+    await manager.processTemplates({ apply: true });
+
+    const changes: string[] = [];
+    manager.on('templateChanged', template => {
+      changes.push(template.name);
+    });
+
+    // Modify only template1
+    await fs.writeFile(template1, `${await fs.readFile(template1, 'utf-8')}\n-- Modified`);
+
+    // Process both templates again
+    await manager.processTemplates({ apply: true });
+
+    expect(changes).toHaveLength(1);
+    expect(changes[0]).toBe(`modified_tmpl_1-${testContext.timestamp}`);
+  });
+
+  it('should correctly update local buildlog on apply', async () => {
+    const templatePath = await createTemplateWithFunc(`test-buildlog-${testContext.timestamp}.sql`);
+    const manager = await TemplateManager.create(testContext.testDir);
+    const localBuildlogPath = join(testContext.testDir, '.buildlog-test.local.json');
+
+    // Initial apply
+    await manager.processTemplates({ apply: true });
+
+    const initialLog = JSON.parse(await fs.readFile(localBuildlogPath, 'utf-8'));
+    const relPath = relative(testContext.testDir, templatePath);
+    const initialHash = initialLog.templates[relPath].lastAppliedHash;
+    const initialContent = await fs.readFile(templatePath, 'utf-8');
+    expect(initialHash).toBeDefined();
+
+    // Modify template
+    await fs.writeFile(templatePath, `${initialContent}\n-- Modified`);
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    const changedContent = await fs.readFile(templatePath, 'utf-8');
+
+    // Second apply
+    await manager.processTemplates({ apply: true });
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    const updatedLog = JSON.parse(await fs.readFile(localBuildlogPath, 'utf-8'));
+    const newHash = updatedLog.templates[relPath].lastAppliedHash;
+
+    const manualMd5 = await calculateMD5(changedContent);
+
+    expect(newHash).toBeDefined();
+    expect(newHash).toBe(manualMd5);
+    expect(newHash).not.toBe(initialHash);
+  });
+
+  it('should skip apply if template hash matches local buildlog', async () => {
+    const templatePath = await createTemplateWithFunc(`test-skip-${testContext.timestamp}.sql`);
+    const manager = await TemplateManager.create(testContext.testDir);
+    const localBuildlogPath = join(testContext.testDir, '.buildlog-test.local.json');
+
+    // Initial apply
+    await manager.processTemplates({ apply: true });
+
+    const initialLog = JSON.parse(await fs.readFile(localBuildlogPath, 'utf-8'));
+    const relPath = relative(testContext.testDir, templatePath);
+    const initialHash = initialLog.templates[relPath].lastAppliedHash;
+    const initialDate = initialLog.templates[relPath].lastAppliedDate;
+
+    // Wait a bit to ensure timestamp would be different
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    // Apply again without changes
+    await manager.processTemplates({ apply: true });
+
+    const updatedLog = JSON.parse(await fs.readFile(localBuildlogPath, 'utf-8'));
+
+    // Hash and date should remain exactly the same since no changes were made
+    expect(updatedLog.templates[relPath].lastAppliedHash).toBe(initialHash);
+    expect(updatedLog.templates[relPath].lastAppliedDate).toBe(initialDate);
+  });
+
+  it('should not reapply unchanged templates in watch mode', async () => {
+    // Create multiple templates
+    const templates = await Promise.all([
+      createTemplateWithFunc(`watch-stable-1-${testContext.timestamp}.sql`, '_watch_1'),
+      createTemplateWithFunc(`watch-stable-2-${testContext.timestamp}.sql`, '_watch_2'),
+    ]);
+
+    const manager = await TemplateManager.create(testContext.testDir);
+    const applied: string[] = [];
+    const changed: string[] = [];
+
+    manager.on('templateChanged', template => {
+      changed.push(template.name);
+    });
+
+    manager.on('templateApplied', template => {
+      applied.push(template.name);
+    });
+
+    // First watch session
+    const watcher1 = await manager.watch();
+    await new Promise(resolve => setTimeout(resolve, 100));
+    await watcher1.close();
+
+    // Record initial state
+    const initialApplied = [...applied];
+    const initialChanged = [...changed];
+    applied.length = 0;
+    changed.length = 0;
+
+    // Second watch session without any changes
+    const watcher2 = await manager.watch();
+    await new Promise(resolve => setTimeout(resolve, 100));
+    await watcher2.close();
+
+    expect(initialApplied).toHaveLength(2); // First run should apply both
+    expect(initialChanged).toHaveLength(2); // First run should detect both
+    expect(applied).toHaveLength(0); // Second run should apply none
+    expect(changed).toHaveLength(0); // Second run should detect none
+
+    // Verify the buildlog state
+    const localBuildlogPath = join(testContext.testDir, '.buildlog-test.local.json');
+    const buildLog = JSON.parse(await fs.readFile(localBuildlogPath, 'utf-8'));
+
+    for (const templatePath of templates) {
+      const relPath = relative(testContext.testDir, templatePath);
+      const content = await fs.readFile(templatePath, 'utf-8');
+      const hash = await calculateMD5(content);
+      expect(buildLog.templates[relPath].lastAppliedHash).toBe(hash);
+    }
   });
 });

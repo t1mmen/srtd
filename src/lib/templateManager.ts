@@ -110,10 +110,14 @@ export class TemplateManager extends EventEmitter implements Disposable {
   }
 
   private async saveBuildLogs(): Promise<void> {
-    await Promise.all([
-      saveBuildLog(this.baseDir, this.buildLog, 'common'),
-      saveBuildLog(this.baseDir, this.localBuildLog, 'local'),
-    ]);
+    try {
+      await Promise.all([
+        saveBuildLog(this.baseDir, this.buildLog, 'common'),
+        saveBuildLog(this.baseDir, this.localBuildLog, 'local'),
+      ]);
+    } catch (error) {
+      throw new Error(`Failed to save build logs: ${error}`);
+    }
   }
 
   private async handleTemplateChange(templatePath: string): Promise<void> {
@@ -129,13 +133,65 @@ export class TemplateManager extends EventEmitter implements Disposable {
     }
   }
 
+  private async processTemplate(
+    templatePath: string,
+    force = false
+  ): Promise<ProcessedTemplateResult> {
+    try {
+      this.invalidateCache(templatePath);
+      const template = await this.getTemplateStatus(templatePath);
+      const relPath = path.relative(this.baseDir, templatePath);
+
+      // Check if template needs processing
+      const needsProcessing =
+        force ||
+        !this.localBuildLog.templates[relPath]?.lastAppliedHash ||
+        this.localBuildLog.templates[relPath]?.lastAppliedHash !== template.currentHash;
+
+      if (needsProcessing) {
+        this.emit('templateChanged', template);
+        const result = await this.applyTemplate(templatePath);
+
+        if (result.errors.length) {
+          // Format error before emitting
+          const error = result.errors[0];
+          const formattedError = typeof error === 'string' ? error : error.error;
+          this.emit('templateError', { template, error: formattedError });
+        } else {
+          const updatedTemplate = await this.getTemplateStatus(templatePath);
+          this.emit('templateApplied', updatedTemplate);
+        }
+        return result;
+      }
+
+      return { errors: [], applied: [] };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      this.log(`Error processing template ${templatePath}: ${errorMessage}`, 'error');
+      this.emit('templateError', {
+        template: await this.getTemplateStatus(templatePath),
+        error: errorMessage,
+      });
+      const templateName = path.basename(templatePath, '.sql');
+      return {
+        errors: [
+          {
+            file: templatePath,
+            error: errorMessage,
+            templateName,
+          },
+        ],
+        applied: [],
+      };
+    }
+  }
+
   private async processNextTemplate(): Promise<void> {
     if (this.processQueue.size === 0) {
       this.processing = false;
       return;
     }
 
-    // Get next template and update state
     const templatePath = this.processQueue.values().next().value;
     if (!templatePath) {
       this.processing = false;
@@ -146,25 +202,9 @@ export class TemplateManager extends EventEmitter implements Disposable {
     this.processingTemplate = templatePath;
 
     try {
-      this.invalidateCache(templatePath);
-      const template = await this.getTemplateStatus(templatePath);
-      this.emit('templateChanged', template);
-
-      const result = await this.applyTemplate(templatePath);
-      if (result.errors.length) {
-        this.emit('templateError', {
-          template,
-          error: result.errors[0],
-        });
-      } else {
-        const updatedTemplate = await this.getTemplateStatus(templatePath);
-        this.emit('templateApplied', updatedTemplate);
-      }
-    } catch (error) {
-      this.log(`Error processing template ${templatePath}: ${error}`, 'error');
+      await this.processTemplate(templatePath);
     } finally {
       this.processingTemplate = null;
-      // Continue processing queue without recursion
       setImmediate(() => void this.processNextTemplate());
     }
   }
@@ -174,7 +214,7 @@ export class TemplateManager extends EventEmitter implements Disposable {
     const templatePath = path.join(this.baseDir, this.config.templateDir);
 
     const watcher = chokidar.watch(templatePath, {
-      ignoreInitial: true,
+      ignoreInitial: false,
       ignored: ['**/!(*.sql)'],
       persistent: true,
       awaitWriteFinish: {
@@ -183,10 +223,13 @@ export class TemplateManager extends EventEmitter implements Disposable {
       },
     });
 
-    // Handle existing files first
+    // Do initial scan once
     const existingFiles = await glob(path.join(templatePath, this.config.filter));
-    await Promise.all(existingFiles.map(file => this.handleTemplateChange(file)));
+    for (const file of existingFiles) {
+      await this.handleTemplateChange(file);
+    }
 
+    // Only handle future changes
     const handleEvent = async (filepath: string) => {
       if (path.extname(filepath) === '.sql') {
         await this.handleTemplateChange(filepath);
@@ -207,30 +250,47 @@ export class TemplateManager extends EventEmitter implements Disposable {
   async applyTemplate(templatePath: string): Promise<ProcessedTemplateResult> {
     const template = await this.getTemplateStatus(templatePath);
     const content = await fs.readFile(templatePath, 'utf-8');
-    const result = await applyMigration(content, template.name, this.silent);
     const relPath = path.relative(this.baseDir, templatePath);
 
-    this.invalidateCache(templatePath);
+    try {
+      const result = await applyMigration(content, template.name, this.silent);
 
-    if (result === true) {
+      if (result === true) {
+        // Always calculate fresh hash after successful apply
+        const currentHash = await calculateMD5(content);
+
+        if (!this.localBuildLog.templates[relPath]) {
+          this.localBuildLog.templates[relPath] = {};
+        }
+
+        this.localBuildLog.templates[relPath] = {
+          ...this.localBuildLog.templates[relPath],
+          lastAppliedHash: currentHash,
+          lastAppliedDate: new Date().toISOString(),
+          lastAppliedError: undefined,
+        };
+
+        await this.saveBuildLogs();
+        this.invalidateCache(templatePath);
+        return { errors: [], applied: [template.name] };
+      }
+
+      // On error, don't update hash but track the error
       this.localBuildLog.templates[relPath] = {
         ...this.localBuildLog.templates[relPath],
-        lastAppliedHash: template.currentHash,
-        lastAppliedDate: new Date().toISOString(),
-        lastAppliedError: undefined,
+        lastAppliedError: result.error,
       };
-      await this.saveBuildLogs();
-      this.emit('templateApplied', template);
-      return { errors: [], applied: [template.name] };
-    }
 
-    this.localBuildLog.templates[relPath] = {
-      ...this.localBuildLog.templates[relPath],
-      lastAppliedError: result.error,
-    };
-    await this.saveBuildLogs();
-    this.emit('templateError', { template, error: result });
-    return { errors: [result], applied: [] };
+      await this.saveBuildLogs();
+      return { errors: [result], applied: [] };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      if (!this.localBuildLog.templates) {
+        this.localBuildLog = { templates: {}, version: '1.0', lastTimestamp: '' };
+      }
+      await this.saveBuildLogs();
+      throw new Error(errorMessage);
+    }
   }
 
   async buildTemplate(templatePath: string, force = false): Promise<void> {
@@ -295,33 +355,23 @@ export class TemplateManager extends EventEmitter implements Disposable {
 
     if (options.apply) {
       const isConnected = await testConnection();
-
-      if (isConnected) {
-        this.log('Connected to database', 'success');
-      } else {
+      if (!isConnected) {
         this.log('Failed to connect to database, cannot proceed. Is Supabase running?', 'error');
         return result;
       }
 
+      this.log('Connected to database', 'success');
       const action = options.force ? 'Force applying' : 'Applying';
       this.log(`${action} changed templates to local database...`, 'success');
-      let hasChanges = false;
 
+      // Process all templates
       for (const templatePath of templates) {
-        const template = await this.getTemplateStatus(templatePath);
-        const needsApply =
-          !template.buildState.lastAppliedHash ||
-          template.buildState.lastAppliedHash !== template.currentHash;
-
-        if (needsApply) {
-          hasChanges = true;
-          const applyResult = await this.applyTemplate(templatePath);
-          result.errors.push(...applyResult.errors);
-          result.applied.push(...applyResult.applied);
-        }
+        const processResult = await this.processTemplate(templatePath, options.force);
+        result.errors.push(...processResult.errors);
+        result.applied.push(...processResult.applied);
       }
 
-      if (!hasChanges) {
+      if (result.applied.length === 0 && result.errors.length === 0) {
         this.log('No changes to apply', 'skip');
       } else if (result.errors.length > 0) {
         this.log(`${result.errors.length} template(s) failed to apply`, 'error');
