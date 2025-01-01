@@ -110,7 +110,7 @@ Running `srtd` without arguments opens an interactive menu:
 ### Ideal Use Cases
 
 ✅ Database functions:
-```sql-diff
+```diff
 -- Event notifications
   CREATE OR REPLACE FUNCTION notify_changes()
   RETURNS trigger AS $$
@@ -126,7 +126,7 @@ Running `srtd` without arguments opens an interactive menu:
 ```
 
 ✅ Row-Level Security (RLS):
-```sql-diff
+```diff
   -- Replace/update policies safely
   DROP POLICY IF EXISTS "workspace_access" ON resources;
   CREATE POLICY "workspace_access" ON resources
@@ -138,7 +138,7 @@ Running `srtd` without arguments opens an interactive menu:
 ```
 
 ✅ Views for data abstraction:
-```sql-diff
+```diff
   CREATE OR REPLACE VIEW active_subscriptions AS
   SELECT
     s.*,
@@ -152,7 +152,7 @@ Running `srtd` without arguments opens an interactive menu:
 ```
 
 ✅ Roles and Permissions:
-```sql-diff
+```diff
   -- Revoke all first for clean state
   REVOKE ALL ON ALL TABLES IN SCHEMA public FROM public;
 
