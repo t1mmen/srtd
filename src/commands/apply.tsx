@@ -30,6 +30,7 @@ export default function Apply({ options }: Props) {
         if (err instanceof Error) {
           exit(err);
         }
+        exit();
       }
     }
     void doApply();
