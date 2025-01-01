@@ -163,7 +163,7 @@ describe('TemplateManager', () => {
     // Make rapid changes
     for (let i = 0; i < 5; i++) {
       await fs.writeFile(templatePath, `${baseContent}\n-- Change ${i}`);
-      await new Promise(resolve => setTimeout(resolve, 50));
+      await new Promise(resolve => setTimeout(resolve, 51));
     }
 
     await new Promise(resolve => setTimeout(resolve, 500));
@@ -388,11 +388,10 @@ describe('TemplateManager', () => {
     });
 
     const watcher = await manager.watch();
-    await new Promise(resolve => setTimeout(resolve, 100));
 
     // Add new template after watch started
     await createTemplateWithFunc(`test-new-${testContext.timestamp}.sql`);
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await new Promise(resolve => setTimeout(resolve, 150));
 
     watcher.close();
     expect(changes).toContain(`test-new-${testContext.timestamp}`);
@@ -406,8 +405,8 @@ describe('TemplateManager', () => {
     for (let i = 1; i <= depth; i++) {
       const dir = [...Array(i)].map((_, idx) => `level${idx + 1}`).join('/');
       const templatePath = await createTemplateWithFunc(
-        `test-${i}-${testContext.timestamp}.sql`,
-        `_${i}`,
+        `depth-test-${i}-${testContext.timestamp}.sql`,
+        `_depth_${i}`,
         dir
       );
       templatePaths.push(templatePath);
@@ -421,13 +420,13 @@ describe('TemplateManager', () => {
     });
 
     const watcher = await manager.watch();
-    await new Promise(resolve => setTimeout(resolve, 500));
+    await new Promise(resolve => setTimeout(resolve, depth * 100 * 1.1));
     watcher.close();
 
     expect(changes.length).toBe(depth);
     // Verify each template was detected
     for (let i = 1; i <= depth; i++) {
-      expect(changes).toContain(`test-${i}-${testContext.timestamp}`);
+      expect(changes).toContain(`depth-test-${i}-${testContext.timestamp}`);
     }
   });
 
@@ -452,5 +451,111 @@ describe('TemplateManager', () => {
 
     expect(changes).toHaveLength(1);
     expect(changes[0]).toBe(`test-sql-${testContext.timestamp}`);
+  });
+
+  it('should handle multiple template changes simultaneously', async () => {
+    const manager = await TemplateManager.create(testContext.testDir);
+    const changes = new Set<string>();
+    const count = 5;
+
+    manager.on('templateChanged', template => {
+      changes.add(template.name);
+    });
+
+    const watcher = await manager.watch();
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    // Create multiple templates simultaneously
+    await Promise.all([
+      createTemplateWithFunc(`rapid_test-1-${testContext.timestamp}.sql`, '_batch_changes_1'),
+      createTemplateWithFunc(`rapid_test-2-${testContext.timestamp}.sql`, '_batch_changes_2'),
+      createTemplateWithFunc(`rapid_test-3-${testContext.timestamp}.sql`, '_batch_changes_3'),
+      createTemplateWithFunc(
+        `rapid_test-4-${testContext.timestamp}.sql`,
+        '_batch_changes_4',
+        'deep'
+      ),
+      createTemplateWithFunc(
+        `rapid_test-5-${testContext.timestamp}.sql`,
+        '_batch_changes_5',
+        'deep/nested'
+      ),
+    ]);
+
+    // Give enough time for all changes to be detected
+    await new Promise(resolve => setTimeout(resolve, count * 100));
+    watcher.close();
+
+    expect(changes.size).toBe(count); // Should detect all 5 templates
+    for (let i = 1; i <= count; i++) {
+      expect(changes.has(`rapid_test-${i}-${testContext.timestamp}`)).toBe(true);
+    }
+
+    // Verify all templates were processed
+    const client = await connect();
+    try {
+      for (let i = 1; i <= count; i++) {
+        const res = await client.query(`SELECT proname FROM pg_proc WHERE proname = $1`, [
+          `${testContext.testFunctionName}_batch_changes_${i}`,
+        ]);
+        expect(res.rows).toHaveLength(1);
+      }
+    } finally {
+      client.release();
+    }
+  }, 15000);
+
+  it('should handle rapid bulk template creation realistically', async () => {
+    const TEMPLATE_COUNT = 50;
+    const manager = await TemplateManager.create(testContext.testDir);
+    const processed = new Set<string>();
+    const failed = new Set<string>();
+    const inProgress = new Set<string>();
+    const events: Array<{ event: string; template: string; time: number }> = [];
+
+    let resolveProcessing: () => void;
+    const processingComplete = new Promise<void>(resolve => {
+      resolveProcessing = resolve;
+    });
+
+    manager.on('templateChanged', ({ name }) => {
+      events.push({ event: 'changed', template: name, time: Date.now() });
+      inProgress.add(name);
+    });
+
+    manager.on('templateApplied', ({ name }) => {
+      events.push({ event: 'applied', template: name, time: Date.now() });
+      processed.add(name);
+      inProgress.delete(name);
+      if (processed.size + failed.size === TEMPLATE_COUNT) {
+        resolveProcessing();
+      }
+    });
+
+    manager.on('templateError', ({ template: { name }, error }) => {
+      events.push({ event: 'error', template: name, time: Date.now() });
+      failed.add(name);
+      inProgress.delete(name);
+      console.error('Template error:', { name, error });
+      if (processed.size + failed.size === TEMPLATE_COUNT) {
+        resolveProcessing();
+      }
+    });
+
+    const watcher = await manager.watch();
+
+    // Create all templates
+    await Promise.all(
+      Array.from({ length: TEMPLATE_COUNT }, (_, i) =>
+        createTemplateWithFunc(`bulk_created_template_${i + 1}.sql`, `_bulk_${i + 1}`)
+      )
+    );
+
+    await processingComplete;
+    watcher.close();
+
+    expect(processed.size + failed.size).toBe(TEMPLATE_COUNT);
+    expect(inProgress.size).toBe(0);
+    expect(failed.size).toBe(0);
   });
 });

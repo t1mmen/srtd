@@ -26,6 +26,9 @@ export class TemplateManager extends EventEmitter {
   private templateCache: Map<string, TemplateCache> = new Map();
   private cacheTimeout = 1000;
   private silent: boolean;
+  private processQueue: Set<string> = new Set();
+  private processingTemplate: string | null = null;
+  private processing = false;
 
   // Constructor:
   private constructor(
@@ -104,19 +107,55 @@ export class TemplateManager extends EventEmitter {
   }
 
   private async handleTemplateChange(templatePath: string): Promise<void> {
-    this.invalidateCache(templatePath);
-    const template = await this.getTemplateStatus(templatePath);
-    this.emit('templateChanged', template);
+    // Add to queue if not already there
+    if (!this.processQueue.has(templatePath) && this.processingTemplate !== templatePath) {
+      this.processQueue.add(templatePath);
+    }
 
-    const result = await this.applyTemplate(templatePath);
-    if (result.errors.length) {
-      this.emit('templateError', {
-        template,
-        error: result.errors[0],
-      });
-    } else {
-      const updatedTemplate = await this.getTemplateStatus(templatePath);
-      this.emit('templateApplied', updatedTemplate);
+    if (!this.processing) {
+      this.processing = true;
+      // Start processing non-recursively
+      setImmediate(() => void this.processNextTemplate());
+    }
+  }
+
+  private async processNextTemplate(): Promise<void> {
+    if (this.processQueue.size === 0) {
+      this.processing = false;
+      return;
+    }
+
+    // Get next template and update state
+    const templatePath = this.processQueue.values().next().value;
+    if (!templatePath) {
+      this.processing = false;
+      return;
+    }
+
+    this.processQueue.delete(templatePath);
+    this.processingTemplate = templatePath;
+
+    try {
+      this.invalidateCache(templatePath);
+      const template = await this.getTemplateStatus(templatePath);
+      this.emit('templateChanged', template);
+
+      const result = await this.applyTemplate(templatePath);
+      if (result.errors.length) {
+        this.emit('templateError', {
+          template,
+          error: result.errors[0],
+        });
+      } else {
+        const updatedTemplate = await this.getTemplateStatus(templatePath);
+        this.emit('templateApplied', updatedTemplate);
+      }
+    } catch (error) {
+      this.log(`Error processing template ${templatePath}: ${error}`, 'error');
+    } finally {
+      this.processingTemplate = null;
+      // Continue processing queue without recursion
+      setImmediate(() => void this.processNextTemplate());
     }
   }
 
@@ -125,22 +164,27 @@ export class TemplateManager extends EventEmitter {
     const templatePath = path.join(this.baseDir, this.config.templateDir);
 
     const watcher = chokidar.watch(templatePath, {
-      ignoreInitial: false,
+      ignoreInitial: true, // Changed to true since we'll handle initial files ourselves
       ignored: ['**/!(*.sql)'],
       persistent: true,
+      awaitWriteFinish: {
+        stabilityThreshold: 50,
+        pollInterval: 50,
+      },
     });
 
-    watcher
-      .on('add', async (filepath: string) => {
-        if (path.extname(filepath) === '.sql') {
-          await this.handleTemplateChange(filepath);
-        }
-      })
-      .on('change', async (filepath: string) => {
-        if (path.extname(filepath) === '.sql') {
-          await this.handleTemplateChange(filepath);
-        }
-      });
+    // Handle existing files first
+    const existingFiles = await glob(path.join(templatePath, this.config.filter));
+    await Promise.all(existingFiles.map(file => this.handleTemplateChange(file)));
+
+    // Then start watching for changes
+    const handleEvent = async (filepath: string) => {
+      if (path.extname(filepath) === '.sql') {
+        await this.handleTemplateChange(filepath);
+      }
+    };
+
+    watcher.on('add', handleEvent).on('change', handleEvent);
 
     return watcher;
   }
