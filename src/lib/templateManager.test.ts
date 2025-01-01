@@ -202,7 +202,7 @@ describe('TemplateManager', () => {
   it('should handle sequential template operations', async () => {
     const templates = await Promise.all(
       [...Array(5)].map((_, i) =>
-        createTemplateWithFunc(`test-${i}-${testContext.timestamp}.sql`, `_${i}`)
+        createTemplateWithFunc(`test-${i}-${testContext.timestamp}.sql`, `_sequence_test_${i}`)
       )
     );
 
@@ -218,7 +218,7 @@ describe('TemplateManager', () => {
     try {
       for (let i = 0; i < 5; i++) {
         const res = await client.query(`SELECT proname FROM pg_proc WHERE proname = $1`, [
-          `${testContext.testFunctionName}_${i}`,
+          `${testContext.testFunctionName}_sequence_test_${i}`,
         ]);
         expect(res.rows).toHaveLength(1);
       }
