@@ -31,7 +31,17 @@ vi.mock('../utils/logger', () => ({
 }));
 
 beforeAll(async () => {
-  await fs.mkdir(TEST_ROOT, { recursive: true });
+  try {
+    await fs.mkdir(TEST_ROOT, { recursive: true });
+  } catch (error) {
+    console.error('Error creating test root:', error, ', retrying once.');
+
+    try {
+      await fs.mkdir(TEST_ROOT, { recursive: true });
+    } catch (error) {
+      console.error('Error creating test root:', error, ', aborting.');
+    }
+  }
 });
 
 afterAll(async () => {
