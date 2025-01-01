@@ -202,7 +202,10 @@ describe('TemplateManager', () => {
   it('should handle sequential template operations', async () => {
     const templates = await Promise.all(
       [...Array(5)].map((_, i) =>
-        createTemplateWithFunc(`test-${i}-${testContext.timestamp}.sql`, `_sequence_test_${i}`)
+        createTemplateWithFunc(
+          `sequencetest-${i}-${testContext.timestamp}.sql`,
+          `_sequence_test_${i}`
+        )
       )
     );
 
@@ -213,6 +216,8 @@ describe('TemplateManager', () => {
       const result = await manager.processTemplates({ apply: true });
       expect(result.errors).toHaveLength(0);
     }
+
+    await new Promise(resolve => setTimeout(resolve, 100));
 
     const client = await connect();
     try {
@@ -230,7 +235,7 @@ describe('TemplateManager', () => {
   it('should generate unique timestamps for multiple templates', async () => {
     const templates = await Promise.all(
       [...Array(10)].map((_, i) =>
-        createTemplateWithFunc(`test-${i}-${testContext.timestamp}.sql`, `_${i}`)
+        createTemplateWithFunc(`timestamptest-${i}-${testContext.timestamp}.sql`, `_${i}`)
       )
     );
 
@@ -246,8 +251,8 @@ describe('TemplateManager', () => {
   });
 
   it('should handle mix of working and broken templates', async () => {
-    await createTemplateWithFunc(`test-good-${testContext.timestamp}.sql`, '_good');
-    await createTemplate(`test-bad-${testContext.timestamp}.sql`, 'INVALID SQL SYNTAX;');
+    await createTemplateWithFunc(`a-test-good-${testContext.timestamp}.sql`, '_good');
+    await createTemplate(`a-test-bad-${testContext.timestamp}.sql`, 'INVALID SQL SYNTAX;');
 
     const manager = await TemplateManager.create(testContext.testDir);
     const result = await manager.processTemplates({ apply: true });
