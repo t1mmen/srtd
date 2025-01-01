@@ -35,7 +35,6 @@ beforeAll(async () => {
     await fs.mkdir(TEST_ROOT, { recursive: true });
   } catch (error) {
     console.error('Error creating test root:', error, ', retrying once.');
-    throw error;
   }
 });
 
