@@ -1,5 +1,18 @@
 # srtd
 
+## 0.4.0
+
+### Minor Changes
+
+- e96e857: Allow clearning local, common logs, and resetting of config.
+- e96e857: Greatly improve watch mode stability, while reducing and simplifying the implementation. Add tests.
+- e96e857: Load templates created while `watch` is already running. Restarting no longer necessary
+
+### Patch Changes
+
+- e96e857: Ensure watcher cleanup on exit
+- e96e857: Make CLI "fullscreen"
+
 ## 0.3.0
 
 ### Minor Changes
