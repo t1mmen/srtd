@@ -117,7 +117,7 @@ Without templates, this would appear as a complete rewrite in your PR.
 
 ✅ Database functions:
 ```diff
--- Event notifications
+  -- Event notifications
   CREATE OR REPLACE FUNCTION notify_changes()
   RETURNS trigger AS $$
   BEGIN
