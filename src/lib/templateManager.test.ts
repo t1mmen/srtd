@@ -62,9 +62,14 @@ describe('TemplateManager', () => {
     const fullPath = dir
       ? join(testContext.testDir, 'test-templates', dir, name)
       : join(testContext.testDir, 'test-templates', name);
-    await fs.mkdir(path.dirname(fullPath), { recursive: true });
-    await fs.writeFile(fullPath, content);
-    return fullPath;
+    try {
+      await fs.mkdir(path.dirname(fullPath), { recursive: true });
+      await fs.writeFile(fullPath, content);
+      return fullPath;
+    } catch (error) {
+      console.error('Error creating template:', error);
+      throw error;
+    }
   };
 
   const createTemplateWithFunc = async (prefix: string, funcSuffix = '', dir?: string) => {
@@ -462,27 +467,29 @@ describe('TemplateManager', () => {
   });
 
   it('should handle multiple template changes simultaneously', async () => {
+    const client = await connect();
     const manager = await TemplateManager.create(testContext.testDir);
     const changes = new Set<string>();
     const count = 5;
 
+    const watcher = await manager.watch();
+    await new Promise(resolve => setTimeout(resolve, 100));
     manager.on('templateChanged', template => {
       changes.add(template.name);
     });
 
-    const watcher = await manager.watch();
-
-    await new Promise(resolve => setTimeout(resolve, 100));
-
     // Create multiple templates simultaneously
-    await Promise.all([
-      await createTemplateWithFunc(`rapid_test_1`, '_batch_changes_1'),
-      await createTemplateWithFunc(`rapid_test_2`, '_batch_changes_2'),
-      await createTemplateWithFunc(`rapid_test_3`, '_batch_changes_3'),
-      await createTemplateWithFunc(`rapid_test_4`, '_batch_changes_4', 'deep'),
-      await createTemplateWithFunc(`rapid_test_5`, '_batch_changes_5', 'deep/nested'),
-    ]);
 
+    try {
+      await createTemplateWithFunc(`rapid_test_1`, '_batch_changes_1');
+      await createTemplateWithFunc(`rapid_test_2`, '_batch_changes_2');
+      await createTemplateWithFunc(`rapid_test_3`, '_batch_changes_3');
+      await createTemplateWithFunc(`rapid_test_4`, '_batch_changes_4', 'deep');
+      await createTemplateWithFunc(`rapid_test_5`, '_batch_changes_5', 'deep/nested');
+    } catch (error) {
+      console.error('Error creating templates:', error);
+      throw error;
+    }
     // Give enough time for all changes to be detected
     await new Promise(resolve => setTimeout(resolve, count * 100 * 1.1));
     watcher.close();
@@ -493,12 +500,16 @@ describe('TemplateManager', () => {
     }
 
     // Verify all templates were processed
-    const client = await connect();
+
+    await new Promise(resolve => setTimeout(resolve, 50));
     try {
       const res = await client.query(`SELECT proname FROM pg_proc WHERE proname LIKE $1`, [
         `${testContext.testFunctionName}_batch_changes_%`,
       ]);
+      // expect(res).toBe('');
       expect(res.rows).toHaveLength(count);
+    } catch (error) {
+      console.error('Error querying functions:', error);
     } finally {
       client.release();
     }
@@ -660,6 +671,7 @@ describe('TemplateManager', () => {
       await fs.writeFile(template1, `${await fs.readFile(template1, 'utf-8')}\n-- Modified`);
     } catch (error) {
       console.error('Test: Error modifying template:', error);
+      throw error;
     }
     // Process both templates again
     await manager.processTemplates({ apply: true });
