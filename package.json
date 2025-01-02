@@ -4,7 +4,7 @@
   "license": "MIT",
   "description": "Supabase Repeatable Template Definitions (srtd): 🪄 Live-reloading SQL templates for Supabase DX. Make your database changes reviewable and migrations maintainable! 🚀",
   "bin": {
-    "srtd": "dist/src/cli.js"
+    "srtd": "dist/cli.js"
   },
   "type": "module",
   "engines": {

@@ -6,6 +6,7 @@
     "target": "ES2022",
     "outDir": "dist",
     "baseUrl": "./src",
+    "rootDir": "./src",
     "strict": true,
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,

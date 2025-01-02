@@ -21,7 +21,7 @@ function parseDbError(error: unknown): string {
   return String(error);
 }
 
-export function useDatabaseConnection(checkInterval = 5000): DbConnectionState {
+export function useDatabaseConnection(checkInterval = 3000): DbConnectionState {
   const [state, setState] = useState<DbConnectionState>({
     isConnected: false,
     isChecking: true,
