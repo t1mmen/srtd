@@ -12,7 +12,7 @@ async function createPool(): Promise<pg.Pool> {
   const config = await getConfig(process.cwd());
   const newPool = new pg.Pool({
     connectionString: config.pgConnection,
-    connectionTimeoutMillis: 500,
+    connectionTimeoutMillis: 2000,
     max: 3, // Reduce for local dev
     idleTimeoutMillis: 1000,
     maxUses: 100, // Close connections after 100 uses
