@@ -195,6 +195,7 @@ export default function Watch() {
       ) : (
         <Box flexDirection="column">
           <Text bold>Recently modified templates:</Text>
+          {activeTemplates.length === 0 && <Text dimColor>No templates found</Text>}
           {activeTemplates.map(template => (
             <TemplateRow
               key={template.path}

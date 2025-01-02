@@ -11,6 +11,8 @@ vi.mock('ink', async importOriginal => {
   };
 });
 
+const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
 describe('Watch Command', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -18,9 +20,16 @@ describe('Watch Command', () => {
 
   test('renders initial state with no templates', async () => {
     const { lastFrame } = render(<Watch />);
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await wait(100); // Allow time for UI to render and DB to initialize
 
-    const output = lastFrame();
-    expect(output).toContain('Watch Mode');
+    expect(lastFrame()).toContain('Watch Mode');
+    expect(lastFrame()).toContain('No templates found');
+  });
+
+  test('renders with templates', async () => {
+    const { lastFrame } = render(<Watch />);
+    await wait(100); // Allow time for UI to render and DB to initialize
+
+    expect(lastFrame()).toContain('Watch Mode');
   });
 });

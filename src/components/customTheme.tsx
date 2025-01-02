@@ -6,6 +6,7 @@ export const COLOR_ACCENT = 'magenta';
 export const COLOR_SUCCESS = 'green';
 export const COLOR_ERROR = 'red';
 export const COLOR_WARNING = 'yellow';
+export const COLOR_SKIP = 'gray';
 export const OPTION_COLOR_SELECTED = 'green';
 
 export const customTheme = extendTheme(defaultTheme, {

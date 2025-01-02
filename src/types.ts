@@ -40,6 +40,8 @@ export interface CLIConfig {
 export interface ProcessedTemplateResult {
   errors: MigrationError[];
   applied: string[];
+  built: string[];
+  skipped: string[];
 }
 
 export interface TemplateStatus {

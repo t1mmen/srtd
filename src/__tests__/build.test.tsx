@@ -4,35 +4,33 @@ import path from 'node:path';
 import { render } from 'ink-testing-library';
 import React from 'react';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
-import Apply from '../commands/apply.js';
-import { connect } from '../utils/databaseConnection.js';
+import Build from '../commands/build.js';
 import { TEST_FN_PREFIX } from './vitest.setup.js';
 
 vi.mock('../hooks/useTemplateProcessor', () => ({
-  useTemplateProcessor: vi.fn().mockImplementation(() => ({
+  useTemplateProcessor: vi.fn().mockImplementation(({ apply }) => ({
     isProcessing: false,
     result: {
-      built: [],
-      applied: ['test.sql'],
+      built: ['test.sql'],
+      applied: apply ? ['test.sql'] : [],
       skipped: [],
       errors: [],
     },
   })),
 }));
 
-describe('Apply Command', () => {
+describe('Build Command', () => {
   const testContext = {
     timestamp: Date.now(),
     testFunctionName: `${TEST_FN_PREFIX}${Date.now()}`,
-    testDir: path.join(tmpdir(), `test-apply-command-${Date.now()}`),
+    testDir: path.join(tmpdir(), `test-build-command-${Date.now()}`),
   };
 
   vi.mock('ink', async importOriginal => {
     const actual = (await importOriginal()) as typeof import('ink');
-    const mockExit = vi.fn();
     return {
       ...actual,
-      useApp: () => ({ exit: mockExit }),
+      useApp: () => ({ exit: vi.fn() }),
     };
   });
 
@@ -41,6 +39,7 @@ describe('Apply Command', () => {
     await fs.mkdir(templateDir, { recursive: true });
     const templatePath = path.join(templateDir, `test-${testContext.timestamp}.sql`);
     await fs.writeFile(templatePath, content);
+    return templatePath;
   }
 
   beforeEach(async () => {
@@ -54,22 +53,23 @@ describe('Apply Command', () => {
   });
 
   afterEach(async () => {
-    const client = await connect();
-    try {
-      await client.query(`DROP FUNCTION IF EXISTS ${testContext.testFunctionName}()`);
-    } finally {
-      client.release();
-    }
     await fs.rm(testContext.testDir, { recursive: true, force: true });
   });
 
-  test('shows progress and success', async () => {
-    const { lastFrame } = render(<Apply options={{ force: false }} />);
+  test('shows build progress and success', async () => {
+    const { lastFrame } = render(<Build options={{ force: false }} />);
     expect(lastFrame()).toMatch(/✓ test\.sql/);
   });
 
   test('handles force flag', async () => {
-    const { lastFrame } = render(<Apply options={{ force: true }} />);
+    const { lastFrame } = render(<Build options={{ force: true }} />);
     expect(lastFrame()).toMatch(/✓ test\.sql/);
+  });
+
+  test('handles build and apply together', async () => {
+    const { lastFrame } = render(<Build options={{ force: false, apply: true }} />);
+    // Use more precise matching that accounts for newlines
+    expect(lastFrame()).toMatch(/Built:\s*\n\s*✓ test\.sql/);
+    expect(lastFrame()).toMatch(/Applied:\s*\n\s*✓ test\.sql/);
   });
 });

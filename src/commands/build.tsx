@@ -1,9 +1,12 @@
 // commands/build.tsx
-import { useApp } from 'ink';
+import { Spinner } from '@inkjs/ui';
+import { Box, Text, useApp, useInput } from 'ink';
 import { option } from 'pastel';
 import React from 'react';
 import zod from 'zod';
-import { TemplateManager } from '../lib/templateManager.js';
+import Branding from '../components/Branding.js';
+import { ProcessingResults } from '../components/ProcessingResults.js';
+import { useTemplateProcessor } from '../hooks/useTemplateProcessor.js';
 
 export const options = zod.object({
   force: zod.boolean().describe(
@@ -12,6 +15,15 @@ export const options = zod.object({
       alias: 'f',
     })
   ),
+  apply: zod
+    .boolean()
+    .optional()
+    .describe(
+      option({
+        description: 'Apply the built templates',
+        alias: 'a',
+      })
+    ),
 });
 
 type Props = {
@@ -20,14 +32,29 @@ type Props = {
 
 export default function Build({ options }: Props) {
   const { exit } = useApp();
-  React.useEffect(() => {
-    async function doBuild() {
-      const manager = await TemplateManager.create(process.cwd());
-      await manager.processTemplates({ generateFiles: true, force: options.force });
+  const { result, isProcessing } = useTemplateProcessor({
+    force: options.force,
+    generateFiles: true,
+    apply: options.apply,
+  });
+
+  useInput((_input, _) => {
+    if (!isProcessing) {
       exit();
     }
-    doBuild();
-  }, [options, exit]);
+  });
 
-  return null;
+  return (
+    <Box flexDirection="column" gap={1}>
+      <Branding subtitle="🏗️  Build migrations" />
+      {isProcessing ? (
+        <Spinner label="Building templates..." />
+      ) : (
+        <>
+          <ProcessingResults result={result} showBuild showApply={!!option.apply} />
+          <Text dimColor>Press any key to exit</Text>
+        </>
+      )}
+    </Box>
+  );
 }
