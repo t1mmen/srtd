@@ -15,7 +15,7 @@ async function createPool(): Promise<pg.Pool> {
     connectionTimeoutMillis: 2000,
     max: MAX_RETRIES,
     idleTimeoutMillis: 1000,
-    maxUses: 100,
+    maxUses: 500,
   });
 
   // Handle pool errors
