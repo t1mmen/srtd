@@ -77,7 +77,7 @@ describe('TemplateManager', () => {
   };
 
   it('should create migration file when template changes', async () => {
-    await createTemplateWithFunc(`test-${testContext.timestamp}.sql`);
+    await createTemplateWithFunc(`test-${testContext.timestamp}.sql`, '_file_change');
 
     const manager = await TemplateManager.create(testContext.testDir);
     await manager.processTemplates({ generateFiles: true });
@@ -88,7 +88,7 @@ describe('TemplateManager', () => {
   });
 
   it('should not allow building WIP templates', async () => {
-    await createTemplateWithFunc(`test-${testContext.timestamp}.wip.sql`);
+    await createTemplateWithFunc(`test-${testContext.timestamp}.wip.sql`, '_wip_wont_build');
 
     const manager = await TemplateManager.create(testContext.testDir);
     await manager.processTemplates({ generateFiles: true });
@@ -261,7 +261,10 @@ describe('TemplateManager', () => {
   it('should generate unique timestamps for multiple templates', async () => {
     const templates = await Promise.all(
       [...Array(10)].map((_, i) =>
-        createTemplateWithFunc(`timestamptest-${i}-${testContext.timestamp}.sql`, `_${i}`)
+        createTemplateWithFunc(
+          `timestamptest-${i}-${testContext.timestamp}.sql`,
+          `_unique_timestamps_${i}`
+        )
       )
     );
 
@@ -277,7 +280,10 @@ describe('TemplateManager', () => {
   });
 
   it('should handle mix of working and broken templates', async () => {
-    await createTemplateWithFunc(`a-test-good-${testContext.timestamp}.sql`, '_good');
+    await createTemplateWithFunc(
+      `a-test-good-${testContext.timestamp}.sql`,
+      '_good_and_broken_mix'
+    );
     await createTemplate(`a-test-bad-${testContext.timestamp}.sql`, 'INVALID SQL SYNTAX;');
 
     const manager = await TemplateManager.create(testContext.testDir);
@@ -289,7 +295,7 @@ describe('TemplateManager', () => {
     const client = await connect();
     try {
       const res = await client.query(`SELECT COUNT(*) FROM pg_proc WHERE proname = $1`, [
-        `${testContext.testFunctionName}_good`,
+        `${testContext.testFunctionName}_good_and_broken_mix`,
       ]);
       expect(Number.parseInt(res.rows[0].count)).toBe(1);
     } finally {
@@ -337,7 +343,7 @@ describe('TemplateManager', () => {
     // Create 50 templates
     await Promise.all(
       [...Array(50)].map((_, i) =>
-        createTemplateWithFunc(`test-${i}-${testContext.timestamp}.sql`, `_${i}`)
+        createTemplateWithFunc(`test-${i}-${testContext.timestamp}.sql`, `_large_batch_${i}`)
       )
     );
 
@@ -399,7 +405,10 @@ describe('TemplateManager', () => {
   });
 
   it('should maintain template state across manager instances', async () => {
-    const template = await createTemplateWithFunc(`test-${testContext.timestamp}.sql`);
+    const template = await createTemplateWithFunc(
+      `test-${testContext.timestamp}.sql`,
+      'maintain_state'
+    );
 
     // First manager instance
     const manager1 = await TemplateManager.create(testContext.testDir);
@@ -422,7 +431,7 @@ describe('TemplateManager', () => {
     const watcher = await manager.watch();
 
     // Add new template after watch started
-    await createTemplateWithFunc(`test-new-${testContext.timestamp}.sql`);
+    await createTemplateWithFunc(`test-new-${testContext.timestamp}.sql`, '_watch_addition');
     await new Promise(resolve => setTimeout(resolve, 150));
 
     watcher.close();
