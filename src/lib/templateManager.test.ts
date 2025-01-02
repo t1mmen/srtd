@@ -485,7 +485,7 @@ describe('TemplateManager', () => {
     // Create various file types
     await fs.writeFile(join(testContext.testDir, 'test-templates/test.txt'), 'not sql');
     await fs.writeFile(join(testContext.testDir, 'test-templates/test.md'), 'not sql');
-    await createTemplateWithFunc(`test-sql-${testContext.timestamp}.sql`);
+    await createTemplateWithFunc(`test-sql-${testContext.timestamp}.sql`, '_watch_sql_only');
 
     await new Promise(resolve => setTimeout(resolve, 500));
     watcher.close();
@@ -611,14 +611,20 @@ describe('TemplateManager', () => {
     await manager.watch();
 
     // Create template before disposal
-    await createTemplateWithFunc(`test-before-dispose-${testContext.timestamp}.sql`);
+    await createTemplateWithFunc(
+      `test-before-dispose-${testContext.timestamp}.sql`,
+      'before_dispose'
+    );
     await new Promise(resolve => setTimeout(resolve, 100));
 
     // Dispose and verify cleanup
     manager[Symbol.dispose]();
 
     // Try creating template after disposal
-    await createTemplateWithFunc(`test-after-dispose-${testContext.timestamp}.sql`);
+    await createTemplateWithFunc(
+      `test-after-dispose-${testContext.timestamp}.sql`,
+      'after_dispose'
+    );
     await new Promise(resolve => setTimeout(resolve, 100));
 
     expect(changes).toHaveLength(1);
@@ -636,12 +642,15 @@ describe('TemplateManager', () => {
       });
 
       await manager.watch();
-      await createTemplateWithFunc(`test-during-scope-${testContext.timestamp}.sql`);
+      await createTemplateWithFunc(
+        `test-during-scope-${testContext.timestamp}.sql`,
+        'during_scope'
+      );
       await new Promise(resolve => setTimeout(resolve, 100));
     })();
 
     // After scope exit, create another template
-    await createTemplateWithFunc(`test-after-scope-${testContext.timestamp}.sql`);
+    await createTemplateWithFunc(`test-after-scope-${testContext.timestamp}.sql`, 'after_scope');
     await new Promise(resolve => setTimeout(resolve, 100));
 
     expect(changes).toHaveLength(1);
@@ -650,7 +659,8 @@ describe('TemplateManager', () => {
 
   it('should not process unchanged templates', async () => {
     const templatePath = await createTemplateWithFunc(
-      `test-unchanged-${testContext.timestamp}.sql`
+      `test-unchanged-${testContext.timestamp}.sql`,
+      'unchanged'
     );
     const manager = await TemplateManager.create(testContext.testDir);
     await manager.watch();
@@ -710,7 +720,10 @@ describe('TemplateManager', () => {
   });
 
   it('should correctly update local buildlog on apply', async () => {
-    const templatePath = await createTemplateWithFunc(`test-buildlog-${testContext.timestamp}.sql`);
+    const templatePath = await createTemplateWithFunc(
+      `test-buildlog-${testContext.timestamp}.sql`,
+      '_buildlog'
+    );
     const manager = await TemplateManager.create(testContext.testDir);
     const localBuildlogPath = join(testContext.testDir, '.buildlog-test.local.json');
 
@@ -744,7 +757,10 @@ describe('TemplateManager', () => {
   });
 
   it('should skip apply if template hash matches local buildlog', async () => {
-    const templatePath = await createTemplateWithFunc(`test-skip-${testContext.timestamp}.sql`);
+    const templatePath = await createTemplateWithFunc(
+      `test-skip-${testContext.timestamp}.sql`,
+      '_skip_apply'
+    );
     const manager = await TemplateManager.create(testContext.testDir);
     const localBuildlogPath = join(testContext.testDir, '.buildlog-test.local.json');
 
@@ -823,7 +839,7 @@ describe('TemplateManager', () => {
 
   it('should process unapplied templates on startup', async () => {
     // Create template but don't process it
-    await createTemplateWithFunc(`startup-test-${testContext.timestamp}.sql`);
+    await createTemplateWithFunc(`startup-test-${testContext.timestamp}.sql`, '_startup_test');
 
     // Create a new manager instance
     const manager = await TemplateManager.create(testContext.testDir);
@@ -884,7 +900,10 @@ describe('TemplateManager', () => {
   });
 
   it('should maintain correct state through manager restarts', async () => {
-    const templatePath = await createTemplateWithFunc(`restart-test-${testContext.timestamp}.sql`);
+    const templatePath = await createTemplateWithFunc(
+      `restart-test-${testContext.timestamp}.sql`,
+      'restart_test'
+    );
 
     // First manager instance
     const manager1 = await TemplateManager.create(testContext.testDir);
@@ -916,7 +935,10 @@ describe('TemplateManager', () => {
   });
 
   it('should properly format and propagate error messages', async () => {
-    const templatePath = await createTemplateWithFunc(`error-format-${testContext.timestamp}.sql`);
+    const templatePath = await createTemplateWithFunc(
+      `error-format-${testContext.timestamp}.sql`,
+      'error_format'
+    );
     const manager = await TemplateManager.create(testContext.testDir);
 
     const errors: Array<{ error: unknown }> = [];
