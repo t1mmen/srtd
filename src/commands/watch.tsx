@@ -6,10 +6,17 @@ import React, { useMemo } from 'react';
 import Branding from '../components/Branding.js';
 import Quittable from '../components/Quittable.js';
 import { TimeSince } from '../components/TimeSince.js';
+import {
+  COLOR_ACCENT,
+  COLOR_ERROR,
+  COLOR_SUCCESS,
+  COLOR_WARNING,
+} from '../components/customTheme.js';
 import { useDatabaseConnection } from '../hooks/useDatabaseConnection.js';
 import { useTemplateManager } from '../hooks/useTemplateManager.js';
 import type { TemplateUpdate } from '../hooks/useTemplateManager.js';
 import type { TemplateStatus } from '../types.js';
+import { store } from '../utils/store.js';
 
 const MAX_FILES = 10;
 const MAX_CHANGES = 15;
@@ -52,6 +59,9 @@ const TemplateRow = React.memo(
     templateDir?: string;
   }) => {
     const displayName = formatTemplateDisplay(template.path, templateDir ?? '');
+    const needsBuild =
+      !template.buildState.lastBuildDate ||
+      template.currentHash !== template.buildState.lastBuildHash;
 
     return (
       <Box marginLeft={2}>
@@ -64,13 +74,16 @@ const TemplateRow = React.memo(
         <Box>
           <Text dimColor>
             applied <TimeSince date={template.buildState.lastAppliedDate} /> ago
-            {!template.buildState.lastBuildDate ||
-            template.currentHash !== template.buildState.lastBuildHash ? (
-              <> • needs build</>
+          </Text>
+          <Text> • </Text>
+          <Text dimColor>
+            {template.wip ? (
+              <>wip</>
+            ) : needsBuild ? (
+              <>needs build</>
             ) : (
               <>
-                {' '}
-                • built <TimeSince date={template.buildState.lastBuildDate} /> ago
+                built <TimeSince date={template.buildState.lastBuildDate} /> ago
               </>
             )}
           </Text>
@@ -108,10 +121,17 @@ const UpdateLog = React.memo(
     return (
       <Box flexDirection="column" marginTop={1}>
         <Text bold>Changelog:</Text>
+        {!sortedUpdates.length && <Text dimColor>Nothing changed yet</Text>}
         {sortedUpdates.map(update => (
           <Box key={`${update.template.path}-${update.timestamp}`} marginLeft={2}>
             <Text
-              color={update.type === 'error' ? 'red' : update.type === 'applied' ? 'green' : 'blue'}
+              color={
+                update.type === 'error'
+                  ? COLOR_ERROR
+                  : update.type === 'applied'
+                    ? COLOR_SUCCESS
+                    : COLOR_ACCENT
+              }
             >
               {update.type === 'error' ? '❌' : update.type === 'applied' ? '✨' : '📝'}{' '}
               {formatTemplateDisplay(update.template.path, templateDir ?? '')}:{' '}
@@ -119,7 +139,7 @@ const UpdateLog = React.memo(
                 ? formatError(update.error)
                 : update.type === 'applied'
                   ? 'applied successfully'
-                  : 'changed and reapplied'}
+                  : 'changed'}
             </Text>
           </Box>
         ))}
@@ -134,20 +154,22 @@ export default function Watch() {
   const { isConnected } = useDatabaseConnection();
   const { templates, updates, stats, isLoading, errors, latestPath, templateDir } =
     useTemplateManager();
-  const [showUpdates, setShowUpdates] = React.useState(true);
+  const [showUpdates, setShowUpdates] = React.useState(store.get('showWatchLogs'));
   const activeTemplates = useMemo(() => templates.slice(-MAX_FILES), [templates]);
   const hasErrors = errors.size > 0;
 
   useInput(input => {
     if (input === 'u') {
-      setShowUpdates(s => !s);
+      const show = !showUpdates;
+      setShowUpdates(show);
+      store.set('showWatchLogs', show);
     }
   });
 
   if (!isConnected) {
     return (
       <Box flexDirection="column">
-        <Text color="red">Unable to connect to database. Is Supabase running?</Text>
+        <Text color={COLOR_ERROR}>Unable to connect to database. Is Supabase running?</Text>
         <Quittable />
       </Box>
     );
@@ -157,21 +179,22 @@ export default function Watch() {
     <Box flexDirection="column">
       <Branding subtitle="👀 Watch Mode" />
 
-      <Box marginY={1}>
-        <StatBadge label="Total" value={stats.total} color="green" />
+      <Box marginBottom={1}>
+        <StatBadge label="Total" value={stats.total} color={COLOR_SUCCESS} />
         {stats.needsBuild > 0 && (
-          <StatBadge label="Needs Build" value={stats.needsBuild} color="yellow" />
+          <StatBadge label="Needs Build" value={stats.needsBuild} color={COLOR_WARNING} />
         )}
         {stats.recentlyChanged > 0 && (
-          <StatBadge label="Recent Changes" value={stats.recentlyChanged} color="blue" />
+          <StatBadge label="Recent Changes" value={stats.recentlyChanged} color={COLOR_ACCENT} />
         )}
-        {hasErrors && <StatBadge label="Errors" value={stats.errors} color="red" />}
+        {hasErrors && <StatBadge label="Errors" value={stats.errors} color={COLOR_ERROR} />}
       </Box>
 
       {isLoading ? (
         <Text>🔍 Finding templates...</Text>
       ) : (
         <Box flexDirection="column">
+          <Text bold>Recently modified templates:</Text>
           {activeTemplates.map(template => (
             <TemplateRow
               key={template.path}
@@ -181,18 +204,16 @@ export default function Watch() {
             />
           ))}
 
-          {showUpdates && updates.length > 0 && (
-            <UpdateLog updates={updates} templateDir={templateDir} />
-          )}
+          {showUpdates && <UpdateLog updates={updates} templateDir={templateDir} />}
 
           {hasErrors && (
             <Box flexDirection="column" marginTop={1}>
-              <Text bold color="red">
+              <Text bold color={COLOR_ERROR}>
                 Errors:
               </Text>
               {Array.from(errors.entries()).map(([path, error]) => (
                 <Box key={path} marginLeft={2} marginTop={1}>
-                  <Text color="red" wrap="wrap">
+                  <Text color={COLOR_ERROR} wrap="wrap">
                     {formatTemplateDisplay(path, templateDir ?? '')}: {String(error)}
                   </Text>
                 </Box>
@@ -204,18 +225,16 @@ export default function Watch() {
 
       <Box marginY={1} flexDirection="row" gap={1}>
         <Quittable />
-        {updates.length > 0 && (
-          <>
-            <Box marginY={1}>
-              <Text dimColor>•</Text>
-            </Box>
-            <Box marginY={1}>
-              <Text dimColor>press </Text>
-              <Text underline={showUpdates}>u</Text>
-              <Text dimColor> to toggle updates</Text>
-            </Box>
-          </>
-        )}
+        <>
+          <Box marginY={1}>
+            <Text dimColor>•</Text>
+          </Box>
+          <Box marginY={1}>
+            <Text dimColor>Press </Text>
+            <Text underline={showUpdates}>u</Text>
+            <Text dimColor> to toggle updates</Text>
+          </Box>
+        </>
       </Box>
     </Box>
   );

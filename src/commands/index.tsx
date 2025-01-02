@@ -4,6 +4,7 @@ import { Box, Text } from 'ink';
 import React from 'react';
 import Branding from '../components/Branding.js';
 import Quittable from '../components/Quittable.js';
+import { COLOR_ERROR } from '../components/customTheme.js';
 import { useDatabaseConnection } from '../hooks/useDatabaseConnection.js';
 import Apply from './apply.js';
 import Build from './build.js';
@@ -55,7 +56,7 @@ export default function UI() {
       <Branding />
       {error ? (
         <Box gap={1}>
-          <Text color="red" bold>
+          <Text color={COLOR_ERROR} bold>
             Error
           </Text>
           <Text>Check your database connection and try again.</Text>

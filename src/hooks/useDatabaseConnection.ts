@@ -1,6 +1,6 @@
 // hooks/useDatabaseConnection.ts
 import { useEffect, useState } from 'react';
-import { RETRY_DELAY, testConnection } from '../utils/databaseConnection.js';
+import { testConnection } from '../utils/databaseConnection.js';
 
 interface DbConnectionState {
   isConnected: boolean;
@@ -29,52 +29,38 @@ export function useDatabaseConnection(checkInterval = 5000): DbConnectionState {
 
   useEffect(() => {
     let mounted = true;
-    let timeoutId: NodeJS.Timeout;
-    let intervalId: NodeJS.Timeout | undefined = undefined;
 
     async function checkConnection() {
       if (!mounted) return;
       setState(prev => ({ ...prev, isChecking: true }));
 
       try {
-        const connectionPromise = testConnection();
-        const timeoutPromise = new Promise<never>((_, reject) => {
-          timeoutId = setTimeout(() => {
-            reject(new Error('Connection attempt timed out'));
-          }, RETRY_DELAY);
+        const isConnected = await testConnection();
+        if (!mounted) return;
+        setState({
+          isConnected,
+          error: undefined,
+          isChecking: false,
         });
-
-        const isConnected = await Promise.race([connectionPromise, timeoutPromise]);
-
-        if (mounted) {
-          setState({
-            isConnected,
-            error: undefined,
-            isChecking: false,
-          });
-        }
       } catch (err) {
-        if (mounted) {
-          setState({
-            isConnected: false,
-            error: parseDbError(err),
-            isChecking: false,
-          });
-        }
-      } finally {
-        clearTimeout(timeoutId);
+        if (!mounted) return;
+        setState({
+          isConnected: false,
+          error: parseDbError(err),
+          isChecking: false,
+        });
       }
     }
 
-    checkConnection();
-    intervalId = setInterval(checkConnection, checkInterval);
+    void checkConnection();
+
+    const intervalId = !state.isConnected ? setInterval(checkConnection, checkInterval) : undefined;
 
     return () => {
       mounted = false;
-      clearTimeout(timeoutId);
-      clearInterval(intervalId);
+      if (intervalId) clearInterval(intervalId);
     };
-  }, [checkInterval]);
+  }, [checkInterval, state.isConnected]);
 
   return state;
 }

@@ -5,6 +5,7 @@ import React from 'react';
 import zod from 'zod';
 import Branding from '../components/Branding.js';
 import Quittable from '../components/Quittable.js';
+import { COLOR_ERROR, COLOR_SUCCESS } from '../components/customTheme.js';
 import { useTemplateState } from '../hooks/useTemplateState.js';
 import { registerTemplate } from '../utils/registerTemplate.js';
 
@@ -63,7 +64,7 @@ export default function Register({ args: templateArgs }: Props) {
   }, [handleTemplateRegistration, templateArgs]);
 
   if (error) {
-    return <Text color="red">Error: {error}</Text>;
+    return <Text color={COLOR_ERROR}>Error: {error}</Text>;
   }
 
   // If no templates were provided as arguments, show interactive selection
@@ -93,8 +94,8 @@ export default function Register({ args: templateArgs }: Props) {
             onSubmit={vals => void handleTemplateRegistration(vals)}
           />
         </Box>
-        {!!errorMessage && <Text color="red">{errorMessage}</Text>}
-        {!!successMessage && <Text color="#3ecf8e">{successMessage}</Text>}
+        {!!errorMessage && <Text color={COLOR_ERROR}>{errorMessage}</Text>}
+        {!!successMessage && <Text color={COLOR_SUCCESS}>{successMessage}</Text>}
         <Quittable />
       </Box>
     );
@@ -102,8 +103,8 @@ export default function Register({ args: templateArgs }: Props) {
 
   return (
     <Box flexDirection="column" marginTop={1}>
-      {!!errorMessage && <Text color="red">{errorMessage}</Text>}
-      {!!successMessage && <Text color="#3ecf8e">{successMessage}</Text>}
+      {!!errorMessage && <Text color={COLOR_ERROR}>{errorMessage}</Text>}
+      {!!successMessage && <Text color={COLOR_SUCCESS}>{successMessage}</Text>}
       <Quittable />
     </Box>
   );

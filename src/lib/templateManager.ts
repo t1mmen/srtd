@@ -18,6 +18,14 @@ interface TemplateCache {
   status: TemplateStatus;
   lastChecked: number;
 }
+// Track watchers globally
+declare global {
+  var __srtd_watchers: FSWatcher[];
+}
+
+if (!global.__srtd_watchers) {
+  global.__srtd_watchers = [];
+}
 
 export class TemplateManager extends EventEmitter implements Disposable {
   private watcher: FSWatcher | null = null;
@@ -99,6 +107,7 @@ export class TemplateManager extends EventEmitter implements Disposable {
       currentHash,
       migrationHash: null,
       buildState,
+      wip: await isWipTemplate(templatePath),
     };
 
     this.templateCache.set(templatePath, {
@@ -222,6 +231,9 @@ export class TemplateManager extends EventEmitter implements Disposable {
       },
     });
 
+    // Track watcher globally
+    global.__srtd_watchers.push(watcher);
+
     // Do initial scan once
     const existingFiles = await glob(path.join(templatePath, this.config.filter));
     for (const file of existingFiles) {
@@ -242,8 +254,15 @@ export class TemplateManager extends EventEmitter implements Disposable {
         this.log(`Watcher error: ${error}`, 'error');
       });
 
+    // Update cleanup
     this.watcher = watcher;
-    return watcher;
+    return {
+      close: async () => {
+        await watcher.close();
+        const idx = global.__srtd_watchers.indexOf(watcher);
+        if (idx > -1) global.__srtd_watchers.splice(idx, 1);
+      },
+    };
   }
 
   async applyTemplate(templatePath: string): Promise<ProcessedTemplateResult> {

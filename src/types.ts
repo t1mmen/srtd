@@ -48,4 +48,5 @@ export interface TemplateStatus {
   currentHash: string;
   migrationHash: string | null;
   buildState: TemplateBuildState;
+  wip: boolean;
 }
