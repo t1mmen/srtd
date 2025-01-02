@@ -20,16 +20,9 @@ describe('Watch Command', () => {
 
   test('renders initial state with no templates', async () => {
     const { lastFrame } = render(<Watch />);
-    await wait(100); // Allow time for UI to render and DB to initialize
+    await wait(200); // Allow time for UI to render and DB to initialize
 
     expect(lastFrame()).toContain('Watch Mode');
     expect(lastFrame()).toContain('No templates found');
-  });
-
-  test('renders with templates', async () => {
-    const { lastFrame } = render(<Watch />);
-    await wait(100); // Allow time for UI to render and DB to initialize
-
-    expect(lastFrame()).toContain('Watch Mode');
   });
 });

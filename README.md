@@ -4,7 +4,7 @@
 
 > Live-reloading SQL templates for [Supabase](https://supabase.com) projects. DX supercharged! 🚀
 
-[![npm version](https://badge.fury.io/js/@t1mmen%2Fsrtd.svg)](https://www.npmjs.com/package/@t1mmen/srtd)
+![NPM Version](https://img.shields.io/npm/v/%40t1mmen%2Fsrtd)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![CI/CD](https://github.com/t1mmen/srtd/actions/workflows/ci.yml/badge.svg)](https://github.com/t1mmen/srtd/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/t1mmen/srtd/graph/badge.svg?token=CIMAZ55KCJ)](https://codecov.io/gh/t1mmen/srtd)
