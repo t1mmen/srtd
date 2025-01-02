@@ -1,9 +1,9 @@
 // src/commands/_app.tsx
 import { Alert, ThemeProvider } from '@inkjs/ui';
-import Debug from 'components/Debug.js';
 import { Box, Static, Text } from 'ink';
 import type { AppProps } from 'pastel';
 import React from 'react';
+import Debug from '../components/Debug.js';
 import { COLOR_ERROR, customTheme } from '../components/customTheme.js';
 import { useDatabaseConnection } from '../hooks/useDatabaseConnection.js';
 

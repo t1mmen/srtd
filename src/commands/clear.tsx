@@ -1,9 +1,8 @@
 import { Select, Spinner } from '@inkjs/ui';
-import Branding from 'components/Branding.js';
-import Quittable from 'components/Quittable.js';
-// commands/build.tsx
 import { Box, useApp } from 'ink';
 import React from 'react';
+import Branding from '../components/Branding.js';
+import Quittable from '../components/Quittable.js';
 import { clearBuildLogs, resetConfig } from '../utils/config.js';
 
 const clearOptions = [
