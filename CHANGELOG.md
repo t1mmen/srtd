@@ -1,5 +1,12 @@
 # srtd
 
+## 0.4.3
+
+### Patch Changes
+
+- 2af15f4: Fix incorrect import paths
+- 1632a20: Add "make sure it renders" tests for all commands, scope naming in other tests a bit better.
+
 ## 0.4.2
 
 ### Patch Changes
