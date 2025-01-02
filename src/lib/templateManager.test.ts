@@ -200,8 +200,8 @@ describe('TemplateManager', () => {
   });
   it('should handle sequential template operations', async () => {
     const templates = await Promise.all(
-      [...Array(5)].map(async (_, i) =>
-        createTemplateWithFunc(`sequencetest-${i}.sql`, `_sequence_test_${i}`)
+      [...Array(5)].map(
+        async (_, i) => await createTemplateWithFunc(`sequencetest-${i}.sql`, `_sequence_test_${i}`)
       )
     );
 
@@ -491,15 +491,15 @@ describe('TemplateManager', () => {
 
     // Create multiple templates simultaneously
     await Promise.all([
-      createTemplateWithFunc(`rapid_test-1-${testContext.timestamp}.sql`, '_batch_changes_1'),
-      createTemplateWithFunc(`rapid_test-2-${testContext.timestamp}.sql`, '_batch_changes_2'),
-      createTemplateWithFunc(`rapid_test-3-${testContext.timestamp}.sql`, '_batch_changes_3'),
-      createTemplateWithFunc(
+      await createTemplateWithFunc(`rapid_test-1-${testContext.timestamp}.sql`, '_batch_changes_1'),
+      await createTemplateWithFunc(`rapid_test-2-${testContext.timestamp}.sql`, '_batch_changes_2'),
+      await createTemplateWithFunc(`rapid_test-3-${testContext.timestamp}.sql`, '_batch_changes_3'),
+      await createTemplateWithFunc(
         `rapid_test-4-${testContext.timestamp}.sql`,
         '_batch_changes_4',
         'deep'
       ),
-      createTemplateWithFunc(
+      await createTemplateWithFunc(
         `rapid_test-5-${testContext.timestamp}.sql`,
         '_batch_changes_5',
         'deep/nested'
