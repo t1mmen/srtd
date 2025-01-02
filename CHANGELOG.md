@@ -1,5 +1,12 @@
 # srtd
 
+## 0.4.1
+
+### Patch Changes
+
+- 6a733b7: Add debug component to test db connections/watchers/etc
+- 6a733b7: Streamline build & apply, allow build to also apply.
+
 ## 0.4.0
 
 ### Minor Changes
