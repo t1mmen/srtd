@@ -1,5 +1,12 @@
 # srtd
 
+## 0.4.2
+
+### Patch Changes
+
+- 8ea6ef7: Scope tests better, maybe improving how brittle they can be
+- 688feae: fix: Build paths, db timeout
+
 ## 0.4.1
 
 ### Patch Changes
