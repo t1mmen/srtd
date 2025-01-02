@@ -471,6 +471,7 @@ describe('TemplateManager', () => {
     });
 
     const watcher = await manager.watch();
+
     await new Promise(resolve => setTimeout(resolve, 100));
 
     // Create multiple templates simultaneously
@@ -494,12 +495,10 @@ describe('TemplateManager', () => {
     // Verify all templates were processed
     const client = await connect();
     try {
-      for (let i = 1; i <= count; i++) {
-        const res = await client.query(`SELECT proname FROM pg_proc WHERE proname = $1`, [
-          `${testContext.testFunctionName}_batch_changes_${i}`,
-        ]);
-        expect(res.rows).toHaveLength(1);
-      }
+      const res = await client.query(`SELECT proname FROM pg_proc WHERE proname LIKE $1`, [
+        `${testContext.testFunctionName}_batch_changes_%`,
+      ]);
+      expect(res.rows).toHaveLength(count);
     } finally {
       client.release();
     }
