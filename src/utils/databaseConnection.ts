@@ -10,10 +10,20 @@ export const RETRY_DELAY = 1000;
 
 async function createPool(): Promise<pg.Pool> {
   const config = await getConfig(process.cwd());
-  return new pg.Pool({
+  const newPool = new pg.Pool({
     connectionString: config.pgConnection,
-    connectionTimeoutMillis: 500,
+    connectionTimeoutMillis: 2000,
+    max: 3, // Reduce for local dev
+    idleTimeoutMillis: 1000,
+    maxUses: 100, // Close connections after 100 uses
   });
+
+  // Handle pool errors
+  newPool.on('error', err => {
+    logger.error(`Unexpected pool error: ${err}`);
+  });
+
+  return newPool;
 }
 
 async function retryConnection(params?: { silent?: boolean }): Promise<pg.PoolClient> {
@@ -42,38 +52,43 @@ export async function connect(params?: { silent?: boolean }): Promise<pg.PoolCli
 }
 
 export async function disconnect(): Promise<void> {
-  if (pool) {
-    // Add poolPendingCount check to avoid hanging on
-    // pending queries during shutdown
-    if (pool.totalCount !== pool.idleCount) {
-      await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
-    }
+  if (!pool) return;
+
+  try {
     await pool.end();
+  } catch (e) {
+    logger.error(`Pool end error: ${e}`);
+  } finally {
     pool = undefined;
   }
-  return;
 }
 
 export async function testConnection(): Promise<boolean> {
   try {
     const client = await connect();
-    await client.query('SELECT 1');
-    client.release();
-    return true;
+    try {
+      await client.query('SELECT 1');
+      return true;
+    } finally {
+      client.release();
+    }
   } catch {
     return false;
   }
 }
 
+export function getConnectionStats() {
+  if (!pool) return null;
+  return {
+    total: pool.totalCount,
+    idle: pool.idleCount,
+    active: pool.totalCount - pool.idleCount,
+  };
+}
+
+// Handle process termination
 function cleanup() {
-  // Sync disconnect since exit handlers must be synchronous
-  try {
-    void disconnect();
-  } catch (e) {
-    logger.error(`Error disconnecting from database: ${String(e)}`);
-    process.exit(1);
-  }
-  process.exit(0);
+  void disconnect().then(() => process.exit(0));
 }
 
 process.on('SIGTERM', cleanup);

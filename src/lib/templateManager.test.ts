@@ -201,12 +201,13 @@ describe('TemplateManager', () => {
 
   it('should handle sequential template operations', async () => {
     const templates = await Promise.all(
-      [...Array(5)].map((_, i) =>
-        createTemplateWithFunc(
+      [...Array(5)].map(async (_, i) => {
+        await new Promise(resolve => setTimeout(resolve, 5));
+        return createTemplateWithFunc(
           `sequencetest-${i}-${testContext.timestamp}.sql`,
           `_sequence_test_${i}`
-        )
-      )
+        );
+      })
     );
 
     const manager = await TemplateManager.create(testContext.testDir);

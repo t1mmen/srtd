@@ -18,6 +18,14 @@ interface TemplateCache {
   status: TemplateStatus;
   lastChecked: number;
 }
+// Track watchers globally
+declare global {
+  var __srtd_watchers: FSWatcher[];
+}
+
+if (!global.__srtd_watchers) {
+  global.__srtd_watchers = [];
+}
 
 export class TemplateManager extends EventEmitter implements Disposable {
   private watcher: FSWatcher | null = null;
@@ -99,6 +107,7 @@ export class TemplateManager extends EventEmitter implements Disposable {
       currentHash,
       migrationHash: null,
       buildState,
+      wip: await isWipTemplate(templatePath),
     };
 
     this.templateCache.set(templatePath, {
@@ -163,7 +172,7 @@ export class TemplateManager extends EventEmitter implements Disposable {
         return result;
       }
 
-      return { errors: [], applied: [] };
+      return { errors: [], applied: [], skipped: [template.name], built: [] };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       this.log(`Error processing template ${templatePath}: ${errorMessage}`, 'error');
@@ -181,6 +190,8 @@ export class TemplateManager extends EventEmitter implements Disposable {
           },
         ],
         applied: [],
+        skipped: [],
+        built: [],
       };
     }
   }
@@ -222,6 +233,9 @@ export class TemplateManager extends EventEmitter implements Disposable {
       },
     });
 
+    // Track watcher globally
+    global.__srtd_watchers.push(watcher);
+
     // Do initial scan once
     const existingFiles = await glob(path.join(templatePath, this.config.filter));
     for (const file of existingFiles) {
@@ -242,8 +256,15 @@ export class TemplateManager extends EventEmitter implements Disposable {
         this.log(`Watcher error: ${error}`, 'error');
       });
 
+    // Update cleanup
     this.watcher = watcher;
-    return watcher;
+    return {
+      close: async () => {
+        await watcher.close();
+        const idx = global.__srtd_watchers.indexOf(watcher);
+        if (idx > -1) global.__srtd_watchers.splice(idx, 1);
+      },
+    };
   }
 
   async applyTemplate(templatePath: string): Promise<ProcessedTemplateResult> {
@@ -271,7 +292,7 @@ export class TemplateManager extends EventEmitter implements Disposable {
 
         await this.saveBuildLogs();
         this.invalidateCache(templatePath);
-        return { errors: [], applied: [template.name] };
+        return { errors: [], applied: [template.name], skipped: [], built: [] };
       }
 
       // On error, don't update hash but track the error
@@ -281,7 +302,7 @@ export class TemplateManager extends EventEmitter implements Disposable {
       };
 
       await this.saveBuildLogs();
-      return { errors: [result], applied: [] };
+      return { errors: [result], applied: [], skipped: [], built: [] };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       if (!this.localBuildLog.templates) {
@@ -348,13 +369,13 @@ export class TemplateManager extends EventEmitter implements Disposable {
     force?: boolean;
   }): Promise<ProcessedTemplateResult> {
     const templates = await this.findTemplates();
-    const result: ProcessedTemplateResult = { errors: [], applied: [] };
+    const result: ProcessedTemplateResult = { errors: [], applied: [], built: [], skipped: [] };
 
     this.log('\n');
 
     if (options.apply) {
       const connectionTimeout = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Database connection timeout')), 5000)
+        setTimeout(() => reject(new Error('Database connection timeout')), 1000)
       );
       const isConnected = await Promise.race([testConnection(), connectionTimeout]);
 
@@ -372,6 +393,7 @@ export class TemplateManager extends EventEmitter implements Disposable {
         const processResult = await this.processTemplate(templatePath, options.force);
         result.errors.push(...processResult.errors);
         result.applied.push(...processResult.applied);
+        result.skipped.push(...processResult.skipped);
       }
 
       if (result.applied.length === 0 && result.errors.length === 0) {
@@ -398,10 +420,15 @@ export class TemplateManager extends EventEmitter implements Disposable {
           const template = await this.getTemplateStatus(templatePath);
           if (options.force || template.currentHash !== template.buildState.lastBuildHash) {
             await this.buildTemplate(templatePath, options.force);
+            result.built.push(template.name);
             built++;
           } else {
+            result.skipped.push(template.name);
             skipped++;
           }
+        } else {
+          result.skipped.push(path.basename(templatePath, '.sql'));
+          skipped++;
         }
       }
 

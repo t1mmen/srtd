@@ -1,20 +1,11 @@
-import { Alert, ThemeProvider, defaultTheme, extendTheme } from '@inkjs/ui';
-import { Box, Static, Text, type TextProps } from 'ink';
+// src/commands/_app.tsx
+import { Alert, ThemeProvider } from '@inkjs/ui';
+import Debug from 'components/Debug.js';
+import { Box, Static, Text } from 'ink';
 import type { AppProps } from 'pastel';
 import React from 'react';
+import { COLOR_ERROR, customTheme } from '../components/customTheme.js';
 import { useDatabaseConnection } from '../hooks/useDatabaseConnection.js';
-
-const customTheme = extendTheme(defaultTheme, {
-  components: {
-    Spinner: {
-      styles: {
-        frame: (): TextProps => ({
-          color: 'magenta',
-        }),
-      },
-    },
-  },
-});
 
 export default function App({ Component, commandProps }: AppProps) {
   const { error } = useDatabaseConnection();
@@ -27,7 +18,7 @@ export default function App({ Component, commandProps }: AppProps) {
             {error => (
               <Box key={error}>
                 <Alert variant="error">
-                  <Text bold color="red">
+                  <Text bold color={COLOR_ERROR}>
                     Error:{' '}
                   </Text>
                   {error}
@@ -37,15 +28,19 @@ export default function App({ Component, commandProps }: AppProps) {
           </Static>
         )}
         <Component {...commandProps} />
+        <Debug />
       </Box>
     </ThemeProvider>
   );
 }
 
-// Mimick fullscreen behavior
+// Fullscreen behavior
 const enterAltScreenCommand = '\x1b[?1049h';
 const leaveAltScreenCommand = '\x1b[?1049l';
 process.stdout.write(enterAltScreenCommand);
-process.on('exit', () => {
+
+const cleanup = () => {
   process.stdout.write(leaveAltScreenCommand);
-});
+};
+
+process.on('exit', cleanup);

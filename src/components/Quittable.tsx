@@ -35,7 +35,7 @@ export default function Quittable(props: QuittableProps) {
 
   return (
     <Box marginY={1}>
-      <Text dimColor>press </Text>
+      <Text dimColor>Press </Text>
       <Text>q</Text>
       <Text dimColor> or </Text>
       <Text>Ctrl+c</Text>

@@ -94,10 +94,8 @@ supabase migration up  # Apply using Supabase CLI
 
 ## The Power of Templates 💪
 
+Without templates, the smallest change to a function would show up as a complete rewrite in your version control system. With templates, the diff is clear and concise.
 
-Templates make code reviews meaningful. Consider this PR adding priority to a notification function:
-
-Without templates, this would appear as a complete rewrite in your PR.
 
 ### Perfect For 🎯
 
