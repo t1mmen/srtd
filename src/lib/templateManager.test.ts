@@ -7,18 +7,6 @@ import { calculateMD5 } from '../utils/calculateMD5.js';
 import { connect, disconnect } from '../utils/databaseConnection.js';
 import { ensureDirectories } from '../utils/ensureDirectories.js';
 import { TemplateManager } from './templateManager.js';
-const waitForCondition = async (
-  condition: () => Promise<boolean>,
-  timeout = 5000,
-  interval = 100
-): Promise<boolean> => {
-  const start = Date.now();
-  while (Date.now() - start < timeout) {
-    if (await condition()) return true;
-    await new Promise(resolve => setTimeout(resolve, interval));
-  }
-  return false;
-};
 
 describe('TemplateManager', () => {
   const testContext = {
@@ -213,10 +201,7 @@ describe('TemplateManager', () => {
   it('should handle sequential template operations', async () => {
     const templates = await Promise.all(
       [...Array(5)].map(async (_, i) =>
-        createTemplateWithFunc(
-          `sequencetest-${i}-${testContext.timestamp}.sql`,
-          `_sequence_test_${i}`
-        )
+        createTemplateWithFunc(`sequencetest-${i}.sql`, `_sequence_test_${i}`)
       )
     );
 
@@ -228,19 +213,17 @@ describe('TemplateManager', () => {
       await client.query('BEGIN');
 
       // Apply templates and verify each one
-      for (const [index, _] of templates.entries()) {
+      for (const _ of templates.entries()) {
         const result = await manager.processTemplates({ apply: true });
         expect(result.errors).toHaveLength(0);
 
         // Wait for function to appear with retry logic
-        const functionExists = await waitForCondition(async () => {
-          const res = await client.query(`SELECT proname FROM pg_proc WHERE proname = $1`, [
-            `${testContext.testFunctionName}_sequence_test_${index}`,
-          ]);
-          return res.rows.length === 1;
-        });
 
-        expect(functionExists).toBe(true);
+        const res = await client.query(`SELECT proname FROM pg_proc WHERE proname LIKE $1`, [
+          `${testContext.testFunctionName}_sequence_test_%`,
+        ]);
+
+        expect(res.rows.length).toBe(5);
       }
 
       // Verify final state
@@ -660,7 +643,7 @@ describe('TemplateManager', () => {
   it('should not process unchanged templates', async () => {
     const templatePath = await createTemplateWithFunc(
       `test-unchanged-${testContext.timestamp}.sql`,
-      'unchanged'
+      'unchanged_tmpl'
     );
     const manager = await TemplateManager.create(testContext.testDir);
     await manager.watch();
