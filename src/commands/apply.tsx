@@ -25,7 +25,7 @@ export default function Apply({ options }: Props) {
   const { exit } = useApp();
   const { result, isProcessing } = useTemplateProcessor({ force: options.force, apply: true });
 
-  useInput((_input, _) => {
+  React.useEffect(() => {
     if (!isProcessing) {
       exit();
     }
@@ -37,10 +37,7 @@ export default function Apply({ options }: Props) {
       {isProcessing ? (
         <Spinner label="Applying templates..." />
       ) : (
-        <>
-          <ProcessingResults result={result} showApply />
-          <Text dimColor>Press any key to exit</Text>
-        </>
+        <ProcessingResults result={result} showApply />
       )}
     </Box>
   );

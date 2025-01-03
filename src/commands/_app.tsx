@@ -33,14 +33,3 @@ export default function App({ Component, commandProps }: AppProps) {
     </ThemeProvider>
   );
 }
-
-// Fullscreen behavior
-const enterAltScreenCommand = '\x1b[?1049h';
-const leaveAltScreenCommand = '\x1b[?1049l';
-process.stdout.write(enterAltScreenCommand);
-
-const cleanup = () => {
-  process.stdout.write(leaveAltScreenCommand);
-};
-
-process.on('exit', cleanup);

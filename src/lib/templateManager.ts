@@ -7,7 +7,6 @@ import type { BuildLog, ProcessedTemplateResult, TemplateStatus } from '../types
 import { applyMigration } from '../utils/applyMigration.js';
 import { calculateMD5 } from '../utils/calculateMD5.js';
 import { getConfig } from '../utils/config.js';
-import { testConnection } from '../utils/databaseConnection.js';
 import { getNextTimestamp } from '../utils/getNextTimestamp.js';
 import { isWipTemplate } from '../utils/isWipTemplate.js';
 import { loadBuildLog } from '../utils/loadBuildLog.js';
@@ -343,19 +342,29 @@ export class TemplateManager extends EventEmitter implements Disposable {
     const safeContent = this.config.wrapInTransaction ? `BEGIN;\n\n${content}\n\nCOMMIT;` : content;
     const migrationContent = `${header}${banner}\n${safeContent}\n${footer}`;
 
-    await fs.writeFile(path.resolve(this.baseDir, migrationPath), migrationContent);
+    try {
+      await fs.writeFile(path.resolve(this.baseDir, migrationPath), migrationContent);
 
-    this.buildLog.templates[relPath] = {
-      ...this.buildLog.templates[relPath],
-      lastBuildHash: currentHash,
-      lastBuildDate: new Date().toISOString(),
-      lastMigrationFile: migrationName,
-      lastBuildError: undefined,
-    };
+      this.buildLog.templates[relPath] = {
+        ...this.buildLog.templates[relPath],
+        lastBuildHash: currentHash,
+        lastBuildDate: new Date().toISOString(),
+        lastMigrationFile: migrationName,
+        lastBuildError: undefined,
+      };
 
-    this.invalidateCache(templatePath);
-    await this.saveBuildLogs();
-    this.emit('templateBuilt', template);
+      this.invalidateCache(templatePath);
+      await this.saveBuildLogs();
+      this.emit('templateBuilt', template);
+    } catch (error) {
+      this.buildLog.templates[relPath] = {
+        ...this.buildLog.templates[relPath],
+        lastBuildError: error instanceof Error ? error.message : String(error),
+      };
+
+      await this.saveBuildLogs();
+      this.emit('templateError', { template, error });
+    }
   }
 
   private log(msg: string, logLevel: LogLevel = 'info') {
@@ -373,17 +382,6 @@ export class TemplateManager extends EventEmitter implements Disposable {
     this.log('\n');
 
     if (options.apply) {
-      const connectionTimeout = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Database connection timeout')), 1000)
-      );
-      const isConnected = await Promise.race([testConnection(), connectionTimeout]);
-
-      if (!isConnected) {
-        this.log('Failed to connect to database, cannot proceed. Is Supabase running?', 'error');
-        return result;
-      }
-
-      this.log('Connected to database', 'success');
       const action = options.force ? 'Force applying' : 'Applying';
       this.log(`${action} changed templates to local database...`, 'success');
 
