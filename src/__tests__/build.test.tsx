@@ -58,18 +58,18 @@ describe('Build Command', () => {
 
   test('shows build progress and success', async () => {
     const { lastFrame } = render(<Build options={{ force: false }} />);
-    expect(lastFrame()).toMatch(/✓ test\.sql/);
+    expect(lastFrame()).toMatch(/Built:\s*\n\s*✔ test\.sql/);
   });
 
   test('handles force flag', async () => {
     const { lastFrame } = render(<Build options={{ force: true }} />);
-    expect(lastFrame()).toMatch(/✓ test\.sql/);
+    expect(lastFrame()).toMatch(/Built:\s*\n\s*✔ test\.sql/);
   });
 
   test('handles build and apply together', async () => {
     const { lastFrame } = render(<Build options={{ force: false, apply: true }} />);
     // Use more precise matching that accounts for newlines
-    expect(lastFrame()).toMatch(/Built:\s*\n\s*✓ test\.sql/);
-    expect(lastFrame()).toMatch(/Applied:\s*\n\s*✓ test\.sql/);
+    expect(lastFrame()).toMatch(/Built:\s*\n\s*✔ test\.sql/);
+    expect(lastFrame()).toMatch(/Applied:\s*\n\s*▶ test\.sql/);
   });
 });
