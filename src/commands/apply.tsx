@@ -1,6 +1,6 @@
 // src/commands/apply.tsx
 import { Spinner } from '@inkjs/ui';
-import { Box, Text, useApp, useInput } from 'ink';
+import { Box, useApp } from 'ink';
 import { option } from 'pastel';
 import React from 'react';
 import zod from 'zod';

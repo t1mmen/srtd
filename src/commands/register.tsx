@@ -1,4 +1,4 @@
-import { Alert, MultiSelect } from '@inkjs/ui';
+import { MultiSelect } from '@inkjs/ui';
 import figures from 'figures';
 import { Box, Text, useInput } from 'ink';
 import { argument } from 'pastel';
