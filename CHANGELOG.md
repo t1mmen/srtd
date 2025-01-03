@@ -1,5 +1,12 @@
 # srtd
 
+## 0.4.4
+
+### Patch Changes
+
+- b7f723b: Various, minor polish on various UI components
+- b7f723b: Only make watch mode enter fullscreen mode (to avoid blocking other commands from printing to terminal)
+
 ## 0.4.3
 
 ### Patch Changes
