@@ -1,6 +1,6 @@
 // commands/build.tsx
 import { Spinner } from '@inkjs/ui';
-import { Box, Text, useApp, useInput } from 'ink';
+import { Box, useApp } from 'ink';
 import { option } from 'pastel';
 import React from 'react';
 import zod from 'zod';
@@ -38,22 +38,21 @@ export default function Build({ options }: Props) {
     apply: options.apply,
   });
 
-  useInput((_input, _) => {
+  React.useEffect(() => {
     if (!isProcessing) {
       exit();
     }
   });
 
+  const forced = options.force ? '(forced)' : '';
+
   return (
     <Box flexDirection="column" gap={1}>
-      <Branding subtitle="🏗️  Build migrations" />
+      <Branding subtitle={`🏗️  Build migrations ${forced}`} />
       {isProcessing ? (
-        <Spinner label="Building templates..." />
+        <Spinner label={`Building templates...`} />
       ) : (
-        <>
-          <ProcessingResults result={result} showBuild showApply={!!option.apply} />
-          <Text dimColor>Press any key to exit</Text>
-        </>
+        <ProcessingResults result={result} showBuild showApply={!!option.apply} />
       )}
     </Box>
   );

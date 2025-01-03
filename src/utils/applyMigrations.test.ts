@@ -1,5 +1,5 @@
 import type { PoolClient } from 'pg';
-import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { TEST_FN_PREFIX } from '../__tests__/vitest.setup.js';
 import { applyMigration } from './applyMigration.js';
 import { connect } from './databaseConnection.js';
@@ -13,6 +13,10 @@ describe('applyMigration', () => {
 
   beforeAll(async () => {
     client = await connect();
+  });
+
+  afterAll(async () => {
+    void client.release();
   });
 
   beforeEach(async () => {

@@ -25,6 +25,7 @@ export function useDatabaseConnection(checkInterval = 3000): DbConnectionState {
   const [state, setState] = useState<DbConnectionState>({
     isConnected: false,
     isChecking: true,
+    error: undefined,
   });
 
   useEffect(() => {
@@ -35,8 +36,8 @@ export function useDatabaseConnection(checkInterval = 3000): DbConnectionState {
       setState(prev => ({ ...prev, isChecking: true }));
 
       try {
-        const isConnected = await testConnection();
         if (!mounted) return;
+        const isConnected = await testConnection();
         setState({
           isConnected,
           error: undefined,

@@ -16,7 +16,6 @@ export default defineConfig({
         '**/vitest.config.*',
       ],
     },
-    maxConcurrency: 1,
     setupFiles: ['./src/__tests__/vitest.setup.ts'],
     testTimeout: 10000,
   },

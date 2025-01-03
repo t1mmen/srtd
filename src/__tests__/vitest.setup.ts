@@ -32,6 +32,7 @@ vi.mock('../utils/logger', () => ({
 
 beforeAll(async () => {
   try {
+    await fs.rm(TEST_ROOT, { recursive: true, force: true });
     await fs.mkdir(TEST_ROOT, { recursive: true });
   } catch (error) {
     console.error('Error creating test root:', error, ', retrying once.');
@@ -66,9 +67,8 @@ afterAll(async () => {
     throw e;
   } finally {
     client.release();
+    void disconnect();
   }
-
-  disconnect();
 });
 
 vi.mock('../utils/config', async importOriginal => {

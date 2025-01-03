@@ -1,11 +1,7 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { connect, disconnect } from './databaseConnection.js';
 
 describe('db.connection', () => {
-  afterEach(async () => {
-    await disconnect();
-  });
-
   it('should connect and execute queries', async () => {
     const client = await connect();
     const result = await client.query('SELECT 1 as num');

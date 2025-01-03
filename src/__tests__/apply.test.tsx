@@ -65,11 +65,11 @@ describe('Apply Command', () => {
 
   test('shows progress and success', async () => {
     const { lastFrame } = render(<Apply options={{ force: false }} />);
-    expect(lastFrame()).toMatch(/✓ test\.sql/);
+    expect(lastFrame()).toMatch(/▶ test\.sql/);
   });
 
   test('handles force flag', async () => {
     const { lastFrame } = render(<Apply options={{ force: true }} />);
-    expect(lastFrame()).toMatch(/✓ test\.sql/);
+    expect(lastFrame()).toMatch(/▶ test\.sql/);
   });
 });

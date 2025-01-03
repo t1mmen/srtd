@@ -1,10 +1,12 @@
 // src/components/watch.tsx
 import path from 'node:path';
-import { Badge } from '@inkjs/ui';
+import { Spinner } from '@inkjs/ui';
+import figures from 'figures';
 import { Box, Text, useInput } from 'ink';
 import React, { useMemo } from 'react';
 import Branding from '../components/Branding.js';
 import Quittable from '../components/Quittable.js';
+import { StatBadge } from '../components/StatBadge.js';
 import { TimeSince } from '../components/TimeSince.js';
 import {
   COLOR_ACCENT,
@@ -12,7 +14,7 @@ import {
   COLOR_SUCCESS,
   COLOR_WARNING,
 } from '../components/customTheme.js';
-import { useDatabaseConnection } from '../hooks/useDatabaseConnection.js';
+import { useFullscreen } from '../hooks/useFullscreen.js';
 import { useTemplateManager } from '../hooks/useTemplateManager.js';
 import type { TemplateUpdate } from '../hooks/useTemplateManager.js';
 import type { TemplateStatus } from '../types.js';
@@ -21,17 +23,6 @@ import { store } from '../utils/store.js';
 const MAX_FILES = 10;
 const MAX_CHANGES = 15;
 const PATH_DISPLAY_LENGTH = 15;
-
-function StatBadge({ label, value, color }: { label: string; value: number; color: string }) {
-  return (
-    <Box marginRight={1}>
-      <Badge color={color}>
-        {' '}
-        {label}: {value}{' '}
-      </Badge>
-    </Box>
-  );
-}
 
 function formatTemplateDisplay(templatePath: string, templateDir: string): string {
   const parts = templatePath.split(path.sep);
@@ -63,19 +54,27 @@ const TemplateRow = React.memo(
       !template.buildState.lastBuildDate ||
       template.currentHash !== template.buildState.lastBuildHash;
 
+    const color = template.buildState.lastAppliedError ? COLOR_ERROR : COLOR_SUCCESS;
     return (
-      <Box marginLeft={2}>
-        <Box width={2}>
-          <Text>{template.buildState.lastAppliedError ? '❌' : isLatest ? '⚡️' : '✓'}</Text>
+      <Box marginLeft={2} gap={1}>
+        <Box width={2} justifyContent="center">
+          <Text color={color}>
+            {template.buildState.lastAppliedError
+              ? figures.cross
+              : isLatest
+                ? figures.play
+                : figures.tick}
+          </Text>
         </Box>
         <Box width={35}>
           <Text>{displayName}</Text>
         </Box>
-        <Box>
+        <Box minWidth={18}>
           <Text dimColor>
-            applied <TimeSince date={template.buildState.lastAppliedDate} /> ago
+            applied <TimeSince date={template.buildState.lastAppliedDate} />
           </Text>
-          <Text> • </Text>
+        </Box>
+        <Box>
           <Text dimColor>
             {template.wip ? (
               <>wip</>
@@ -105,8 +104,9 @@ const UpdateLog = React.memo(
   }) => {
     const sortedUpdates = useMemo(() => {
       return [...updates]
-        .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
-        .slice(0, MAX_CHANGES);
+        .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()) // Newest first
+        .slice(0, MAX_CHANGES) // Take most recent
+        .reverse(); // Display oldest to newest
     }, [updates]);
 
     const formatError = (error: unknown) => {
@@ -121,7 +121,7 @@ const UpdateLog = React.memo(
     return (
       <Box flexDirection="column" marginTop={1}>
         <Text bold>Changelog:</Text>
-        {!sortedUpdates.length && <Text dimColor>Nothing changed yet</Text>}
+        {!sortedUpdates.length && <Spinner label="No updates yet, watching..." />}
         {sortedUpdates.map(update => (
           <Box key={`${update.template.path}-${update.timestamp}`} marginLeft={2}>
             <Text
@@ -133,7 +133,11 @@ const UpdateLog = React.memo(
                     : COLOR_ACCENT
               }
             >
-              {update.type === 'error' ? '❌' : update.type === 'applied' ? '✨' : '📝'}{' '}
+              {update.type === 'error'
+                ? figures.cross
+                : update.type === 'applied'
+                  ? figures.play
+                  : figures.info}{' '}
               {formatTemplateDisplay(update.template.path, templateDir ?? '')}:{' '}
               {update.type === 'error'
                 ? formatError(update.error)
@@ -151,7 +155,8 @@ const UpdateLog = React.memo(
 UpdateLog.displayName = 'UpdateLog';
 
 export default function Watch() {
-  const { isConnected } = useDatabaseConnection();
+  useFullscreen();
+
   const { templates, updates, stats, isLoading, errors, latestPath, templateDir } =
     useTemplateManager();
   const [showUpdates, setShowUpdates] = React.useState(store.get('showWatchLogs'));
@@ -165,15 +170,6 @@ export default function Watch() {
       store.set('showWatchLogs', show);
     }
   });
-
-  if (!isConnected) {
-    return (
-      <Box flexDirection="column">
-        <Text color={COLOR_ERROR}>Unable to connect to database. Is Supabase running?</Text>
-        <Quittable />
-      </Box>
-    );
-  }
 
   return (
     <Box flexDirection="column">

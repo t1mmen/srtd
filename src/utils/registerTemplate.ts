@@ -12,7 +12,6 @@ export async function registerTemplate(templatePath: string, baseDir: string): P
 
   // Try multiple path resolutions
   const pathsToTry = [
-    templatePath, // As provided
     path.join(baseDir, config.templateDir, templatePath), // In templates dir
   ];
 
@@ -27,7 +26,7 @@ export async function registerTemplate(templatePath: string, baseDir: string): P
   if (!resolvedPath) {
     console.log(chalk.red('Error:'), `Template file not found. Tried:`);
     for (const p of pathsToTry) {
-      console.log(chalk.dim(`  - ${p}`));
+      console.log(chalk.dim(`  - ${path.relative(baseDir, p)}`));
     }
     throw new Error(`Template ${templatePath} not found`);
   }

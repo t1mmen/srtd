@@ -39,7 +39,7 @@ export default function Branding({ subtitle }: Props) {
             efinitions
           </Text>
         )}
-        <Text dimColor>v{packageJson.version}</Text>
+        <Text dimColor> v{packageJson.version}</Text>
       </Box>
     </Box>
   );

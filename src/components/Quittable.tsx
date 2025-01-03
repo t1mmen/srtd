@@ -1,5 +1,4 @@
-import process from 'node:process';
-import { Box, Text, useInput } from 'ink';
+import { Box, Text, useApp, useInput } from 'ink';
 import React from 'react';
 
 interface QuittableProps {
@@ -8,6 +7,7 @@ interface QuittableProps {
 
 export default function Quittable(props: QuittableProps) {
   // Use ref to track if component is mounted
+  const { exit } = useApp();
   const mounted = React.useRef(true);
 
   React.useEffect(() => {
@@ -25,10 +25,12 @@ export default function Quittable(props: QuittableProps) {
           props.onQuit();
         }
         // Exit synchronously
-        process.exit(0);
+        exit();
       } catch (error) {
         console.error('Failed to exit cleanly:', error);
-        process.exit(1);
+        if (error instanceof Error) {
+          exit(error);
+        }
       }
     }
   });
