@@ -59,7 +59,7 @@ export default function Register({ args: templateArgs }: Props) {
   React.useEffect(() => {
     // If templates were provided as arguments, register them directly
     if (templateArgs?.length) {
-      void handleTemplateRegistration(templateArgs);
+      handleTemplateRegistration(templateArgs);
     }
   }, [handleTemplateRegistration, templateArgs]);
 
@@ -91,7 +91,7 @@ export default function Register({ args: templateArgs }: Props) {
           <MultiSelect
             options={options}
             onChange={vals => setSelectedValues(vals)}
-            onSubmit={vals => void handleTemplateRegistration(vals)}
+            onSubmit={vals => handleTemplateRegistration(vals)}
           />
         </Box>
         {!!errorMessage && <Text color={COLOR_ERROR}>{errorMessage}</Text>}

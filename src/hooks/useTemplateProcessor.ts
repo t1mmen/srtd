@@ -37,19 +37,12 @@ export function useTemplateProcessor(options: ProcessorOptions) {
 
         const result = await managerRef.current.processTemplates(options);
 
-        if (options.apply) {
-          await disconnect();
-        }
-
         if (mounted) {
           setResult(result);
           setIsProcessing(false);
         }
       } catch (err) {
         console.error('Processing error:', err);
-        if (options.apply) {
-          await disconnect();
-        }
 
         if (mounted) {
           setResult(prev => ({

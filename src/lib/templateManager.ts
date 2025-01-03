@@ -137,8 +137,7 @@ export class TemplateManager extends EventEmitter implements Disposable {
 
     if (!this.processing) {
       this.processing = true;
-      // Start processing non-recursively
-      setImmediate(() => void this.processNextTemplate());
+      await this.processNextTemplate();
     }
   }
 
@@ -215,7 +214,7 @@ export class TemplateManager extends EventEmitter implements Disposable {
       await this.processTemplate(templatePath);
     } finally {
       this.processingTemplate = null;
-      setImmediate(() => void this.processNextTemplate());
+      await this.processNextTemplate();
     }
   }
 
@@ -390,10 +389,22 @@ export class TemplateManager extends EventEmitter implements Disposable {
 
       // Process all templates
       for (const templatePath of templates) {
-        const processResult = await this.processTemplate(templatePath, options.force);
-        result.errors.push(...processResult.errors);
-        result.applied.push(...processResult.applied);
-        result.skipped.push(...processResult.skipped);
+        try {
+          const processResult = await this.processTemplate(templatePath, options.force);
+          if (processResult) {
+            result.errors.push(...(processResult.errors || []));
+            result.applied.push(...(processResult.applied || []));
+            result.skipped.push(...(processResult.skipped || []));
+          } else {
+            throw new Error('No result from processing template');
+          }
+        } catch (error) {
+          result.errors.push({
+            file: templatePath,
+            templateName: templatePath,
+            error: error instanceof Error ? error.message : 'Unknown error',
+          });
+        }
       }
 
       if (result.applied.length === 0 && result.errors.length === 0) {
