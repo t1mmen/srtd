@@ -7,6 +7,7 @@ import Quittable from '../components/Quittable.js';
 import Apply from './apply.js';
 import Build from './build.js';
 import Clear from './clear.js';
+import Promote from './promote.js';
 import Register from './register.js';
 import Watch from './watch.js';
 
@@ -37,6 +38,10 @@ export default function UI() {
     return <Clear />;
   }
 
+  if (selectedCommand === 'promote') {
+    return <Promote />;
+  }
+
   const menuItems = [
     {
       label: '👀  watch - Watch for changes, apply directly to db',
@@ -45,13 +50,14 @@ export default function UI() {
     { label: '▶️  apply - Apply templates directly to db', value: 'apply' },
     { label: '🏗️  build - Build templates as Supabase migrations', value: 'build' },
     { label: '✍️  register - Register templates as already built', value: 'register' },
+    { label: '📦  promote - Promote WIP template to buildable templates', value: 'promote' },
     { label: '🧹  maintenance - Clear build logs and reset config', value: 'clear' },
   ];
 
   return (
     <Box flexDirection="column">
       <Branding />
-      <Select options={menuItems} onChange={handleOnChange} />
+      <Select visibleOptionCount={10} options={menuItems} onChange={handleOnChange} />
       <Quittable />
     </Box>
   );
