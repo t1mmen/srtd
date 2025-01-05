@@ -96,7 +96,7 @@ supabase migration up      # Apply using Supabase CLI
 ```
 
 
-> [!INFO]
+> [!TIP]
 > To reduce noise in PR's, consider adding `migration-templates/*srtd*.sql linguist-generated=true` to your [`.gitattributes` file.](https://docs.github.com/en/repositories/working-with-files/managing-files/customizing-how-changed-files-appear-on-github) (unless you manually edit the generated files)
 
 
