@@ -34,14 +34,9 @@ export default function Build({ options }: Props) {
   const { exit } = useApp();
   const { result, isProcessing } = useTemplateProcessor({
     force: options.force,
-    generateFiles: true,
     apply: options.apply,
-  });
-
-  React.useEffect(() => {
-    if (!isProcessing) {
-      exit();
-    }
+    generateFiles: true,
+    onComplete: () => exit(), // Move exit here
   });
 
   const forced = options.force ? '(forced)' : '';

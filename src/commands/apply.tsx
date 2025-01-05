@@ -23,12 +23,10 @@ type Props = {
 
 export default function Apply({ options }: Props) {
   const { exit } = useApp();
-  const { result, isProcessing } = useTemplateProcessor({ force: options.force, apply: true });
-
-  React.useEffect(() => {
-    if (!isProcessing) {
-      exit();
-    }
+  const { result, isProcessing } = useTemplateProcessor({
+    force: options.force,
+    apply: true,
+    onComplete: () => exit(), // Move exit here
   });
 
   return (

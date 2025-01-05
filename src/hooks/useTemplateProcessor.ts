@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { TemplateManager } from '../lib/templateManager.js';
 import type { ProcessedTemplateResult } from '../types.js';
-import { disconnect } from '../utils/databaseConnection.js';
 
 interface ProcessorOptions {
   force?: boolean;
   apply?: boolean;
   generateFiles?: boolean;
+  onComplete?: () => void;
 }
 
 export function useTemplateProcessor(options: ProcessorOptions) {
@@ -17,62 +17,37 @@ export function useTemplateProcessor(options: ProcessorOptions) {
     built: [],
   });
   const [isProcessing, setIsProcessing] = useState(true);
-  const managerRef = useRef<TemplateManager>();
-  const processedRef = useRef(false);
+  const processed = useRef(false);
 
   useEffect(() => {
-    let mounted = true;
+    if (processed.current) return;
+    processed.current = true;
 
-    async function doProcess() {
-      // Prevent duplicate processing
-      if (processedRef.current) return;
-      processedRef.current = true;
-
+    async function doProcessing() {
       try {
-        if (!managerRef.current) {
-          managerRef.current = await TemplateManager.create(process.cwd(), {
-            silent: true,
-          });
-        }
-
-        const result = await managerRef.current.processTemplates(options);
-
-        if (mounted) {
-          setResult(result);
-          setIsProcessing(false);
-        }
+        using manager = await TemplateManager.create(process.cwd(), { silent: true });
+        const result = await manager.processTemplates(options);
+        setResult(result);
+        setIsProcessing(false);
+        options.onComplete?.();
       } catch (err) {
         console.error('Processing error:', err);
-
-        if (mounted) {
-          setResult(prev => ({
-            ...prev,
-            errors: [
-              ...prev.errors,
-              {
-                file: 'process',
-                templateName: 'global',
-                error: err instanceof Error ? err.message : String(err),
-              },
-            ],
-          }));
-          setIsProcessing(false);
-        }
+        setResult(prev => ({
+          ...prev,
+          errors: [
+            ...prev.errors,
+            {
+              file: 'process',
+              templateName: 'global',
+              error: err instanceof Error ? err.message : String(err),
+            },
+          ],
+        }));
+        setIsProcessing(false);
       }
     }
 
-    void doProcess();
-
-    return () => {
-      mounted = false;
-      // Only dispose if we're unmounting
-      if (managerRef.current) {
-        void disconnect();
-        managerRef.current[Symbol.dispose]?.();
-        managerRef.current = undefined;
-        processedRef.current = false;
-      }
-    };
+    void doProcessing();
   }, [options]);
 
   return { result, isProcessing };

@@ -625,6 +625,7 @@ describe('TemplateManager', () => {
       });
 
       await manager.watch();
+      await wait(100);
       await createTemplateWithFunc(`during-scope`, 'during_scope');
       await wait(100);
     })();
@@ -914,9 +915,9 @@ describe('TemplateManager', () => {
 
     // Create invalid SQL
     await fs.writeFile(templatePath, 'SELECT * FROM nonexistent_table;');
-
+    await wait(50);
     await manager.processTemplates({ apply: true });
-
+    await wait(50);
     expect(errors).toHaveLength(1);
     const error = errors[0]?.error;
     expect(typeof error).toBe('string');

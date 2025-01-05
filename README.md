@@ -4,13 +4,15 @@
 
 > Live-reloading SQL templates for [Supabase](https://supabase.com) projects. DX supercharged! 🚀
 
-![NPM Version](https://img.shields.io/npm/v/%40t1mmen%2Fsrtd)
+[![NPM Version](https://img.shields.io/npm/v/%40t1mmen%2Fsrtd)](https://www.npmjs.com/package/@t1mmen/srtd)
+[![Downloads](https://img.shields.io/npm/dt/%40t1mmen%2Fsrtd)](https://www.npmjs.com/package/@t1mmen/srtd)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![CI/CD](https://github.com/t1mmen/srtd/actions/workflows/ci.yml/badge.svg)](https://github.com/t1mmen/srtd/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/t1mmen/srtd/graph/badge.svg?token=CIMAZ55KCJ)](https://codecov.io/gh/t1mmen/srtd)
 
 
-[![screenshot of srtd](./readme-screenshot.png)](./readme-screenshot.png)
+[![video demo](./readme-demo.gif)](./readme-demo.gif)
+
 
 `srtd` enhances the [Supabase](https://supabase.com) DX by adding live-reloading SQL templates into local db. The single-source-of-truth template ➡️ migrations system brings sanity to code reviews, making `git blame` useful.
 
@@ -27,6 +29,8 @@ While building [Timely](https://www.timely.com)'s next-generation [Memory Engine
 I spent [nearly two years looking](https://news.ycombinator.com/item?id=37755076) for something pre-existing, to no avail. Sufficiently fed up, I paired with [Claude](https://claude.ai) to eliminate these annoyances.
 
 Say hello to `srtd`.
+
+[![screenshot of srtd](./readme-screenshot.png)](./readme-screenshot.png)
 
 ## Key Features ✨
 
@@ -62,7 +66,7 @@ npx @t1mmen/srtd
 
 ```bash
 cd your-supabase-project
-srtd init
+npx @t1mmen/srtd init # Creates srtd.config.json, not required
 ```
 
 ### Create Your First Template
@@ -82,14 +86,18 @@ $$ LANGUAGE plpgsql;
 
 1. Start watch mode:
 ```bash
-srtd watch  # Changes auto-apply to local database
+npx @t1mmen/srtd watch  # Changes auto-apply to local database
 ```
 
 2. When ready to deploy:
 ```bash
-srtd build        # Creates timestamped migration file
-supabase migration up  # Apply using Supabase CLI
+npx @t1mmen/srtd build     # Creates timestamped migration file
+supabase migration up      # Apply using Supabase CLI
 ```
+
+
+> [!INFO]
+> To reduce noise in PR's, consider adding `migration-templates/*srtd*.sql linguist-generated=true` to your [`.gitattributes` file.](https://docs.github.com/en/repositories/working-with-files/managing-files/customizing-how-changed-files-appear-on-github) (unless you manually edit the generated files)
 
 
 ## The Power of Templates 💪
@@ -183,13 +191,12 @@ Use regular [Supabase](https://supabase.com) migrations for these cases.
 
 ### Interactive Mode
 
-Running `srtd` without arguments opens an interactive menu:
-
-### CLI Mode
+Running `npx @t1mmen/srtd` without arguments opens an interactive menu:
 
 - 🏗️  `srtd build [--force]` - Generate migrations from templates
 - ▶️  `srtd apply [--force]` - Apply templates directly to local database
-- ✍️  `srtd register [file.sql]` - Mark templates as already built
+- ✍️  `srtd register [file.sql...]` - Mark templates as already built
+- 🚀  `srtd promote - [file.sql ...]` - Promote WIP template to buildable templates
 - 👀 `srtd watch` - Watch and auto-apply changes
 - 🧹 `srtd clean` - Remove all logs and reset config
 
@@ -238,6 +245,11 @@ Add `.wip.sql` extension to prevent migration generation:
 my_function.wip.sql  # Only applied locally, never built
 ```
 
+Make a WIP templates buildable my renaming it, or using the `promote` command:
+```bash
+npx @t1mmen/srtd promote my_function.wip.sql
+```
+
 ### Template State Management
 
 Two state tracking files:
@@ -246,13 +258,14 @@ Two state tracking files:
 
 ### Register Existing Objects
 
-Import existing database objects:
+Registering a template is useful when you're creating templates for what is already in your database. This avoids generating migrations on `build` (until they're changed)
+
 ```bash
 # Register specific template
-srtd register my_function.sql
+npx @t1mmen/srtd register my_function.sql another_fn.sql
 
 # Interactive multi-select UI
-srtd register
+npx @t1mmen/srtd register
 ```
 
 ## Development 🛠️
@@ -266,13 +279,15 @@ cd srtd
 npm install
 
 # Development
-npm run dev    # Watch mode
-npm test       # Run tests
-npm start      # Build, link, run
+npm run dev     # Watch mode
+npm test        # Run tests
+npm start       # Run CLI
+npm start:link  # Build, npm link, and run CLI
 
 # Quality Checks
-npm run typecheck        # Type checking
+npm run typecheck       # Type checking
 npm run lint            # Lint and fix
+npm run format          # Format code
 npm run test:coverage   # Test coverage
 ```
 
@@ -293,6 +308,19 @@ While feature-complete for our needs, we welcome:
 4. Update documentation
 
 Note: New features are evaluated based on alignment with project scope.
+
+## Built With 🛠️
+
+### Terminal UI
+- [Ink](https://github.com/vadimdemedes/ink) - React for CLI interfaces
+- [Pastel](https://github.com/vadimdemedes/pastel) - Next-like framework for Ink
+- [Figures](https://github.com/sindresorhus/figures) - Unicode symbols
+- [Chokidar](https://github.com/paulmillr/chokidar) - File watcher
+- [update-notifier](https://github.com/sindresorhus/update-notifier) - Version checks
+- [Zod](https://zod.dev/) - Schema validation
+- [Conf](https://github.com/sindresorhus/conf) - Config management
+- [vhs](https://github.com/charmbracelet/vhs) - Video recording
+
 
 ## License
 

@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import chalk from 'chalk';
+import { useApp } from 'ink';
 import React from 'react';
 import { CONFIG_FILE } from '../constants.js';
 import { getConfig, saveConfig } from '../utils/config.js';
@@ -10,6 +11,7 @@ import { fileExists } from '../utils/fileExists.js';
 import { logger } from '../utils/logger.js';
 
 export default function Init() {
+  const { exit } = useApp();
   React.useEffect(() => {
     async function doInit() {
       console.log(`${chalk.green('\n✨ Initializing srtd\n')}`);
@@ -71,13 +73,16 @@ export default function Init() {
         } else {
           logger.skip(`.gitignore already contains ${ignoreEntry}`);
         }
+        exit();
       } catch (error) {
         logger.error(`Failed to initialize: ${JSON.stringify(error)}`);
-        process.exit(1);
+        if (error instanceof Error) {
+          exit(error);
+        }
       }
     }
     doInit();
-  }, []);
+  }, [exit]);
 
   return null;
 }
