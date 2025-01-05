@@ -23,9 +23,11 @@
     "test": "vitest",
     "test:coverage": "vitest run --coverage --reporter=junit --outputFile=test-report.junit.xml",
     "start": "tsx src/cli.tsx",
+    "start:link": "npm run build && npm link && chmod u+x ./dist/cli.js && srtd",
     "repomix": "mkdir build; npx repomix",
     "supabase:start": "npx supabase start",
-    "supabase:stop": "npx supabase stop"
+    "supabase:stop": "npx supabase stop",
+    "vhs": "chmod +x scripts/record_demo.sh && ./scripts/record_demo.sh"
   },
   "files": [
     "dist"

@@ -1,16 +1,16 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { Select, Spinner } from '@inkjs/ui';
-import { COLOR_ERROR, COLOR_SUCCESS, COLOR_WARNING } from 'components/customTheme.js';
 import figures from 'figures';
 import { glob } from 'glob';
 import { Box, Text, useApp } from 'ink';
 import { argument } from 'pastel';
 import React, { useCallback, useEffect, useState } from 'react';
-import type { CLIConfig } from 'types.js';
 import zod from 'zod';
 import Branding from '../components/Branding.js';
 import Quittable from '../components/Quittable.js';
+import { COLOR_ERROR, COLOR_SUCCESS, COLOR_WARNING } from '../components/customTheme.js';
+import type { CLIConfig } from '../types.js';
 import { getConfig } from '../utils/config.js';
 import { loadBuildLog } from '../utils/loadBuildLog.js';
 import { saveBuildLog } from '../utils/saveBuildLog.js';
@@ -128,7 +128,7 @@ export default function Promote({ args: templateArgs }: Props) {
   if (error) {
     return (
       <Box flexDirection="column">
-        <Branding subtitle="📦 Promote WIP template" />
+        <Branding subtitle="🚀 Promote WIP template" />
         <Text color={COLOR_ERROR}>
           {figures.cross} {error}
         </Text>
@@ -139,7 +139,7 @@ export default function Promote({ args: templateArgs }: Props) {
   if (success) {
     return (
       <Box flexDirection="column">
-        <Branding subtitle="📦 Promote WIP template" />
+        <Branding subtitle="🚀 Promote WIP template" />
         <Box gap={1} flexDirection="column">
           <Text color={COLOR_SUCCESS}>
             {figures.tick} {success}
@@ -155,7 +155,7 @@ export default function Promote({ args: templateArgs }: Props) {
     if (templates.length === 0) {
       return (
         <Box flexDirection="column">
-          <Branding subtitle="📦 Promote WIP template" />
+          <Branding subtitle="🚀 Promote WIP template" />
           <Text color={COLOR_WARNING}>
             {figures.warning} No WIP templates found in {config?.templateDir}{' '}
             <Text bold>({config?.wipIndicator})</Text>
@@ -172,7 +172,7 @@ export default function Promote({ args: templateArgs }: Props) {
 
     return (
       <Box flexDirection="column">
-        <Branding subtitle="📦 Promote WIP template" />
+        <Branding subtitle="🚀 Promote WIP template" />
         <Box gap={1} marginBottom={1}>
           <Text>Select a template to promote</Text>
           <Text dimColor>(removes {config?.wipIndicator} in filename)</Text>
@@ -188,7 +188,7 @@ export default function Promote({ args: templateArgs }: Props) {
   // Loading state for CLI mode
   return (
     <Box flexDirection="column">
-      <Branding subtitle="📦 Promote WIP template" />
+      <Branding subtitle="🚀 Promote WIP template" />
       <Spinner label="Loading..." />
     </Box>
   );
