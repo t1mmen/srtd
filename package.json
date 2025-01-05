@@ -1,6 +1,6 @@
 {
   "name": "@t1mmen/srtd",
-  "version": "0.4.4",
+  "version": "0.4.5",
   "license": "MIT",
   "description": "Supabase Repeatable Template Definitions (srtd): 🪄 Live-reloading SQL templates for Supabase DX. Make your database changes reviewable and migrations maintainable! 🚀",
   "bin": {

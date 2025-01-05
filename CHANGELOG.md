@@ -1,5 +1,11 @@
 # srtd
 
+## 0.4.5
+
+### Patch Changes
+
+- 8391b2b: Add command for promoting .wip templates to buildable migration templates
+
 ## 0.4.4
 
 ### Patch Changes
