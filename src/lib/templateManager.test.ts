@@ -625,6 +625,7 @@ describe('TemplateManager', () => {
       });
 
       await manager.watch();
+      await wait(100);
       await createTemplateWithFunc(`during-scope`, 'during_scope');
       await wait(100);
     })();
