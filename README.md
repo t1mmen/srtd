@@ -245,7 +245,7 @@ Add `.wip.sql` extension to prevent migration generation:
 my_function.wip.sql  # Only applied locally, never built
 ```
 
-Make a WIP templates buildable my renaming it, or using the `promote` command:
+Make a WIP template buildable as migration by renaming it, or using the `promote` command:
 ```bash
 npx @t1mmen/srtd promote my_function.wip.sql
 ```
