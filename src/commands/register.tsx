@@ -8,6 +8,7 @@ import Branding from '../components/Branding.js';
 import Quittable from '../components/Quittable.js';
 import { COLOR_ERROR, COLOR_SUCCESS, COLOR_WARNING } from '../components/customTheme.js';
 import { useTemplateState } from '../hooks/useTemplateState.js';
+import { findProjectRoot } from '../utils/findProjectRoot.js';
 import { registerTemplate } from '../utils/registerTemplate.js';
 
 // Support both array of filenames as arguments and interactive selection
@@ -45,15 +46,23 @@ export default function Register({ args: templateArgs }: Props) {
     let successCount = 0;
     let failCount = 0;
 
-    for (const path of templates) {
-      try {
-        await registerTemplate(path, process.cwd());
-        successCount++;
-      } catch {
-        failCount++;
+    try {
+      const projectRoot = await findProjectRoot();
+      for (const path of templates) {
+        try {
+          await registerTemplate(path, projectRoot);
+          successCount++;
+        } catch (err) {
+          console.error(err);
+          failCount++;
+        }
       }
+    } catch (err) {
+      if (err instanceof Error) {
+        setErrorMessage(err.message);
+      }
+      process.exit(1);
     }
-
     if (failCount > 0) {
       setErrorMessage(`Failed to register ${failCount} template(s).`);
     }
@@ -122,7 +131,9 @@ export default function Register({ args: templateArgs }: Props) {
         <Box gap={2}>
           {options.length === 0 ? (
             <Box flexDirection="column">
-              <Text color={COLOR_WARNING}>{figures.warning} No templates found</Text>
+              <Text color={COLOR_WARNING}>
+                {figures.warning} No templates {!showAll && 'unregistered'} found
+              </Text>
               {!showAll && !!items.length && (
                 <Text dimColor>{figures.info} Press r to show registered templates</Text>
               )}

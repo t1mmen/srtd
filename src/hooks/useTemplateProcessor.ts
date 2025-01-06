@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { TemplateManager } from '../lib/templateManager.js';
 import type { ProcessedTemplateResult } from '../types.js';
+import { findProjectRoot } from '../utils/findProjectRoot.js';
 
 interface ProcessorOptions {
   force?: boolean;
@@ -25,7 +26,8 @@ export function useTemplateProcessor(options: ProcessorOptions) {
 
     async function doProcessing() {
       try {
-        using manager = await TemplateManager.create(process.cwd(), { silent: true });
+        const projectRoot = await findProjectRoot();
+        using manager = await TemplateManager.create(projectRoot, { silent: true });
         const result = await manager.processTemplates(options);
         setResult(result);
         setIsProcessing(false);

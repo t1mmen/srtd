@@ -7,10 +7,12 @@ import { loadBuildLog } from './loadBuildLog.js';
 import { saveBuildLog } from './saveBuildLog.js';
 
 export async function registerTemplate(templatePath: string, baseDir: string): Promise<void> {
+  const config = await getConfig();
+
   const pathsToTry = [
     path.resolve(templatePath),
     path.resolve(baseDir, templatePath),
-    path.join(baseDir, templatePath)
+    path.join(baseDir, templatePath),
   ];
 
   let resolvedPath: string | null = null;

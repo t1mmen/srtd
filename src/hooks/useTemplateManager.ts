@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { TemplateManager } from '../lib/templateManager.js';
 import type { TemplateStatus } from '../types.js';
 import { getConfig } from '../utils/config.js';
+import { findProjectRoot } from '../utils/findProjectRoot.js';
 
 export type TemplateUpdate = {
   type: 'applied' | 'changed' | 'error';
@@ -26,7 +27,7 @@ export interface UseTemplateManager {
   templateDir?: string;
 }
 
-export function useTemplateManager(cwd: string = process.cwd()): UseTemplateManager {
+export function useTemplateManager(baseDir?: string): UseTemplateManager {
   const [templates, setTemplates] = useState<TemplateStatus[]>([]);
   const [updates, setUpdates] = useState<TemplateUpdate[]>([]);
   const [errors, setErrors] = useState<Map<string, string>>(new Map());
@@ -66,6 +67,7 @@ export function useTemplateManager(cwd: string = process.cwd()): UseTemplateMana
 
     async function init() {
       try {
+        const cwd = baseDir || (await findProjectRoot());
         const config = await getConfig(cwd);
         setTemplateDir(config.templateDir);
 
@@ -162,7 +164,7 @@ export function useTemplateManager(cwd: string = process.cwd()): UseTemplateMana
       mounted = false;
       managerRef.current?.[Symbol.dispose]();
     };
-  }, [cwd]);
+  }, [baseDir]);
 
   return {
     templates: sortedTemplates,

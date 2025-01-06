@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { TemplateManager } from '../lib/templateManager.js';
 import type { TemplateStatus } from '../types.js';
+import { findProjectRoot } from '../utils/findProjectRoot.js';
 
 export function useTemplateState() {
   const [loading, setLoading] = useState(true);
@@ -11,7 +12,7 @@ export function useTemplateState() {
   useEffect(() => {
     async function fetchStatus() {
       try {
-        const baseDir = process.cwd();
+        const baseDir = await findProjectRoot();
         const manager = await TemplateManager.create(baseDir);
         const templates = await manager.findTemplates();
         const statuses = await Promise.all(templates.map(t => manager.getTemplateStatus(t)));
