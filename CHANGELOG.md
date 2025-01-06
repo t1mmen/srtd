@@ -1,5 +1,13 @@
 # srtd
 
+## 0.4.6
+
+### Patch Changes
+
+- 4febf28: Add tests for template registration handling, improve detection of incorrectly located templates
+- 9006417: Attempt to identify "root of project", so srtd can be run from subdirectories as well.
+- aaa78e7: fix `register` template path resolution
+
 ## 0.4.5
 
 ### Patch Changes
