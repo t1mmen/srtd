@@ -8,11 +8,12 @@ import { loadBuildLog } from './loadBuildLog.js';
 import { saveBuildLog } from './saveBuildLog.js';
 
 export async function registerTemplate(templatePath: string, baseDir: string): Promise<void> {
-  const config = await getConfig(baseDir);
+  const config = await getConfig();
 
-  // Try multiple path resolutions
   const pathsToTry = [
-    path.join(baseDir, config.templateDir, templatePath), // In templates dir
+    path.resolve(templatePath),
+    path.resolve(baseDir, templatePath),
+    path.join(baseDir, templatePath),
   ];
 
   let resolvedPath: string | null = null;
