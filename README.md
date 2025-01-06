@@ -37,7 +37,7 @@ Say hello to `srtd`.
 - **Live Reload**: Changes to your SQL templates instantly update your local database
 - **Templates as source of truth**: Templates are the source of (non-mutable) database objects
 - **Just SQL**: Templates as just SQL, and `build` to standard [Supabase](https://supabase.com) migrations when you're ready to ship
-- **Sane code reviews**: Templates evolve like regular code, making diffs in PR's and `git blame` work like you'd expect.
+- **Sane code reviews**: Templates evolve like regular code, with diffs in PR's working `git blame`.
 - **Developer Friendly**: Interactive CLI with visual feedback for all operations.
 
 Built specifically for projects using the standard [Supabase](https://supabase.com) stack (but probably works alright for other Postgres-based projects, too).
@@ -179,7 +179,7 @@ Without templates, the smallest change to a function would show up as a complete
 ```
 
 ✅ Triggers
-```
+```diff
  DROP TRIGGER IF EXISTS on_new_user ON auth.users;
  DROP FUNCTION IF EXISTS public.setup_new_user;
 
