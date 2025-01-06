@@ -2,7 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import chalk from 'chalk';
 import { calculateMD5 } from './calculateMD5.js';
-import { getConfig } from './config.js'; // keep this
+import { getConfig } from './config.js';
 import { fileExists } from './fileExists.js';
 import { loadBuildLog } from './loadBuildLog.js';
 import { saveBuildLog } from './saveBuildLog.js';
