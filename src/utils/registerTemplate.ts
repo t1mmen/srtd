@@ -29,6 +29,12 @@ export async function registerTemplate(templatePath: string, baseDir: string): P
     throw new Error(`Template ${templatePath} not found`);
   }
 
+  if (!resolvedPath.startsWith(path.resolve(baseDir, config.templateDir))) {
+    throw new Error(
+      `Template in wrong directly, must be located inside of configured templateDir: ${config.templateDir}/*`
+    );
+  }
+
   const content = await fs.readFile(resolvedPath, 'utf-8');
   const hash = await calculateMD5(content);
   const relativePath = path.relative(baseDir, resolvedPath);

@@ -35,19 +35,19 @@ Say hello to `srtd`.
 ## Key Features ✨
 
 - **Live Reload**: Changes to your SQL templates instantly update your local database
-- **Single Source of Truth**: Templates are the source of all (non-mutable) database objects, improving code-review clarity
-- **Just SQL**: Templates build as standard [Supabase](https://supabase.com) migrations when you're ready to deploy
-- **Developer Friendly**: Interactive CLI with visual feedback for all operations
+- **Templates as source of truth**: Templates are the source of (non-mutable) database objects
+- **Just SQL**: Templates as just SQL, and `build` to standard [Supabase](https://supabase.com) migrations when you're ready to ship
+- **Sane code reviews**: Templates evolve like regular code, making diffs in PR's and `git blame` work like you'd expect.
+- **Developer Friendly**: Interactive CLI with visual feedback for all operations.
 
 Built specifically for projects using the standard [Supabase](https://supabase.com) stack (but probably works alright for other Postgres-based projects, too).
 
-## Requirements
+## Quick Start 🚀
+
+### Requirements
 
 - Node.js v20.x or higher
-- [Supabase](https://supabase.com) CLI installed and project initialized (with `/supabase` directory)
-- Local Postgres instance running (typically via `supabase start`)
-
-## Quick Start 🚀
+- [Supabase](https://supabase.com) project initialized (in `/supabase`).
 
 ### Installation
 
@@ -74,7 +74,8 @@ npx @t1mmen/srtd init # Creates srtd.config.json, not required
 Create `supabase/migrations-templates/my_function.sql`:
 
 ```sql
-CREATE OR REPLACE FUNCTION my_function()
+DROP FUNCTION IF EXISTS public.my_function; -- Makes it easier to change args later
+CREATE FUNCTION my_function()
 RETURNS void AS $$
 BEGIN
   -- Your function logic here
@@ -95,7 +96,6 @@ npx @t1mmen/srtd build     # Creates timestamped migration file
 supabase migration up      # Apply using Supabase CLI
 ```
 
-
 > [!TIP]
 > To reduce noise in PR's, consider adding `migration-templates/*srtd*.sql linguist-generated=true` to your [`.gitattributes` file.](https://docs.github.com/en/repositories/working-with-files/managing-files/customizing-how-changed-files-appear-on-github) (unless you manually edit the generated files)
 
@@ -110,7 +110,8 @@ Without templates, the smallest change to a function would show up as a complete
 ✅ Database functions:
 ```diff
   -- Event notifications
-  CREATE OR REPLACE FUNCTION notify_changes()
+  DROP FUNCTION IF EXISTS notify_changes;
+  CREATE FUNCTION notify_changes()
   RETURNS trigger AS $$
   BEGIN
     PERFORM pg_notify(
@@ -173,12 +174,31 @@ Without templates, the smallest change to a function would show up as a complete
    ALTER TYPE notification_type ADD VALUE IF NOT EXISTS 'push';
    ALTER TYPE notification_type ADD VALUE IF NOT EXISTS 'pusher';
    ALTER TYPE notification_type ADD VALUE IF NOT EXISTS 'webhook';
-+  ALTER TYPE notification_type ADD VALUE IF NOT EXISTS 'email';
++  ALTER TYPE notification_type ADD VALUE IF NOT EXISTS 'whatsapp';
  END $$;
 ```
 
-### Not Recommended For
+✅ Triggers
+```
+ DROP TRIGGER IF EXISTS on_new_user ON auth.users;
+ DROP FUNCTION IF EXISTS public.setup_new_user;
 
+ CREATE FUNCTION public.setup_new_user() RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER
+ SET search_path = public AS $$
+ BEGIN
+   -- Existing logic for new users
+
++  -- Your new changes go here..
+ END;
+ $$;
+
+ CREATE TRIGGER on_new_user AFTER INSERT ON auth.users FOR EACHW EXECUTE PROCEDURE public.setup_new_user ();
+```
+
+> [!TIP]
+> You don't need to specifying parameters in drop functions. E.g `DROP FUNCTION IF EXISTS public.my_function;`. This ensures you don't end up with multiple functions with the same name, but different parameters.
+
+### Not Recommended Fo
 * ❌ Table structures
 * ❌ Indexes
 * ❌ Data modifications
@@ -191,13 +211,13 @@ Use regular [Supabase](https://supabase.com) migrations for these cases.
 
 ### Interactive Mode
 
-Running `npx @t1mmen/srtd` without arguments opens an interactive menu:
+Running `npx @t1mmen/srtd` without arguments opens an interactive menu. All commands can also be run directly:
 
+- 👀 `srtd watch` - Watch and auto-apply changes
 - 🏗️  `srtd build [--force]` - Generate migrations from templates
 - ▶️  `srtd apply [--force]` - Apply templates directly to local database
 - ✍️  `srtd register [file.sql...]` - Mark templates as already built
 - 🚀  `srtd promote - [file.sql ...]` - Promote WIP template to buildable templates
-- 👀 `srtd watch` - Watch and auto-apply changes
 - 🧹 `srtd clean` - Remove all logs and reset config
 
 > [!IMPORTANT]
@@ -205,7 +225,7 @@ Running `npx @t1mmen/srtd` without arguments opens an interactive menu:
 
 ## Configuration 📝
 
-`srtd.config.json` created during initialization:
+`srtd.config.json` can be created with `init` command. It is not necessary, if the defaults suit your needs.
 
 ```jsonc
 {
