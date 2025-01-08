@@ -1,7 +1,7 @@
 import { Badge } from '@inkjs/ui';
 import { Box, Text } from 'ink';
 import React from 'react';
-import packageJson from '../../package.json' assert { type: 'json' };
+import packageJson from '../../package.json' with { type: 'json' };
 import { useDatabaseConnection } from '../hooks/useDatabaseConnection.js';
 import { COLOR_ERROR, COLOR_SUPABASE, COLOR_WARNING } from './customTheme.js';
 
