@@ -1,5 +1,11 @@
 # srtd
 
+## 0.4.7
+
+### Patch Changes
+
+- b9890b0: fixes compatibility with Node 22
+
 ## 0.4.6
 
 ### Patch Changes
