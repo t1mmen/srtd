@@ -91,7 +91,7 @@ describe('registerTemplate', () => {
     await fs.writeFile(sneakyPath, outsideContent);
 
     await expect(registerTemplate(sneakyPath, testContext.testDir)).rejects.toThrow(
-      /Template in wrong directly/
+      /Template in wrong directory/
     );
   });
 
