@@ -34,7 +34,7 @@ export async function registerTemplate(templatePath: string, baseDir: string): P
 
   if (!resolvedPath.startsWith(path.resolve(baseDir, config.templateDir))) {
     throw new Error(
-      `Template in wrong directly, must be located inside of configured templateDir: ${config.templateDir}/*`
+      `Template in wrong directory, must be located inside of configured templateDir: ${config.templateDir}/*`
     );
   }
 

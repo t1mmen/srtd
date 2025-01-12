@@ -14,19 +14,21 @@
 [![video demo](./readme-demo.gif)](./readme-demo.gif)
 
 
-`srtd` enhances the [Supabase](https://supabase.com) DX by adding live-reloading SQL templates into local db. The single-source-of-truth template ➡️ migrations system brings sanity to code reviews, making `git blame` useful.
+`srtd` enhances the [Supabase](https://supabase.com) DX by adding **live-reloading SQL** from templates into local db.
+
+**Templates act as single-source-of-truth of your database objects**, that `build` to regular SQL migrations; This makes for sane code reviews and functional change history, (e.g `git blame` works as expected).
 
 
 📖 Blog: [Introducing `srtd`: Live-Reloading SQL Templates for Supabase](https://timm.stokke.me/blog/srtd-live-reloading-and-sql-templates-for-supabase)
 
-## Why This Exists 🤔
+### Why This Exists 🤔
 
 While building [Timely](https://www.timely.com)'s next-generation [Memory Engine](https://www.timely.com/memory-app) on [Supabase](https://supabase.com), we found ourselves facing two major annoyances:
 
 1. Code reviews were painful - function changes showed up as complete rewrites, `git blame` was useless
 2. Designing and iterating on database changes locally was full of friction, no matter which workflow we tried
 
-I spent [nearly two years looking](https://news.ycombinator.com/item?id=37755076) for something pre-existing, to no avail. Sufficiently fed up, I paired with [Claude](https://claude.ai) to eliminate these annoyances.
+I spent [nearly two](https://news.ycombinator.com/item?id=37755076) [years looking](https://news.ycombinator.com/item?id=36007640) for something pre-existing, to no avail. Sufficiently fed up, I paired with [Claude](https://claude.ai) to eliminate these annoyances.
 
 Say hello to `srtd`.
 
@@ -46,7 +48,7 @@ Built specifically for projects using the standard [Supabase](https://supabase.c
 
 ### Requirements
 
-- Node.js v20.x or higher
+- Node.js v20.18.1 or higher
 - [Supabase](https://supabase.com) project initialized (in `/supabase`).
 
 ### Installation
@@ -192,13 +194,13 @@ Without templates, the smallest change to a function would show up as a complete
  END;
  $$;
 
- CREATE TRIGGER on_new_user AFTER INSERT ON auth.users FOR EACHW EXECUTE PROCEDURE public.setup_new_user ();
+ CREATE TRIGGER on_new_user AFTER INSERT ON auth.users FOR EACH ROW EXECUTE PROCEDURE public.setup_new_user ();
 ```
 
 > [!TIP]
 > You don't need to specifying parameters in drop functions. E.g `DROP FUNCTION IF EXISTS public.my_function;`. This ensures you don't end up with multiple functions with the same name, but different parameters.
 
-### Not Recommended Fo
+### Not Recommended For:
 * ❌ Table structures
 * ❌ Indexes
 * ❌ Data modifications
@@ -270,12 +272,6 @@ Make a WIP template buildable as migration by renaming it, or using the `promote
 npx @t1mmen/srtd promote my_function.wip.sql
 ```
 
-### Template State Management
-
-Two state tracking files:
-- `.buildlog.json` - Migration build state (commit this)
-- `.buildlog.local.json` - Local database state (add to `.gitignore`)
-
 ### Register Existing Objects
 
 Registering a template is useful when you're creating templates for what is already in your database. This avoids generating migrations on `build` (until they're changed)
@@ -287,6 +283,17 @@ npx @t1mmen/srtd register my_function.sql another_fn.sql
 # Interactive multi-select UI
 npx @t1mmen/srtd register
 ```
+
+This can be useful when setting up `srtd` for an existing project, where you may have hundreds of existing functions, views, etc that you want as templates, but don't want to generate migrations until changed later.
+
+### Template State Management
+
+The state of templates are stored to..
+
+- [`.buildlog.json`](https://github.com/t1mmen/srtd/blob/main/supabase/migrations-templates/.srtd.buildlog.json) - Migration build state (commit this)
+- `.buildlog.local.json` - Local database state (add to `.gitignore`)
+
+This helps `srtd` identify when templates are changed, to only `build` (as migrations) or `apply`  the necessary changes (directly to local db).
 
 ## Development 🛠️
 
