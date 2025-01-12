@@ -82,7 +82,7 @@ describe('registerTemplate', () => {
     await fs.writeFile(outsidePath, outsideContent);
 
     await expect(registerTemplate(outsidePath, testContext.testDir)).rejects.toThrow(
-      /Template in wrong directly/
+      /Template in wrong directory/
     );
 
     // Also try with a path that looks like it's in templateDir but isn't
