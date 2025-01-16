@@ -7,6 +7,7 @@ interface ProcessorOptions {
   force?: boolean;
   apply?: boolean;
   generateFiles?: boolean;
+  bundle?: boolean;
   onComplete?: () => void;
 }
 

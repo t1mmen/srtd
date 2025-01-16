@@ -216,7 +216,7 @@ Use regular [Supabase](https://supabase.com) migrations for these cases.
 Running `npx @t1mmen/srtd` without arguments opens an interactive menu. All commands can also be run directly:
 
 - 👀 `srtd watch` - Watch and auto-apply changes
-- 🏗️  `srtd build [--force]` - Generate migrations from templates
+- 🏗️  `srtd build [--force] [--bundle]` - Generate migrations from templates
 - ▶️  `srtd apply [--force]` - Apply templates directly to local database
 - ✍️  `srtd register [file.sql...]` - Mark templates as already built
 - 🚀  `srtd promote - [file.sql ...]` - Promote WIP template to buildable templates

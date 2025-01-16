@@ -1,4 +1,3 @@
-// commands/build.tsx
 import { Spinner } from '@inkjs/ui';
 import { Box, useApp } from 'ink';
 import { option } from 'pastel';
@@ -24,6 +23,15 @@ export const options = zod.object({
         alias: 'a',
       })
     ),
+  bundle: zod
+    .boolean()
+    .optional()
+    .describe(
+      option({
+        description: 'Bundle all templates into a single migration',
+        alias: 'b',
+      })
+    ),
 });
 
 type Props = {
@@ -36,14 +44,16 @@ export default function Build({ options }: Props) {
     force: options.force,
     apply: options.apply,
     generateFiles: true,
+    bundle: options.bundle,
     onComplete: () => exit(), // Move exit here
   });
 
   const forced = options.force ? '(forced)' : '';
+  const bundled = options.bundle ? '(bundled)' : '';
 
   return (
     <Box flexDirection="column" gap={1}>
-      <Branding subtitle={`🏗️  Build migrations ${forced}`} />
+      <Branding subtitle={`🏗️  Build migrations ${forced} ${bundled}`} />
       {isProcessing ? (
         <Spinner label={`Building templates...`} />
       ) : (
