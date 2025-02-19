@@ -5,7 +5,8 @@ import { afterAll, beforeAll, vi } from 'vitest';
 import { connect, disconnect } from '../utils/databaseConnection.js';
 
 export const TEST_FN_PREFIX = 'srtd_scoped_test_func_';
-export const TEST_ROOT = join(tmpdir(), `srtd-test-${Date.now()}`);
+export const TEST_ROOT_BASE = join(tmpdir(), 'srtd-test');
+export const TEST_ROOT = join(TEST_ROOT_BASE, `srtd-tests-${Date.now()}`);
 
 vi.mock('../utils/logger', () => ({
   logger: {
@@ -33,6 +34,7 @@ vi.mock('../utils/logger', () => ({
 beforeAll(async () => {
   try {
     await fs.rm(TEST_ROOT, { recursive: true, force: true });
+    await fs.mkdir(TEST_ROOT_BASE, { recursive: true });
     await fs.mkdir(TEST_ROOT, { recursive: true });
   } catch (error) {
     console.error('Error creating test root:', error, ', retrying once.');

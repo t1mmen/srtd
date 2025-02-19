@@ -1,8 +1,8 @@
 import fs from 'node:fs/promises';
-import { tmpdir } from 'node:os';
+// import { tmpdir } from 'node:os';
 import { default as path, join, relative } from 'node:path';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { TEST_FN_PREFIX } from '../__tests__/vitest.setup.js';
+import { describe, expect, it } from 'vitest';
+import { TEST_FN_PREFIX, TEST_ROOT_BASE } from '../__tests__/vitest.setup.js';
 import { calculateMD5 } from '../utils/calculateMD5.js';
 import { connect } from '../utils/databaseConnection.js';
 import { ensureDirectories } from '../utils/ensureDirectories.js';
@@ -20,7 +20,7 @@ describe('TemplateManager', () => {
 
     constructor() {
       this.testId = Math.floor(Math.random() * 1000000);
-      this.testDir = join(tmpdir(), `srtd-test-${this.testId}`);
+      this.testDir = join(TEST_ROOT_BASE, `srtd-test-${this.testId}`);
       this.testFunctionName = `${TEST_FN_PREFIX}_${this.testId}`;
     }
 
@@ -175,17 +175,14 @@ describe('TemplateManager', () => {
     });
 
     const watcher = await manager.watch();
-    await wait(100);
 
     // Make rapid changes
     for (let i = 0; i < 5; i++) {
       await fs.writeFile(templatePath, `${baseContent}\n-- Change ${i}`);
-      await wait(100);
+      await wait(10);
     }
 
-    await wait(500);
-
-    watcher.close();
+    await watcher.close();
 
     expect(changes.length).toBeGreaterThanOrEqual(1);
     expect(new Set(changes).size).toBe(changes.length); // All changes should be unique
@@ -196,7 +193,7 @@ describe('TemplateManager', () => {
     await resources.setup();
 
     // Create a WIP template by appending .wip to the name
-    const templatePath = await resources.createTemplateWithFunc('template.wip', '');
+    await resources.createTemplateWithFunc('template.wip', '');
 
     using manager = await TemplateManager.create(resources.testDir);
 
@@ -237,7 +234,7 @@ describe('TemplateManager', () => {
       const result = await manager.processTemplates({ apply: true, force: true });
 
       // Add retry logic for verification
-      const verifyFunctions = async (retries = 3, delay = 200): Promise<void> => {
+      const verifyFunctions = async (retries = 3, delay = 20): Promise<void> => {
         try {
           const allFunctions = await client.query(
             `SELECT proname FROM pg_proc WHERE proname LIKE $1`,
@@ -456,7 +453,7 @@ describe('TemplateManager', () => {
     await resources.createTemplateWithFunc('new', '_watch_addition');
     await wait(150);
 
-    watcher.close();
+    await watcher.close();
     expect(changes).toContain(`new_${resources.testId}_1`);
   });
 
@@ -486,8 +483,8 @@ describe('TemplateManager', () => {
     });
 
     const watcher = await manager.watch();
-    await wait(depth * 100 * 1.1);
-    watcher.close();
+    // await wait(depth * 100 * 1.1);
+    await watcher.close();
 
     expect(changes.length).toBe(depth);
     // Verify each template was detected
@@ -509,15 +506,13 @@ describe('TemplateManager', () => {
 
     const watcher = await manager.watch();
 
-    await wait(100);
-
     // Create various file types
-    await fs.writeFile(join(resources.testDir, 'test-templates/test.txt'), 'not sql');
-    await fs.writeFile(join(resources.testDir, 'test-templates/test.md'), 'not sql');
+    await resources.createTemplate(`test.txt`, 'not sql');
+    await resources.createTemplate(`test.md`, 'not sql');
     await resources.createTemplateWithFunc(`sql`, '_watch_sql_only');
 
-    await wait(500);
-    watcher.close();
+    await wait(101);
+    await watcher.close();
 
     expect(changes).toHaveLength(1);
     expect(changes[0]).toBe(`sql_${resources.testId}_1`);
@@ -551,9 +546,9 @@ describe('TemplateManager', () => {
       throw error;
     }
     // Give enough time for all changes to be detected
-    await wait(count * 100 * 1.1);
+    await wait(100);
 
-    watcher.close();
+    await watcher.close();
 
     expect(changes.size).toBe(count); // Should detect all 5 templates
     for (let i = 1; i <= count; i++) {
@@ -625,7 +620,7 @@ describe('TemplateManager', () => {
     );
 
     await processingComplete;
-    watcher.close();
+    await watcher.close();
 
     expect(processed.size + failed.size).toBe(TEMPLATE_COUNT);
     expect(inProgress.size).toBe(0);
