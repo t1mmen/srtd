@@ -11,132 +11,136 @@ import { TemplateManager } from './templateManager.js';
 const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 describe('TemplateManager', () => {
-  const testContext = {
-    testId: 0,
-    testDir: tmpdir(),
-    testFunctionName: TEST_FN_PREFIX,
-    templateCounter: 0,
-  };
+  // Helper class to manage test resources
+  class TestResources {
+    public readonly testId: number;
+    public readonly testDir: string;
+    public readonly testFunctionName: string;
+    private templateCounter = 0;
 
-  beforeEach(async () => {
-    testContext.testId = Math.floor(Math.random() * 1000000);
-    testContext.testDir = join(tmpdir(), `srtd-test`);
-    testContext.testFunctionName = `${TEST_FN_PREFIX}`;
-    testContext.templateCounter = 0;
-
-    await ensureDirectories(testContext.testDir);
-
-    const client = await connect();
-    try {
-      await client.query('BEGIN');
-      await client.query(`DROP FUNCTION IF EXISTS ${testContext.testFunctionName}()`);
-      await client.query('COMMIT');
-    } catch (e) {
-      await client.query('ROLLBACK');
-      throw e;
-    } finally {
-      client.release();
+    constructor() {
+      this.testId = Math.floor(Math.random() * 1000000);
+      this.testDir = join(tmpdir(), `srtd-test-${this.testId}`);
+      this.testFunctionName = `${TEST_FN_PREFIX}_${this.testId}`;
     }
-  });
 
-  afterEach(async () => {
-    const client = await connect();
-    try {
-      await client.query('BEGIN');
-      await client.query(`DROP FUNCTION IF EXISTS ${testContext.testFunctionName}()`);
-      await client.query('COMMIT');
-    } catch (_) {
-      await client.query('ROLLBACK');
-    } finally {
-      client.release();
+    async setup() {
+      await ensureDirectories(this.testDir);
+      const client = await connect();
+      try {
+        await client.query('BEGIN');
+        await client.query(`DROP FUNCTION IF EXISTS ${this.testFunctionName}()`);
+        await client.query('COMMIT');
+      } catch (e) {
+        await client.query('ROLLBACK');
+        throw e;
+      } finally {
+        client.release();
+      }
     }
-    await fs.rm(testContext.testDir, { recursive: true, force: true });
-  });
 
-  // Helper to generate unique template names
-  const getNextTemplateName = (prefix = 'template') => {
-    testContext.templateCounter++;
-    return `${prefix}_${testContext.testId}_${testContext.templateCounter}`;
-  };
-
-  const createTemplate = async (name: string, content: string, dir?: string) => {
-    const fullPath = dir
-      ? join(testContext.testDir, 'test-templates', dir, name)
-      : join(testContext.testDir, 'test-templates', name);
-    try {
-      await fs.mkdir(path.dirname(fullPath), { recursive: true });
-      await fs.writeFile(fullPath, content);
-      return fullPath;
-    } catch (error) {
-      console.error('Error creating template:', error);
-      throw error;
+    async cleanup() {
+      const client = await connect();
+      try {
+        await client.query('BEGIN');
+        await client.query(`DROP FUNCTION IF EXISTS ${this.testFunctionName}()`);
+        await client.query('COMMIT');
+      } catch (_) {
+        await client.query('ROLLBACK');
+      } finally {
+        client.release();
+      }
+      await fs.rm(this.testDir, { recursive: true, force: true });
     }
-  };
 
-  const createTemplateWithFunc = async (prefix: string, funcSuffix = '', dir?: string) => {
-    const name = `${getNextTemplateName(prefix)}.sql`;
-    const funcName = `${testContext.testFunctionName}${funcSuffix}`;
-    const content = `CREATE OR REPLACE FUNCTION ${funcName}() RETURNS void AS $$ BEGIN NULL; END; $$ LANGUAGE plpgsql;`;
-    return createTemplate(name, content, dir);
-  };
+    getNextTemplateName(prefix = 'template') {
+      this.templateCounter++;
+      return `${prefix}_${this.testId}_${this.templateCounter}`;
+    }
+
+    async createTemplate(name: string, content: string, dir?: string) {
+      const fullPath = dir
+        ? join(this.testDir, 'test-templates', dir, name)
+        : join(this.testDir, 'test-templates', name);
+      try {
+        await fs.mkdir(path.dirname(fullPath), { recursive: true });
+        await fs.writeFile(fullPath, content);
+        return fullPath;
+      } catch (error) {
+        console.error('Error creating template:', error);
+        throw error;
+      }
+    }
+
+    async createTemplateWithFunc(prefix: string, funcSuffix = '', dir?: string) {
+      const name = `${this.getNextTemplateName(prefix)}.sql`;
+      const funcName = `${this.testFunctionName}${funcSuffix}`;
+      const content = `CREATE OR REPLACE FUNCTION ${funcName}() RETURNS void AS $$ BEGIN NULL; END; $$ LANGUAGE plpgsql;`;
+      return this.createTemplate(name, content, dir);
+    }
+
+    [Symbol.dispose]() {
+      return this.cleanup();
+    }
+  }
 
   it('should create migration file when template changes', async () => {
-    await createTemplateWithFunc('basic', '_file_change');
+    using resources = new TestResources();
+    await resources.setup();
 
-    using manager = await TemplateManager.create(testContext.testDir);
+    await resources.createTemplateWithFunc('basic', '_file_change');
+
+    using manager = await TemplateManager.create(resources.testDir);
     await manager.processTemplates({ generateFiles: true });
 
-    const migrations = await fs.readdir(join(testContext.testDir, 'test-migrations'));
+    const migrations = await fs.readdir(join(resources.testDir, 'test-migrations'));
     expect(migrations.length).toBe(1);
   });
 
   it('should not allow building WIP templates', async () => {
-    await createTemplateWithFunc('file.wip', '_wip_wont_build');
+    using resources = new TestResources();
+    await resources.setup();
 
-    using manager = await TemplateManager.create(testContext.testDir);
+    await resources.createTemplateWithFunc('file.wip', '_wip_wont_build');
+
+    using manager = await TemplateManager.create(resources.testDir);
     await manager.processTemplates({ generateFiles: true });
 
-    const migrations = await fs.readdir(join(testContext.testDir, 'test-migrations'));
+    const migrations = await fs.readdir(join(resources.testDir, 'test-migrations'));
     expect(migrations.filter(m => m.includes(`wip`))).toHaveLength(0);
   });
 
   it('should maintain separate build and local logs', async () => {
-    const templatePath = join(
-      testContext.testDir,
-      'test-templates',
-      `template_${testContext.testId}_1.sql`
-    );
-    const templateContent = `CREATE FUNCTION ${testContext.testFunctionName}() RETURNS void AS $$ BEGIN NULL; END; $$ LANGUAGE plpgsql;`;
-    await fs.writeFile(templatePath, templateContent);
+    using resources = new TestResources();
+    await resources.setup();
 
-    using manager = await TemplateManager.create(testContext.testDir);
+    const templatePath = await resources.createTemplateWithFunc('template', '');
+
+    using manager = await TemplateManager.create(resources.testDir);
 
     // Build writes to build log
     await manager.processTemplates({ generateFiles: true });
     const buildLog = JSON.parse(
-      await fs.readFile(join(testContext.testDir, '.buildlog-test.json'), 'utf-8')
+      await fs.readFile(join(resources.testDir, '.buildlog-test.json'), 'utf-8')
     );
-    const relPath = relative(testContext.testDir, templatePath);
+    const relPath = relative(resources.testDir, templatePath);
     expect(buildLog.templates[relPath].lastBuildHash).toBeDefined();
 
     // Apply writes to local log
     await manager.processTemplates({ apply: true });
     const localLog = JSON.parse(
-      await fs.readFile(join(testContext.testDir, '.buildlog-test.local.json'), 'utf-8')
+      await fs.readFile(join(resources.testDir, '.buildlog-test.local.json'), 'utf-8')
     );
     expect(localLog.templates[relPath].lastAppliedHash).toBeDefined();
   });
 
   it('should track template state correctly', async () => {
-    const templatePath = join(
-      testContext.testDir,
-      'test-templates',
-      `template_${testContext.testId}_1.sql`
-    );
-    const templateContent = `CREATE FUNCTION ${testContext.testFunctionName}() RETURNS void AS $$ BEGIN NULL; END; $$ LANGUAGE plpgsql;`;
-    await fs.writeFile(templatePath, templateContent);
+    using resources = new TestResources();
+    await resources.setup();
 
-    using manager = await TemplateManager.create(testContext.testDir);
+    const templatePath = await resources.createTemplateWithFunc('template', '');
+
+    using manager = await TemplateManager.create(resources.testDir);
 
     // Initially no state
     let status = await manager.getTemplateStatus(templatePath);
@@ -157,16 +161,13 @@ describe('TemplateManager', () => {
   });
 
   it('should handle rapid template changes', async () => {
-    const templatePath = join(
-      testContext.testDir,
-      'test-templates',
-      `template_${testContext.testId}_1.sql`
-    );
-    const baseContent = `CREATE OR REPLACE FUNCTION ${testContext.testFunctionName}() RETURNS void AS $$ BEGIN NULL; END; $$ LANGUAGE plpgsql;`;
+    using resources = new TestResources();
+    await resources.setup();
 
-    await fs.writeFile(templatePath, baseContent);
+    const templatePath = await resources.createTemplateWithFunc('template', '');
+    const baseContent = await fs.readFile(templatePath, 'utf-8');
 
-    using manager = await TemplateManager.create(testContext.testDir);
+    using manager = await TemplateManager.create(resources.testDir);
     const changes: string[] = [];
 
     manager.on('templateChanged', async template => {
@@ -191,15 +192,13 @@ describe('TemplateManager', () => {
   }, 10000);
 
   it('should apply WIP templates directly to database', async () => {
-    const templatePath = join(
-      testContext.testDir,
-      'test-templates',
-      `template_${testContext.testId}_1.wip.sql`
-    );
-    const templateContent = `CREATE FUNCTION ${testContext.testFunctionName}() RETURNS void AS $$ BEGIN NULL; END; $$ LANGUAGE plpgsql;`;
-    await fs.writeFile(templatePath, templateContent);
+    using resources = new TestResources();
+    await resources.setup();
 
-    using manager = await TemplateManager.create(testContext.testDir);
+    // Create a WIP template by appending .wip to the name
+    const templatePath = await resources.createTemplateWithFunc('template.wip', '');
+
+    using manager = await TemplateManager.create(resources.testDir);
 
     const result = await manager.processTemplates({ apply: true });
     expect(result.errors).toHaveLength(0);
@@ -207,7 +206,7 @@ describe('TemplateManager', () => {
     const client = await connect();
     try {
       const res = await client.query(`SELECT COUNT(*) FROM pg_proc WHERE proname = $1`, [
-        testContext.testFunctionName,
+        resources.testFunctionName,
       ]);
       expect(Number.parseInt(res.rows[0].count)).toBe(1);
     } finally {
@@ -216,14 +215,17 @@ describe('TemplateManager', () => {
   });
 
   it('should handle sequential template operations', async () => {
+    using resources = new TestResources();
+    await resources.setup();
+
     const tmpls = await Promise.all(
       [...Array(5)].map((_, i) =>
-        createTemplateWithFunc(`sequencetest_${i}`, `_sequence_test_${i}`)
+        resources.createTemplateWithFunc(`sequencetest_${i}`, `_sequence_test_${i}`)
       )
     );
     expect(tmpls).toHaveLength(5);
 
-    using manager = await TemplateManager.create(testContext.testDir);
+    using manager = await TemplateManager.create(resources.testDir);
     const client = await connect();
 
     await wait(100);
@@ -239,7 +241,7 @@ describe('TemplateManager', () => {
         try {
           const allFunctions = await client.query(
             `SELECT proname FROM pg_proc WHERE proname LIKE $1`,
-            [`${testContext.testFunctionName}_sequence_test_%`]
+            [`${resources.testFunctionName}_sequence_test_%`]
           );
           expect(allFunctions.rows).toHaveLength(5);
         } catch (error) {
@@ -265,16 +267,19 @@ describe('TemplateManager', () => {
   });
 
   it('should generate unique timestamps for multiple templates', async () => {
+    using resources = new TestResources();
+    await resources.setup();
+
     const templates = await Promise.all(
       [...Array(10)].map((_, i) =>
-        createTemplateWithFunc(`timestamptest_${i}`, `_unique_timestamps_${i}`)
+        resources.createTemplateWithFunc(`timestamptest_${i}`, `_unique_timestamps_${i}`)
       )
     );
 
-    using manager = await TemplateManager.create(testContext.testDir);
+    using manager = await TemplateManager.create(resources.testDir);
     await manager.processTemplates({ generateFiles: true });
 
-    const migrations = await fs.readdir(join(testContext.testDir, 'test-migrations'));
+    const migrations = await fs.readdir(join(resources.testDir, 'test-migrations'));
     const timestamps = migrations.map(m => m.split('_')[0]);
     const uniqueTimestamps = new Set(timestamps);
 
@@ -283,10 +288,13 @@ describe('TemplateManager', () => {
   });
 
   it('should handle mix of working and broken templates', async () => {
-    await createTemplateWithFunc(`a-test-good`, '_good_and_broken_mix');
-    await createTemplate(`a-test-bad.sql`, 'INVALID SQL SYNTAX;');
+    using resources = new TestResources();
+    await resources.setup();
 
-    using manager = await TemplateManager.create(testContext.testDir);
+    await resources.createTemplateWithFunc(`a-test-good`, '_good_and_broken_mix');
+    await resources.createTemplate(`a-test-bad.sql`, 'INVALID SQL SYNTAX;');
+
+    using manager = await TemplateManager.create(resources.testDir);
     const result = await manager.processTemplates({ apply: true });
 
     expect(result.errors).toHaveLength(1);
@@ -295,7 +303,7 @@ describe('TemplateManager', () => {
     const client = await connect();
     try {
       const res = await client.query(`SELECT COUNT(*) FROM pg_proc WHERE proname = $1`, [
-        `${testContext.testFunctionName}_good_and_broken_mix`,
+        `${resources.testFunctionName}_good_and_broken_mix`,
       ]);
       expect(Number.parseInt(res.rows[0].count)).toBe(1);
     } finally {
@@ -304,8 +312,11 @@ describe('TemplateManager', () => {
   });
 
   it('should handle database errors gracefully', async () => {
-    using manager = await TemplateManager.create(testContext.testDir);
-    await createTemplate(`test-error.sql`, 'SELECT 1/0;'); // Division by zero error
+    using resources = new TestResources();
+    await resources.setup();
+
+    using manager = await TemplateManager.create(resources.testDir);
+    await resources.createTemplate(`test-error.sql`, 'SELECT 1/0;'); // Division by zero error
 
     const result = await manager.processTemplates({ apply: true });
     expect(result.errors).toHaveLength(1);
@@ -313,12 +324,15 @@ describe('TemplateManager', () => {
   });
 
   it('should handle file system errors', async () => {
-    const errorPath = join(testContext.testDir, 'test-templates', `test-error.sql`);
+    using resources = new TestResources();
+    await resources.setup();
+
+    const errorPath = join(resources.testDir, 'test-templates', `test-error.sql`);
     try {
-      await createTemplate(`test-error.sql`, 'SELECT 1;');
+      await resources.createTemplate(`test-error.sql`, 'SELECT 1;');
       await fs.chmod(errorPath, 0o000);
 
-      using manager = await TemplateManager.create(testContext.testDir);
+      using manager = await TemplateManager.create(resources.testDir);
       try {
         await manager.processTemplates({ generateFiles: true });
       } catch (error) {
@@ -339,23 +353,30 @@ describe('TemplateManager', () => {
   });
 
   it('should handle large batches of templates', async () => {
+    using resources = new TestResources();
+    await resources.setup();
+
     // Create 50 templates
     await Promise.all(
-      [...Array(50)].map((_, i) => createTemplateWithFunc(`test_${i}`, `_large_batch_${i}`))
+      [...Array(50)].map((_, i) =>
+        resources.createTemplateWithFunc(`test_${i}`, `_large_batch_${i}`)
+      )
     );
 
-    using manager = await TemplateManager.create(testContext.testDir);
+    using manager = await TemplateManager.create(resources.testDir);
     const result = await manager.processTemplates({ generateFiles: true });
 
     expect(result.errors).toHaveLength(0);
-    const migrations = await fs.readdir(join(testContext.testDir, 'test-migrations'));
+    const migrations = await fs.readdir(join(resources.testDir, 'test-migrations'));
     expect(migrations.length).toBe(50);
   });
 
   it('should handle templates with complex SQL', async () => {
-    const testFunctionName = `${testContext.testFunctionName}_complex`;
+    using resources = new TestResources();
+    await resources.setup();
+
     const complexSQL = `
-      CREATE OR REPLACE FUNCTION ${testFunctionName}(
+      CREATE OR REPLACE FUNCTION ${resources.testFunctionName}_complex(
         param1 integer DEFAULT 100,
         OUT result1 integer,
         OUT result2 text
@@ -379,9 +400,9 @@ describe('TemplateManager', () => {
       END;
       $$ LANGUAGE plpgsql;
     `;
-    await createTemplate(`test-complex.sql`, complexSQL);
+    await resources.createTemplate(`test-complex.sql`, complexSQL);
 
-    using manager = await TemplateManager.create(testContext.testDir);
+    using manager = await TemplateManager.create(resources.testDir);
     const result = await manager.processTemplates({ apply: true });
     expect(result.errors).toHaveLength(0);
 
@@ -393,7 +414,7 @@ describe('TemplateManager', () => {
         FROM pg_proc
         WHERE proname = $1
       `,
-        [testFunctionName]
+        [`${resources.testFunctionName}_complex`]
       );
       expect(res.rows).toHaveLength(1);
       expect(res.rows[0].return_type).toBe('record');
@@ -403,20 +424,26 @@ describe('TemplateManager', () => {
   });
 
   it('should maintain template state across manager instances', async () => {
-    const template = await createTemplateWithFunc(`test`, 'maintain_state');
+    using resources = new TestResources();
+    await resources.setup();
+
+    const template = await resources.createTemplateWithFunc(`test`, 'maintain_state');
 
     // First manager instance
-    using manager1 = await TemplateManager.create(testContext.testDir);
+    using manager1 = await TemplateManager.create(resources.testDir);
     await manager1.processTemplates({ generateFiles: true });
 
     // Second manager instance should see the state
-    using manager2 = await TemplateManager.create(testContext.testDir);
+    using manager2 = await TemplateManager.create(resources.testDir);
     const status = await manager2.getTemplateStatus(template);
     expect(status.buildState.lastBuildHash).toBeDefined();
   });
 
   it('should handle template additions in watch mode', async () => {
-    using manager = await TemplateManager.create(testContext.testDir);
+    using resources = new TestResources();
+    await resources.setup();
+
+    using manager = await TemplateManager.create(resources.testDir);
     const changes: string[] = [];
 
     manager.on('templateChanged', template => {
@@ -426,25 +453,32 @@ describe('TemplateManager', () => {
     const watcher = await manager.watch();
 
     // Add new template after watch started
-    await createTemplateWithFunc('new', '_watch_addition');
+    await resources.createTemplateWithFunc('new', '_watch_addition');
     await wait(150);
 
     watcher.close();
-    expect(changes).toContain(`new_${testContext.testId}_1`);
+    expect(changes).toContain(`new_${resources.testId}_1`);
   });
 
   it('should handle templates in deep subdirectories', async () => {
+    using resources = new TestResources();
+    await resources.setup();
+
     // Create nested directory structure
     const depth = 5;
     const templatePaths: string[] = [];
 
     for (let i = 1; i <= depth; i++) {
       const dir = [...Array(i)].map((_, idx) => `level${idx + 1}`).join('/');
-      const templatePath = await createTemplateWithFunc(`depth-test_${i}`, `_depth_${i}`, dir);
+      const templatePath = await resources.createTemplateWithFunc(
+        `depth-test_${i}`,
+        `_depth_${i}`,
+        dir
+      );
       templatePaths.push(templatePath);
     }
 
-    using manager = await TemplateManager.create(testContext.testDir);
+    using manager = await TemplateManager.create(resources.testDir);
     const changes: string[] = [];
 
     manager.on('templateChanged', template => {
@@ -458,12 +492,15 @@ describe('TemplateManager', () => {
     expect(changes.length).toBe(depth);
     // Verify each template was detected
     for (let i = 1; i <= depth; i++) {
-      expect(changes).toContain(`depth-test_${i}_${testContext.testId}_${i}`);
+      expect(changes).toContain(`depth-test_${i}_${resources.testId}_${i}`);
     }
   });
 
   it('should only watch SQL files', async () => {
-    using manager = await TemplateManager.create(testContext.testDir);
+    using resources = new TestResources();
+    await resources.setup();
+
+    using manager = await TemplateManager.create(resources.testDir);
     const changes: string[] = [];
 
     manager.on('templateChanged', template => {
@@ -475,20 +512,23 @@ describe('TemplateManager', () => {
     await wait(100);
 
     // Create various file types
-    await fs.writeFile(join(testContext.testDir, 'test-templates/test.txt'), 'not sql');
-    await fs.writeFile(join(testContext.testDir, 'test-templates/test.md'), 'not sql');
-    await createTemplateWithFunc(`sql`, '_watch_sql_only');
+    await fs.writeFile(join(resources.testDir, 'test-templates/test.txt'), 'not sql');
+    await fs.writeFile(join(resources.testDir, 'test-templates/test.md'), 'not sql');
+    await resources.createTemplateWithFunc(`sql`, '_watch_sql_only');
 
     await wait(500);
     watcher.close();
 
     expect(changes).toHaveLength(1);
-    expect(changes[0]).toBe(`sql_${testContext.testId}_1`);
+    expect(changes[0]).toBe(`sql_${resources.testId}_1`);
   });
 
   it('should handle multiple template changes simultaneously', async () => {
+    using resources = new TestResources();
+    await resources.setup();
+
     const client = await connect();
-    using manager = await TemplateManager.create(testContext.testDir);
+    using manager = await TemplateManager.create(resources.testDir);
     const changes = new Set<string>();
     const count = 5;
 
@@ -500,13 +540,12 @@ describe('TemplateManager', () => {
     });
 
     // Create multiple templates simultaneously
-
     try {
-      await createTemplateWithFunc(`rapid_test_1`, '_batch_changes_1');
-      await createTemplateWithFunc(`rapid_test_2`, '_batch_changes_2');
-      await createTemplateWithFunc(`rapid_test_3`, '_batch_changes_3');
-      await createTemplateWithFunc(`rapid_test_4`, '_batch_changes_4', 'deep');
-      await createTemplateWithFunc(`rapid_test_5`, '_batch_changes_5', 'deep/nested');
+      await resources.createTemplateWithFunc(`rapid_test_1`, '_batch_changes_1');
+      await resources.createTemplateWithFunc(`rapid_test_2`, '_batch_changes_2');
+      await resources.createTemplateWithFunc(`rapid_test_3`, '_batch_changes_3');
+      await resources.createTemplateWithFunc(`rapid_test_4`, '_batch_changes_4', 'deep');
+      await resources.createTemplateWithFunc(`rapid_test_5`, '_batch_changes_5', 'deep/nested');
     } catch (error) {
       console.error('Error creating templates:', error);
       throw error;
@@ -518,14 +557,14 @@ describe('TemplateManager', () => {
 
     expect(changes.size).toBe(count); // Should detect all 5 templates
     for (let i = 1; i <= count; i++) {
-      expect(changes.has(`rapid_test_${i}_${testContext.testId}_${i}`)).toBe(true);
+      expect(changes.has(`rapid_test_${i}_${resources.testId}_${i}`)).toBe(true);
     }
 
     // Verify all templates were processed
     await wait(100);
     try {
       const res = await client.query(`SELECT proname FROM pg_proc WHERE proname LIKE $1`, [
-        `${testContext.testFunctionName}_batch_changes_%`,
+        `${resources.testFunctionName}_batch_changes_%`,
       ]);
       // expect(res).toBe('');
       expect(res.rows).toHaveLength(count);
@@ -537,8 +576,11 @@ describe('TemplateManager', () => {
   }, 15000);
 
   it('should handle rapid bulk template creation realistically', async () => {
+    using resources = new TestResources();
+    await resources.setup();
+
     const TEMPLATE_COUNT = 50;
-    using manager = await TemplateManager.create(testContext.testDir);
+    using manager = await TemplateManager.create(resources.testDir);
     const processed = new Set<string>();
     const failed = new Set<string>();
     const inProgress = new Set<string>();
@@ -578,7 +620,7 @@ describe('TemplateManager', () => {
     // Create all templates
     await Promise.all(
       Array.from({ length: TEMPLATE_COUNT }, (_, i) =>
-        createTemplateWithFunc(`bulk_${i + 1}`, `_bulk_${i + 1}`)
+        resources.createTemplateWithFunc(`bulk_${i + 1}`, `_bulk_${i + 1}`)
       )
     );
 
@@ -591,7 +633,10 @@ describe('TemplateManager', () => {
   });
 
   it('should cleanup resources when disposed', async () => {
-    using manager = await TemplateManager.create(testContext.testDir);
+    using resources = new TestResources();
+    await resources.setup();
+
+    using manager = await TemplateManager.create(resources.testDir);
     const changes: string[] = [];
 
     manager.on('templateChanged', template => {
@@ -601,49 +646,55 @@ describe('TemplateManager', () => {
     await manager.watch();
 
     // Create template before disposal
-    await createTemplateWithFunc(`before-dispose`, 'before_dispose');
+    await resources.createTemplateWithFunc(`before-dispose`, 'before_dispose');
 
     await wait(100);
     // Dispose and verify cleanup
     manager[Symbol.dispose]();
 
     // Try creating template after disposal
-    await createTemplateWithFunc(`after-dispose`, 'after_dispose');
+    await resources.createTemplateWithFunc(`after-dispose`, 'after_dispose');
     await wait(100);
 
     expect(changes).toHaveLength(1);
-    expect(changes[0]).toBe(`before-dispose_${testContext.testId}_1`);
+    expect(changes[0]).toBe(`before-dispose_${resources.testId}_1`);
   });
 
   it('should auto-cleanup with using statement', async () => {
+    using resources = new TestResources();
+    await resources.setup();
+
     const changes: string[] = [];
 
     await (async () => {
-      using manager = await TemplateManager.create(testContext.testDir);
+      using manager = await TemplateManager.create(resources.testDir);
       manager.on('templateChanged', template => {
         changes.push(template.name);
       });
 
       await manager.watch();
       await wait(100);
-      await createTemplateWithFunc(`during-scope`, 'during_scope');
+      await resources.createTemplateWithFunc(`during-scope`, 'during_scope');
       await wait(100);
     })();
 
     // After scope exit, create another template
-    await createTemplateWithFunc(`after-scope`, 'after_scope');
+    await resources.createTemplateWithFunc(`after-scope`, 'after_scope');
     await wait(100);
 
-    expect(changes[0]).toBe(`during-scope_${testContext.testId}_1`);
+    expect(changes[0]).toBe(`during-scope_${resources.testId}_1`);
     expect(changes).toHaveLength(1);
   });
 
   it('should not process unchanged templates', async () => {
-    const templatePath = await createTemplateWithFunc(
+    using resources = new TestResources();
+    await resources.setup();
+
+    const templatePath = await resources.createTemplateWithFunc(
       `initial_will_remain_unchanged`,
       'unchanged_tmpl'
     );
-    using manager = await TemplateManager.create(testContext.testDir);
+    using manager = await TemplateManager.create(resources.testDir);
     await manager.watch();
 
     // First processing
@@ -673,11 +724,14 @@ describe('TemplateManager', () => {
   });
 
   it('should only process modified templates in batch', async () => {
-    // Create two templates
-    const template1 = await createTemplateWithFunc(`modified_tmpl_1`, 'mod_1');
-    await createTemplateWithFunc(`modified_tmpl_2`, 'mod_2');
+    using resources = new TestResources();
+    await resources.setup();
 
-    using manager = await TemplateManager.create(testContext.testDir);
+    // Create two templates
+    const template1 = await resources.createTemplateWithFunc(`modified_tmpl_1`, 'mod_1');
+    await resources.createTemplateWithFunc(`modified_tmpl_2`, 'mod_2');
+
+    using manager = await TemplateManager.create(resources.testDir);
 
     // First processing of both
     await manager.processTemplates({ apply: true });
@@ -699,19 +753,22 @@ describe('TemplateManager', () => {
     await manager.processTemplates({ apply: true });
 
     expect(changes).toHaveLength(1);
-    expect(changes[0]).toBe(`modified_tmpl_1_${testContext.testId}_1`);
+    expect(changes[0]).toBe(`modified_tmpl_1_${resources.testId}_1`);
   });
 
   it('should correctly update local buildlog on apply', async () => {
-    const templatePath = await createTemplateWithFunc(`buildlog`, '_buildlog');
-    using manager = await TemplateManager.create(testContext.testDir);
-    const localBuildlogPath = join(testContext.testDir, '.buildlog-test.local.json');
+    using resources = new TestResources();
+    await resources.setup();
+
+    const templatePath = await resources.createTemplateWithFunc(`buildlog`, '_buildlog');
+    using manager = await TemplateManager.create(resources.testDir);
+    const localBuildlogPath = join(resources.testDir, '.buildlog-test.local.json');
 
     // Initial apply
     await manager.processTemplates({ apply: true });
 
     const initialLog = JSON.parse(await fs.readFile(localBuildlogPath, 'utf-8'));
-    const relPath = relative(testContext.testDir, templatePath);
+    const relPath = relative(resources.testDir, templatePath);
     const initialHash = initialLog.templates[relPath].lastAppliedHash;
     const initialContent = await fs.readFile(templatePath, 'utf-8');
     expect(initialHash).toBeDefined();
@@ -738,15 +795,18 @@ describe('TemplateManager', () => {
   });
 
   it('should skip apply if template hash matches local buildlog', async () => {
-    const templatePath = await createTemplateWithFunc(`skip`, '_skip_apply');
-    using manager = await TemplateManager.create(testContext.testDir);
-    const localBuildlogPath = join(testContext.testDir, '.buildlog-test.local.json');
+    using resources = new TestResources();
+    await resources.setup();
+
+    const templatePath = await resources.createTemplateWithFunc(`skip`, '_skip_apply');
+    using manager = await TemplateManager.create(resources.testDir);
+    const localBuildlogPath = join(resources.testDir, '.buildlog-test.local.json');
 
     // Initial apply
     await manager.processTemplates({ apply: true });
 
     const initialLog = JSON.parse(await fs.readFile(localBuildlogPath, 'utf-8'));
-    const relPath = relative(testContext.testDir, templatePath);
+    const relPath = relative(resources.testDir, templatePath);
     const initialHash = initialLog.templates[relPath].lastAppliedHash;
     const initialDate = initialLog.templates[relPath].lastAppliedDate;
 
@@ -764,13 +824,16 @@ describe('TemplateManager', () => {
   });
 
   it('should not reapply unchanged templates in watch mode', async () => {
+    using resources = new TestResources();
+    await resources.setup();
+
     // Create multiple templates
     const templates = await Promise.all([
-      createTemplateWithFunc(`watch-stable_1`, '_watch_1'),
-      createTemplateWithFunc(`watch-stable_2`, '_watch_2'),
+      resources.createTemplateWithFunc(`watch-stable_1`, '_watch_1'),
+      resources.createTemplateWithFunc(`watch-stable_2`, '_watch_2'),
     ]);
 
-    using manager = await TemplateManager.create(testContext.testDir);
+    using manager = await TemplateManager.create(resources.testDir);
     const applied: string[] = [];
     const changed: string[] = [];
 
@@ -804,11 +867,11 @@ describe('TemplateManager', () => {
     expect(changed).toHaveLength(0); // Second run should detect none
 
     // Verify the buildlog state
-    const localBuildlogPath = join(testContext.testDir, '.buildlog-test.local.json');
+    const localBuildlogPath = join(resources.testDir, '.buildlog-test.local.json');
     const buildLog = JSON.parse(await fs.readFile(localBuildlogPath, 'utf-8'));
 
     for (const templatePath of templates) {
-      const relPath = relative(testContext.testDir, templatePath);
+      const relPath = relative(resources.testDir, templatePath);
       const content = await fs.readFile(templatePath, 'utf-8');
       const hash = await calculateMD5(content);
       expect(buildLog.templates[relPath].lastAppliedHash).toBe(hash);
@@ -816,11 +879,14 @@ describe('TemplateManager', () => {
   });
 
   it('should process unapplied templates on startup', async () => {
+    using resources = new TestResources();
+    await resources.setup();
+
     // Create template but don't process it
-    await createTemplateWithFunc(`startup-test`, '_startup_test');
+    await resources.createTemplateWithFunc(`startup-test`, '_startup_test');
 
     // Create a new manager instance
-    using manager = await TemplateManager.create(testContext.testDir);
+    using manager = await TemplateManager.create(resources.testDir);
 
     const changes: string[] = [];
     const applied: string[] = [];
@@ -834,13 +900,16 @@ describe('TemplateManager', () => {
 
     expect(changes).toHaveLength(1);
     expect(applied).toHaveLength(1);
-    expect(changes[0]).toBe(`startup-test_${testContext.testId}_1`);
-    expect(applied[0]).toBe(`startup-test_${testContext.testId}_1`);
+    expect(changes[0]).toBe(`startup-test_${resources.testId}_1`);
+    expect(applied[0]).toBe(`startup-test_${resources.testId}_1`);
   });
 
   it('should handle error state transitions correctly', async () => {
-    const templatePath = await createTemplateWithFunc(`error-state`, '_error_test');
-    using manager = await TemplateManager.create(testContext.testDir);
+    using resources = new TestResources();
+    await resources.setup();
+
+    const templatePath = await resources.createTemplateWithFunc(`error-state`, '_error_test');
+    using manager = await TemplateManager.create(resources.testDir);
 
     const states: Array<{ type: string; error?: string }> = [];
 
@@ -860,7 +929,7 @@ describe('TemplateManager', () => {
     // Fix template with valid SQL
     await fs.writeFile(
       templatePath,
-      `CREATE OR REPLACE FUNCTION ${testContext.testFunctionName}() RETURNS void AS $$ BEGIN NULL; END; $$ LANGUAGE plpgsql;`
+      `CREATE OR REPLACE FUNCTION ${resources.testFunctionName}() RETURNS void AS $$ BEGIN NULL; END; $$ LANGUAGE plpgsql;`
     );
     await manager.processTemplates({ apply: true });
 
@@ -875,10 +944,13 @@ describe('TemplateManager', () => {
   });
 
   it('should maintain correct state through manager restarts', async () => {
-    const templatePath = await createTemplateWithFunc(`restart-test`, 'restart_test');
+    using resources = new TestResources();
+    await resources.setup();
+
+    const templatePath = await resources.createTemplateWithFunc(`restart-test`, 'restart_test');
 
     // First manager instance
-    using manager1 = await TemplateManager.create(testContext.testDir);
+    using manager1 = await TemplateManager.create(resources.testDir);
     await manager1.processTemplates({ apply: true });
 
     // Get initial state
@@ -889,7 +961,7 @@ describe('TemplateManager', () => {
     await fs.writeFile(templatePath, `${await fs.readFile(templatePath, 'utf-8')}\n-- Modified`);
 
     // Create new manager instance
-    using manager2 = await TemplateManager.create(testContext.testDir);
+    using manager2 = await TemplateManager.create(resources.testDir);
     const changes: string[] = [];
     const applied: string[] = [];
 
@@ -902,13 +974,16 @@ describe('TemplateManager', () => {
     // Verify state was maintained and change was detected
     const status2 = await manager2.getTemplateStatus(templatePath);
     expect(status2.buildState.lastAppliedHash).not.toBe(initialHash);
-    expect(changes).toContain(`restart-test_${testContext.testId}_1`);
-    expect(applied).toContain(`restart-test_${testContext.testId}_1`);
+    expect(changes).toContain(`restart-test_${resources.testId}_1`);
+    expect(applied).toContain(`restart-test_${resources.testId}_1`);
   });
 
   it('should properly format and propagate error messages', async () => {
-    const templatePath = await createTemplateWithFunc(`error-format`, 'error_format');
-    using manager = await TemplateManager.create(testContext.testDir);
+    using resources = new TestResources();
+    await resources.setup();
+
+    const templatePath = await resources.createTemplateWithFunc(`error-format`, 'error_format');
+    using manager = await TemplateManager.create(resources.testDir);
 
     const errors: Array<{ error: unknown }> = [];
     manager.on('templateError', err => errors.push(err));
