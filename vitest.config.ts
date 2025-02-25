@@ -3,8 +3,8 @@ import { defineConfig } from 'vitest/config';
 export default defineConfig({
   test: {
     globals: true,
-    fileParallelism: false,
-    maxConcurrency: 1,
+    fileParallelism: true, // Enable running files in parallel
+    maxConcurrency: 5, // Allow up to 5 files to run concurrently
     environment: 'node',
     coverage: {
       provider: 'v8',
