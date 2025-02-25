@@ -20,7 +20,7 @@ describe('loadBuildLog', () => {
       },
     };
 
-    await fs.writeFile(path.join(TEST_ROOT, '.buildlog-test.json'), JSON.stringify(content) + '\n');
+    await fs.writeFile(path.join(TEST_ROOT, '.buildlog-test.json'), `${JSON.stringify(content)}\n`);
 
     const log = await loadBuildLog(TEST_ROOT, 'common');
     expect(log).toEqual(content);
@@ -59,7 +59,7 @@ describe('loadBuildLog', () => {
 
     await fs.writeFile(
       path.join(TEST_ROOT, '.buildlog-test.json'),
-      JSON.stringify(incompleteContent) + '\n'
+      `${JSON.stringify(incompleteContent)}\n`
     );
 
     const log = await loadBuildLog(TEST_ROOT, 'common');
@@ -79,11 +79,11 @@ describe('loadBuildLog', () => {
 
     await fs.writeFile(
       path.join(TEST_ROOT, '.buildlog-test.json'),
-      JSON.stringify(commonContent) + '\n'
+      `${JSON.stringify(commonContent)}\n`
     );
     await fs.writeFile(
       path.join(TEST_ROOT, '.buildlog-test.local.json'),
-      JSON.stringify(localContent) + '\n'
+      `${JSON.stringify(localContent)}\n`
     );
 
     const commonLog = await loadBuildLog(TEST_ROOT, 'common');
