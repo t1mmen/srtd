@@ -90,31 +90,52 @@ export class TemplateManager extends EventEmitter implements Disposable {
       return cached.status;
     }
 
-    const content = await fs.readFile(templatePath, 'utf-8');
-    const currentHash = await calculateMD5(content);
-    const relPath = path.relative(this.baseDir, templatePath);
+    try {
+      const content = await fs.readFile(templatePath, 'utf-8');
+      const currentHash = await calculateMD5(content);
+      const relPath = path.relative(this.baseDir, templatePath);
 
-    // Merge build and apply states
-    const buildState = {
-      ...this.buildLog.templates[relPath],
-      ...this.localBuildLog.templates[relPath],
-    };
+      // Merge build and apply states
+      const buildState = {
+        ...this.buildLog.templates[relPath],
+        ...this.localBuildLog.templates[relPath],
+      };
 
-    const status = {
-      name: path.basename(templatePath, '.sql'),
-      path: templatePath,
-      currentHash,
-      migrationHash: null,
-      buildState,
-      wip: await isWipTemplate(templatePath),
-    };
+      const status = {
+        name: path.basename(templatePath, '.sql'),
+        path: templatePath,
+        currentHash,
+        migrationHash: null,
+        buildState,
+        wip: await isWipTemplate(templatePath),
+      };
 
-    this.templateCache.set(templatePath, {
-      status,
-      lastChecked: Date.now(),
-    });
+      this.templateCache.set(templatePath, {
+        status,
+        lastChecked: Date.now(),
+      });
 
-    return status;
+      return status;
+    } catch (error) {
+      // Handle file not found errors gracefully
+      if (error instanceof Error && 'code' in error && error.code === 'ENOENT') {
+        // For file not found errors, log and return a placeholder status
+        this.log(`Template file not found: ${templatePath}`, 'warn');
+
+        // Return a placeholder status without caching
+        return {
+          name: path.basename(templatePath, '.sql'),
+          path: templatePath,
+          currentHash: '',
+          migrationHash: null,
+          buildState: {},
+          wip: false,
+        };
+      }
+
+      // Re-throw other errors
+      throw error;
+    }
   }
 
   private async saveBuildLogs(): Promise<void> {
@@ -146,6 +167,23 @@ export class TemplateManager extends EventEmitter implements Disposable {
   ): Promise<ProcessedTemplateResult> {
     try {
       this.invalidateCache(templatePath);
+
+      // Check if file exists first
+      const exists = await fs
+        .stat(templatePath)
+        .then(() => true)
+        .catch(() => false);
+      if (!exists) {
+        const templateName = path.basename(templatePath, '.sql');
+        this.log(`Template file not found: ${templatePath}`, 'warn');
+        return {
+          errors: [],
+          applied: [],
+          skipped: [templateName],
+          built: [],
+        };
+      }
+
       const template = await this.getTemplateStatus(templatePath);
       const relPath = path.relative(this.baseDir, templatePath);
 
@@ -174,11 +212,23 @@ export class TemplateManager extends EventEmitter implements Disposable {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       this.log(`Error processing template ${templatePath}: ${errorMessage}`, 'error');
+
+      // Create a safe template object for the error event
+      const templateName = path.basename(templatePath, '.sql');
+      const safeTemplate = {
+        name: templateName,
+        path: templatePath,
+        currentHash: '',
+        migrationHash: null,
+        buildState: {},
+        wip: false,
+      };
+
       this.emit('templateError', {
-        template: await this.getTemplateStatus(templatePath),
+        template: safeTemplate,
         error: errorMessage,
       });
-      const templateName = path.basename(templatePath, '.sql');
+
       return {
         errors: [
           {

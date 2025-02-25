@@ -6,6 +6,9 @@ import { loadBuildLog } from './loadBuildLog.js';
 
 describe('loadBuildLog', () => {
   it('should load existing build log', async () => {
+    // Ensure TEST_ROOT directory exists before writing to it
+    await fs.mkdir(TEST_ROOT, { recursive: true });
+
     const content = {
       version: '1.0',
       lastTimestamp: '20240101120000',
@@ -17,7 +20,7 @@ describe('loadBuildLog', () => {
       },
     };
 
-    await fs.writeFile(path.join(TEST_ROOT, '.buildlog-test.json'), JSON.stringify(content));
+    await fs.writeFile(path.join(TEST_ROOT, '.buildlog-test.json'), JSON.stringify(content) + '\n');
 
     const log = await loadBuildLog(TEST_ROOT, 'common');
     expect(log).toEqual(content);
@@ -33,7 +36,10 @@ describe('loadBuildLog', () => {
   });
 
   it('should handle invalid JSON', async () => {
-    await fs.writeFile(path.join(TEST_ROOT, '.buildlog-test.local.json'), 'invalid json');
+    // Ensure TEST_ROOT directory exists before writing to it
+    await fs.mkdir(TEST_ROOT, { recursive: true });
+
+    await fs.writeFile(path.join(TEST_ROOT, '.buildlog-test.local.json'), 'invalid json\n');
 
     const log = await loadBuildLog(TEST_ROOT, 'local');
     expect(log).toEqual({
@@ -44,13 +50,16 @@ describe('loadBuildLog', () => {
   });
 
   it('should handle missing fields', async () => {
+    // Ensure TEST_ROOT directory exists before writing to it
+    await fs.mkdir(TEST_ROOT, { recursive: true });
+
     const incompleteContent = {
       version: '1.0',
     };
 
     await fs.writeFile(
       path.join(TEST_ROOT, '.buildlog-test.json'),
-      JSON.stringify(incompleteContent)
+      JSON.stringify(incompleteContent) + '\n'
     );
 
     const log = await loadBuildLog(TEST_ROOT, 'common');
@@ -62,13 +71,19 @@ describe('loadBuildLog', () => {
   });
 
   it('should load correct file based on type parameter', async () => {
+    // Ensure TEST_ROOT directory exists before writing to it
+    await fs.mkdir(TEST_ROOT, { recursive: true });
+
     const commonContent = { version: '1.0', templates: { common: true } };
     const localContent = { version: '1.0', templates: { local: true } };
 
-    await fs.writeFile(path.join(TEST_ROOT, '.buildlog-test.json'), JSON.stringify(commonContent));
+    await fs.writeFile(
+      path.join(TEST_ROOT, '.buildlog-test.json'),
+      JSON.stringify(commonContent) + '\n'
+    );
     await fs.writeFile(
       path.join(TEST_ROOT, '.buildlog-test.local.json'),
-      JSON.stringify(localContent)
+      JSON.stringify(localContent) + '\n'
     );
 
     const commonLog = await loadBuildLog(TEST_ROOT, 'common');
