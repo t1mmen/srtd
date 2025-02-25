@@ -147,11 +147,25 @@ export class TestResource {
       client.release();
     }
 
-    // Clean up filesystem
+    // Clean up filesystem with retry logic
     try {
-      await fs.rm(this.testDir, { recursive: true, force: true });
+      // Make 3 attempts to clean up the directory with delay between attempts
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        try {
+          await fs.rm(this.testDir, { recursive: true, force: true });
+          break; // Success, exit loop
+        } catch (e) {
+          if (attempt === 3) {
+            // On last attempt, log the error
+            console.error('Error cleaning up filesystem resources after 3 attempts:', e);
+            throw e;
+          }
+          // Wait briefly before retrying
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+      }
     } catch (e) {
-      console.error('Error cleaning up filesystem resources:', e);
+      console.error('Failed to clean up test directory:', e);
     }
 
     this.isCleanedUp = true;

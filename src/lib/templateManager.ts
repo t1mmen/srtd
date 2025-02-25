@@ -221,35 +221,54 @@ export class TemplateManager extends EventEmitter implements Disposable {
     const chokidar = await import('chokidar');
     const templatePath = path.join(this.baseDir, this.config.templateDir);
 
+    // Use more appropriate values for stabilityThreshold and pollInterval
+    // This prevents excessive file events and improves reliability
     const watcher = chokidar.watch(templatePath, {
       ignoreInitial: false,
       ignored: ['**/!(*.sql)'],
       persistent: true,
       awaitWriteFinish: {
-        stabilityThreshold: 50,
-        pollInterval: 50,
+        stabilityThreshold: 200, // Increased from 50ms to 200ms
+        pollInterval: 100, // Increased from 50ms to 100ms
       },
     });
 
     // Track watcher globally
     global.__srtd_watchers.push(watcher);
 
-    // Do initial scan once
+    // Do initial scan once, but don't wait for each file to be processed
+    // This prevents blocking and makes tests more reliable
     const existingFiles = await glob(path.join(templatePath, this.config.filter));
     for (const file of existingFiles) {
-      await this.handleTemplateChange(file);
+      // Don't await here - queue the files and let the queue process them
+      void this.handleTemplateChange(file);
     }
 
-    // Only handle future changes
-    const handleEvent = async (filepath: string) => {
-      if (path.extname(filepath) === '.sql') {
-        await this.handleTemplateChange(filepath);
+    // Use debouncing for file change events
+    // This prevents multiple rapid events for the same file
+    const debouncedHandlers = new Map<string, NodeJS.Timeout>();
+
+    const debouncedHandleEvent = (filepath: string) => {
+      if (path.extname(filepath) !== '.sql') return;
+
+      // Clear any existing debounce timer for this file
+      const existingTimer = debouncedHandlers.get(filepath);
+      if (existingTimer) {
+        clearTimeout(existingTimer);
       }
+
+      // Set a new debounce timer
+      const timer = setTimeout(() => {
+        void this.handleTemplateChange(filepath);
+        debouncedHandlers.delete(filepath);
+      }, 100); // 100ms debounce delay
+
+      debouncedHandlers.set(filepath, timer);
     };
 
     watcher
-      .on('add', handleEvent)
-      .on('change', handleEvent)
+      .on('add', debouncedHandleEvent)
+      .on('change', debouncedHandleEvent)
       .on('error', error => {
         this.log(`Watcher error: ${error}`, 'error');
       });
@@ -258,6 +277,12 @@ export class TemplateManager extends EventEmitter implements Disposable {
     this.watcher = watcher;
     return {
       close: async () => {
+        // Clear any pending debounced handlers
+        for (const timer of debouncedHandlers.values()) {
+          clearTimeout(timer);
+        }
+        debouncedHandlers.clear();
+
         await watcher.close();
         const idx = global.__srtd_watchers.indexOf(watcher);
         if (idx > -1) global.__srtd_watchers.splice(idx, 1);
