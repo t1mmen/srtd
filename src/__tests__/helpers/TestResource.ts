@@ -30,13 +30,13 @@
  * ```
  */
 
+import { randomUUID } from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { randomUUID } from 'node:crypto';
+import type { PoolClient } from 'pg';
 import { connect } from '../../utils/databaseConnection.js';
 import { ensureDirectories } from '../../utils/ensureDirectories.js';
 import { TEST_FN_PREFIX, TEST_ROOT_BASE } from '../vitest.setup.js';
-import type { PoolClient } from 'pg';
 
 /**
  * Helper class to manage test resources consistently across all tests.
