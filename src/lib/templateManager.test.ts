@@ -86,33 +86,43 @@ describe('TemplateManager', () => {
     expect(status.buildState.lastAppliedDate).toBeDefined();
   });
 
-  it('should handle rapid template changes', async () => {
+  it('should handle template changes', async () => {
     using resources = new TestResource({ prefix: 'template-manager' });
     await resources.setup();
 
+    // Create template and initialize manager before setting up watchers
     const templatePath = await resources.createTemplateWithFunc('template', '');
     const baseContent = await fs.readFile(templatePath, 'utf-8');
-
     using manager = await TemplateManager.create(resources.testDir);
-    const changes: string[] = [];
 
+    // Start watching and let initial detection settle
+    const watcher = await manager.watch();
+    await wait(400);
+
+    // Clear changes array after initialization to only count our new changes
+    const changes: string[] = [];
     manager.on('templateChanged', async template => {
       changes.push(template.currentHash);
     });
 
-    const watcher = await manager.watch();
-
-    // Make rapid changes
-    for (let i = 0; i < 5; i++) {
-      await fs.writeFile(templatePath, `${baseContent}\n-- Change ${i}`);
-      await wait(10);
+    // Make exactly 3 changes with substantial delays to ensure detection
+    for (let i = 0; i < 3; i++) {
+      await fs.writeFile(templatePath, `${baseContent}\n-- Major Change ${i}`);
+      // Use a longer delay to ensure changes are detected
+      await wait(300);
     }
 
+    // Allow time for all events to process
+    await wait(400);
     await watcher.close();
 
-    expect(changes.length).toBeGreaterThanOrEqual(1);
-    expect(new Set(changes).size).toBe(changes.length); // All changes should be unique
-  }, 10000);
+    // Log what we captured to help debug
+    console.log(`Detected ${changes.length} changes`);
+
+    // Expect exactly 3 change events - one for each file write
+    expect(changes.length).toBe(3);
+    expect(new Set(changes).size).toBe(3); // All changes should be unique
+  }, 15000);
 
   it('should apply WIP templates directly to database', async () => {
     using resources = new TestResource({ prefix: 'template-manager' });
@@ -161,16 +171,23 @@ describe('TemplateManager', () => {
 
       // Verify results were processed
       expect(result.errors).toHaveLength(0);
-      expect(result.applied.length).toBeGreaterThan(0);
+      expect(result.applied.length).toBe(5);
 
-      // We'll verify at least one function was applied rather than all 5
-      // to make the test more stable in parallel test environments
+      // Check all 5 functions were created
       const functionQuery = await client.query(
-        `SELECT proname FROM pg_proc WHERE proname LIKE $1 LIMIT 1`,
+        `SELECT proname FROM pg_proc WHERE proname LIKE $1`,
         [`${resources.testFunctionName}_sequence_test_%`]
       );
 
-      expect(functionQuery.rows.length).toBeGreaterThan(0);
+      expect(functionQuery.rows.length).toBe(5);
+
+      // Verify each function was created
+      for (let i = 0; i < 5; i++) {
+        const found = functionQuery.rows.some(
+          row => row.proname === `${resources.testFunctionName}_sequence_test_${i}`
+        );
+        expect(found).toBe(true);
+      }
     });
   });
 
@@ -516,9 +533,10 @@ describe('TemplateManager', () => {
 
     // Start watching
     const watcher = await manager.watch();
-    await resources.wait(200); // Give watcher time to fully initialize
+    // Give watcher time to fully initialize
+    await resources.wait(300);
 
-    // Create templates with longer delays between them to reduce contention
+    // Create templates with longer delays between them to improve reliability
     const templates = [];
     for (let i = 1; i <= count; i++) {
       const tpl = await resources.createTemplateWithFunc(
@@ -527,11 +545,12 @@ describe('TemplateManager', () => {
         i > 3 ? (i > 4 ? 'deep/nested' : 'deep') : undefined
       );
       templates.push(tpl);
-      await resources.wait(50); // Small delay between template creations
+      // Use significant delay between template creations to ensure reliability
+      await resources.wait(100);
     }
 
-    // Wait for all changes to be detected and processed
-    await resources.wait(500);
+    // Wait longer for all changes to be detected and processed
+    await resources.wait(600);
     await watcher.close();
 
     // Verify all templates were detected
@@ -547,19 +566,15 @@ describe('TemplateManager', () => {
     // Verify all database functions were created
     const allFunctionsExist = await verifyFunctionsExist(count);
 
-    // We have two conditions to verify - make both soft to avoid flakiness
-    if (changes.size < count) {
-      console.warn(`Expected ${count} template changes, but only detected ${changes.size}`);
-    }
-
-    if (!allFunctionsExist) {
-      console.warn(`Not all expected functions were created in the database`);
-    }
-
-    // Make the assertion less strict - instead of requiring exact count,
-    // just make sure we detected at least 1 change and found at least one function
-    expect(changes.size).toBeGreaterThan(0);
+    // Make the assertions strict - we should detect all 5 changes
+    expect(changes.size).toBe(count);
     expect(allFunctionsExist).toBe(true);
+
+    // Verify each template was detected
+    for (let i = 1; i <= count; i++) {
+      const name = `rapid_test_${i}_${resources.testId}_${i}`;
+      expect(changes.has(name)).toBe(true);
+    }
   }, 15000);
 
   it('should handle rapid bulk template creation realistically', async () => {

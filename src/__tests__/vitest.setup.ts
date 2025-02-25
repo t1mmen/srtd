@@ -42,35 +42,12 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
+  // Just clean up the test root directory
   await fs.rm(TEST_ROOT, { recursive: true, force: true });
 
-  // Be extra sure to clean up any test functions from db
-  const client = await connect();
-  try {
-    await client.query('BEGIN');
-    await client.query(`
-    DO $$
-    DECLARE
-      r record;
-    BEGIN
-      FOR r IN
-        SELECT quote_ident(proname) AS func_name
-        FROM pg_proc
-        WHERE proname LIKE '${TEST_FN_PREFIX}%'
-      LOOP
-        EXECUTE 'DROP FUNCTION IF EXISTS ' || r.func_name;
-      END LOOP;
-    END;
-    $$;
-    `);
-    await client.query('COMMIT');
-  } catch (e) {
-    await client.query('ROLLBACK');
-    throw e;
-  } finally {
-    client.release();
-    void disconnect();
-  }
+  // No need for global database cleanup as each test now cleans up after itself
+  // using the TestResource dispose pattern
+  void disconnect();
 });
 
 vi.mock('../utils/config', async importOriginal => {
