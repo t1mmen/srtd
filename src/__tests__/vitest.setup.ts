@@ -2,7 +2,7 @@ import fs from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, beforeAll, vi } from 'vitest';
-import { connect, disconnect } from '../utils/databaseConnection.js';
+import { disconnect } from '../utils/databaseConnection.js';
 
 export const TEST_FN_PREFIX = 'srtd_scoped_test_func_';
 export const TEST_ROOT_BASE = join(tmpdir(), 'srtd-test');

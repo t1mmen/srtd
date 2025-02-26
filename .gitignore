@@ -8,6 +8,7 @@ npm-debug.log*
 *.tsbuildinfo
 .npm
 .env
+coverage
 
 # srtd's local logs should not be committed, as they're per-environment specific
 .srtd.buildlog.local.json
