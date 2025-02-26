@@ -112,39 +112,67 @@ export class TestResource {
    */
   async cleanup(): Promise<void> {
     if (this.isCleanedUp) return;
+    this.isCleanedUp = true; // Mark as cleaned up immediately to prevent multiple cleanup attempts
 
     // Release any unreleased database clients
     for (const client of this.dbClients) {
-      client.release();
+      try {
+        client.release();
+      } catch (e) {
+        // Ignore errors when releasing clients
+      }
     }
     this.dbClients = [];
 
-    // Clean up database objects
-    const client = await connect();
-    try {
-      await client.query('BEGIN');
-      // Drop any functions created by this test
-      await client.query(`
-        DO $$
-        DECLARE
-          r record;
-        BEGIN
-          FOR r IN
-            SELECT quote_ident(proname) AS func_name
-            FROM pg_proc
-            WHERE proname LIKE '${this.testFunctionName}%'
-          LOOP
-            EXECUTE 'DROP FUNCTION IF EXISTS ' || r.func_name;
-          END LOOP;
-        END;
-        $$;
-      `);
-      await client.query('COMMIT');
-    } catch (e) {
-      await client.query('ROLLBACK');
-      console.error('Error cleaning up database resources:', e);
-    } finally {
-      client.release();
+    // Clean up database objects with retry logic
+    let dbCleanupSuccess = false;
+
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      let client;
+      try {
+        client = await connect({ silent: true });
+        await client.query('BEGIN');
+
+        // Drop any functions created by this test
+        await client.query(`
+          DO $$
+          DECLARE
+            r record;
+          BEGIN
+            FOR r IN
+              SELECT quote_ident(proname) AS func_name
+              FROM pg_proc
+              WHERE proname LIKE '${this.testFunctionName}%'
+            LOOP
+              EXECUTE 'DROP FUNCTION IF EXISTS ' || r.func_name;
+            END LOOP;
+          END;
+          $$;
+        `);
+
+        await client.query('COMMIT');
+        dbCleanupSuccess = true;
+        client.release();
+        break; // Success, exit retry loop
+      } catch (e) {
+        if (client) {
+          try {
+            await client.query('ROLLBACK');
+          } catch {}
+          client.release();
+        }
+
+        if (attempt === 3) {
+          console.error('Error cleaning up database resources after 3 attempts:', e);
+        } else {
+          // Wait briefly before retrying
+          await new Promise(resolve => setTimeout(resolve, 100 * attempt));
+        }
+      }
+    }
+
+    if (!dbCleanupSuccess) {
+      console.warn(`Failed to clean up database functions for test ${this.testId}`);
     }
 
     // Clean up filesystem with retry logic

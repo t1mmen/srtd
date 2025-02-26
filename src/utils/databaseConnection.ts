@@ -6,7 +6,7 @@ import { logger } from './logger.js';
 let pool: pg.Pool | undefined;
 let connectionAttempts = 0;
 const MAX_RETRIES = 3;
-export const RETRY_DELAY = 1000;
+export const RETRY_DELAY = 500; // Reduced from 1000 to speed up tests while still allowing recovery
 
 async function createPool(): Promise<pg.Pool> {
   // Only create a new pool if one doesn't exist or has been ended
@@ -14,9 +14,9 @@ async function createPool(): Promise<pg.Pool> {
     const config = await getConfig(process.cwd());
     pool = new pg.Pool({
       connectionString: config.pgConnection,
-      connectionTimeoutMillis: 2000,
-      max: MAX_RETRIES,
-      idleTimeoutMillis: 1000,
+      connectionTimeoutMillis: 5000, // Increased from 2000 for CI environments
+      max: MAX_RETRIES * 2, // Increase max connections to handle concurrent tests
+      idleTimeoutMillis: 2000, // Increase idle timeout to prevent premature connection closures
       maxUses: 500,
     });
 
@@ -57,7 +57,20 @@ export async function disconnect(): Promise<void> {
   if (!pool || pool.ended) return;
 
   try {
-    await pool.end();
+    // First drain the pool by waiting for active queries to complete
+    // but don't accept new clients
+    pool.on('error', () => {}); // Suppress errors during shutdown
+
+    // End the pool with a timeout
+    const endPromise = pool.end();
+    const timeoutPromise = new Promise<void>(resolve => {
+      setTimeout(() => {
+        logger.debug('Pool end timed out, proceeding anyway');
+        resolve();
+      }, 1000);
+    });
+
+    await Promise.race([endPromise, timeoutPromise]);
   } catch (e) {
     logger.error(`Pool end error: ${e}`);
   } finally {
