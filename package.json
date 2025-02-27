@@ -93,12 +93,12 @@
     "@types/pg": "^8.11.10",
     "@types/react": "^18.3.0",
     "@types/update-notifier": "^6.0.8",
-    "@vitest/coverage-v8": "^2.1.8",
+    "@vitest/coverage-v8": "^3.0.7",
     "chalk": "^5.4.1",
     "ink-testing-library": "^4.0.0",
     "lefthook": "^1.10.1",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2",
-    "vitest": "^2.1.8"
+    "vitest": "^3.0.7"
   }
 }
