@@ -57,7 +57,7 @@ export default function Build({ options }: Props) {
       {isProcessing ? (
         <Spinner label={`Building templates...`} />
       ) : (
-        <ProcessingResults result={result} showBuild showApply={!!option.apply} />
+        <ProcessingResults result={result} showBuild showApply={!!options.apply} />
       )}
     </Box>
   );
