@@ -516,7 +516,7 @@ export class TemplateManager extends EventEmitter implements Disposable {
           const content = await fs.readFile(templatePath, 'utf-8');
           const currentHash = await calculateMD5(content);
 
-          if (!force && this.buildLog.templates[relPath]?.lastBuildHash === currentHash) {
+          if (!options.force && this.buildLog.templates[relPath]?.lastBuildHash === currentHash) {
             this.log(`Skipping unchanged template: ${template.name}`, 'skip');
             result.skipped.push(template.name);
             continue;
