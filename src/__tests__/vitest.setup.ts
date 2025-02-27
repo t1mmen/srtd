@@ -2,10 +2,11 @@ import fs from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, beforeAll, vi } from 'vitest';
-import { connect, disconnect } from '../utils/databaseConnection.js';
+import { disconnect } from '../utils/databaseConnection.js';
 
 export const TEST_FN_PREFIX = 'srtd_scoped_test_func_';
-export const TEST_ROOT = join(tmpdir(), `srtd-test-${Date.now()}`);
+export const TEST_ROOT_BASE = join(tmpdir(), 'srtd-test');
+export const TEST_ROOT = join(TEST_ROOT_BASE, `srtd-tests-${Date.now()}`);
 
 vi.mock('../utils/logger', () => ({
   logger: {
@@ -33,6 +34,7 @@ vi.mock('../utils/logger', () => ({
 beforeAll(async () => {
   try {
     await fs.rm(TEST_ROOT, { recursive: true, force: true });
+    await fs.mkdir(TEST_ROOT_BASE, { recursive: true });
     await fs.mkdir(TEST_ROOT, { recursive: true });
   } catch (error) {
     console.error('Error creating test root:', error, ', retrying once.');
@@ -40,35 +42,12 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
+  // Just clean up the test root directory
   await fs.rm(TEST_ROOT, { recursive: true, force: true });
 
-  // Be extra sure to clean up any test functions from db
-  const client = await connect();
-  try {
-    await client.query('BEGIN');
-    await client.query(`
-    DO $$
-    DECLARE
-      r record;
-    BEGIN
-      FOR r IN
-        SELECT quote_ident(proname) AS func_name
-        FROM pg_proc
-        WHERE proname LIKE '${TEST_FN_PREFIX}%'
-      LOOP
-        EXECUTE 'DROP FUNCTION IF EXISTS ' || r.func_name;
-      END LOOP;
-    END;
-    $$;
-    `);
-    await client.query('COMMIT');
-  } catch (e) {
-    await client.query('ROLLBACK');
-    throw e;
-  } finally {
-    client.release();
-    void disconnect();
-  }
+  // No need for global database cleanup as each test now cleans up after itself
+  // using the TestResource dispose pattern
+  void disconnect();
 });
 
 vi.mock('../utils/config', async importOriginal => {

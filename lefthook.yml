@@ -20,5 +20,12 @@ pre-commit:
         . ~/.nvm/nvm.sh
         if [ -f ".nvmrc" ]; then
           nvm use
-          ./node_modules/.bin/biome lint {staged_files}
+          # First try to fix errors automatically
+          ./node_modules/.bin/biome check --write {staged_files}
+          # If there are still unsafe fixes available, apply them if requested
+          if [ "$APPLY_UNSAFE_FIXES" = "true" ]; then
+            ./node_modules/.bin/biome check --write --unsafe {staged_files}
+          fi
+          # Add fixed files back to staging
+          git add {staged_files}
         fi

@@ -90,31 +90,52 @@ export class TemplateManager extends EventEmitter implements Disposable {
       return cached.status;
     }
 
-    const content = await fs.readFile(templatePath, 'utf-8');
-    const currentHash = await calculateMD5(content);
-    const relPath = path.relative(this.baseDir, templatePath);
+    try {
+      const content = await fs.readFile(templatePath, 'utf-8');
+      const currentHash = await calculateMD5(content);
+      const relPath = path.relative(this.baseDir, templatePath);
 
-    // Merge build and apply states
-    const buildState = {
-      ...this.buildLog.templates[relPath],
-      ...this.localBuildLog.templates[relPath],
-    };
+      // Merge build and apply states
+      const buildState = {
+        ...this.buildLog.templates[relPath],
+        ...this.localBuildLog.templates[relPath],
+      };
 
-    const status = {
-      name: path.basename(templatePath, '.sql'),
-      path: templatePath,
-      currentHash,
-      migrationHash: null,
-      buildState,
-      wip: await isWipTemplate(templatePath),
-    };
+      const status = {
+        name: path.basename(templatePath, '.sql'),
+        path: templatePath,
+        currentHash,
+        migrationHash: null,
+        buildState,
+        wip: await isWipTemplate(templatePath),
+      };
 
-    this.templateCache.set(templatePath, {
-      status,
-      lastChecked: Date.now(),
-    });
+      this.templateCache.set(templatePath, {
+        status,
+        lastChecked: Date.now(),
+      });
 
-    return status;
+      return status;
+    } catch (error) {
+      // Handle file not found errors gracefully
+      if (error instanceof Error && 'code' in error && error.code === 'ENOENT') {
+        // For file not found errors, log and return a placeholder status
+        this.log(`Template file not found: ${templatePath}`, 'warn');
+
+        // Return a placeholder status without caching
+        return {
+          name: path.basename(templatePath, '.sql'),
+          path: templatePath,
+          currentHash: '',
+          migrationHash: null,
+          buildState: {},
+          wip: false,
+        };
+      }
+
+      // Re-throw other errors
+      throw error;
+    }
   }
 
   private async saveBuildLogs(): Promise<void> {
@@ -146,6 +167,23 @@ export class TemplateManager extends EventEmitter implements Disposable {
   ): Promise<ProcessedTemplateResult> {
     try {
       this.invalidateCache(templatePath);
+
+      // Check if file exists first
+      const exists = await fs
+        .stat(templatePath)
+        .then(() => true)
+        .catch(() => false);
+      if (!exists) {
+        const templateName = path.basename(templatePath, '.sql');
+        this.log(`Template file not found: ${templatePath}`, 'warn');
+        return {
+          errors: [],
+          applied: [],
+          skipped: [templateName],
+          built: [],
+        };
+      }
+
       const template = await this.getTemplateStatus(templatePath);
       const relPath = path.relative(this.baseDir, templatePath);
 
@@ -174,11 +212,23 @@ export class TemplateManager extends EventEmitter implements Disposable {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       this.log(`Error processing template ${templatePath}: ${errorMessage}`, 'error');
+
+      // Create a safe template object for the error event
+      const templateName = path.basename(templatePath, '.sql');
+      const safeTemplate = {
+        name: templateName,
+        path: templatePath,
+        currentHash: '',
+        migrationHash: null,
+        buildState: {},
+        wip: false,
+      };
+
       this.emit('templateError', {
-        template: await this.getTemplateStatus(templatePath),
+        template: safeTemplate,
         error: errorMessage,
       });
-      const templateName = path.basename(templatePath, '.sql');
+
       return {
         errors: [
           {
@@ -221,35 +271,54 @@ export class TemplateManager extends EventEmitter implements Disposable {
     const chokidar = await import('chokidar');
     const templatePath = path.join(this.baseDir, this.config.templateDir);
 
+    // Use more appropriate values for stabilityThreshold and pollInterval
+    // This prevents excessive file events and improves reliability
     const watcher = chokidar.watch(templatePath, {
       ignoreInitial: false,
       ignored: ['**/!(*.sql)'],
       persistent: true,
       awaitWriteFinish: {
-        stabilityThreshold: 50,
-        pollInterval: 50,
+        stabilityThreshold: 200, // Increased from 50ms to 200ms
+        pollInterval: 100, // Increased from 50ms to 100ms
       },
     });
 
     // Track watcher globally
     global.__srtd_watchers.push(watcher);
 
-    // Do initial scan once
+    // Do initial scan once, but don't wait for each file to be processed
+    // This prevents blocking and makes tests more reliable
     const existingFiles = await glob(path.join(templatePath, this.config.filter));
     for (const file of existingFiles) {
-      await this.handleTemplateChange(file);
+      // Don't await here - queue the files and let the queue process them
+      void this.handleTemplateChange(file);
     }
 
-    // Only handle future changes
-    const handleEvent = async (filepath: string) => {
-      if (path.extname(filepath) === '.sql') {
-        await this.handleTemplateChange(filepath);
+    // Use debouncing for file change events
+    // This prevents multiple rapid events for the same file
+    const debouncedHandlers = new Map<string, NodeJS.Timeout>();
+
+    const debouncedHandleEvent = (filepath: string) => {
+      if (path.extname(filepath) !== '.sql') return;
+
+      // Clear any existing debounce timer for this file
+      const existingTimer = debouncedHandlers.get(filepath);
+      if (existingTimer) {
+        clearTimeout(existingTimer);
       }
+
+      // Set a new debounce timer
+      const timer = setTimeout(() => {
+        void this.handleTemplateChange(filepath);
+        debouncedHandlers.delete(filepath);
+      }, 100); // 100ms debounce delay
+
+      debouncedHandlers.set(filepath, timer);
     };
 
     watcher
-      .on('add', handleEvent)
-      .on('change', handleEvent)
+      .on('add', debouncedHandleEvent)
+      .on('change', debouncedHandleEvent)
       .on('error', error => {
         this.log(`Watcher error: ${error}`, 'error');
       });
@@ -258,6 +327,12 @@ export class TemplateManager extends EventEmitter implements Disposable {
     this.watcher = watcher;
     return {
       close: async () => {
+        // Clear any pending debounced handlers
+        for (const timer of debouncedHandlers.values()) {
+          clearTimeout(timer);
+        }
+        debouncedHandlers.clear();
+
         await watcher.close();
         const idx = global.__srtd_watchers.indexOf(watcher);
         if (idx > -1) global.__srtd_watchers.splice(idx, 1);

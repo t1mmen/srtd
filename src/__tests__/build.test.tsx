@@ -23,7 +23,7 @@ describe('Build Command', () => {
   const testContext = {
     timestamp: Date.now(),
     testFunctionName: `${TEST_FN_PREFIX}${Date.now()}`,
-    testDir: path.join(tmpdir(), `test-build-command-${Date.now()}`),
+    testDir: path.join(tmpdir(), 'srtd-test', `test-build-command-${Date.now()}`),
   };
 
   vi.mock('ink', async importOriginal => {
