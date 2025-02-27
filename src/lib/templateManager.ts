@@ -527,7 +527,9 @@ export class TemplateManager extends EventEmitter implements Disposable {
           const lastBuildAt = this.buildLog.templates[relPath]?.lastMigrationFile;
           const footer = `${this.config.footer}\n-- Last built: ${lastBuildAt || 'Never'}\n-- Built with https://github.com/t1mmen/srtd\n`;
 
-          const safeContent = this.config.wrapInTransaction ? `BEGIN;\n\n${content}\n\nCOMMIT;` : content;
+          const safeContent = this.config.wrapInTransaction
+            ? `BEGIN;\n\n${content}\n\nCOMMIT;`
+            : content;
           migrationContent += `${header}${banner}\n${safeContent}\n${footer}\n\n`;
 
           this.buildLog.templates[relPath] = {
