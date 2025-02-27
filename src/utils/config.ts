@@ -40,7 +40,8 @@ export async function getConfig(dir: string = process.cwd()): Promise<CLIConfig>
 export async function saveConfig(baseDir: string, config: Partial<CLIConfig>): Promise<void> {
   const configPath = path.join(baseDir, CONFIG_FILE);
   const finalConfig = { ...defaultConfig, ...config };
-  await fs.writeFile(configPath, JSON.stringify(finalConfig, null, 2)).catch(e => {
+  // Add newline at the end to satisfy linters
+  await fs.writeFile(configPath, `${JSON.stringify(finalConfig, null, 2)}\n`).catch(e => {
     logger.error(`Failed to save config: ${e.message}`);
   });
   cachedConfig = finalConfig;

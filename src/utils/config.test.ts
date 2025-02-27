@@ -68,6 +68,14 @@ describe('config', () => {
     expect(savedContent.unknownField).toBe('value');
   });
 
+  it('should add a newline at the end of the config file', async () => {
+    await saveConfig(TEST_ROOT, { templateDir: 'custom' });
+    const fileContent = await fs.readFile(path.join(TEST_ROOT, 'srtd.config.json'), 'utf-8');
+
+    // Verify the file ends with a newline
+    expect(fileContent.endsWith('\n')).toBe(true);
+  });
+
   it('should handle nested paths correctly', async () => {
     const nestedPath = path.join(TEST_ROOT, 'nested', 'config');
     const config = await getConfig(nestedPath);

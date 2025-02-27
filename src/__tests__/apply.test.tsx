@@ -24,7 +24,7 @@ describe('Apply Command', () => {
   const testContext = {
     timestamp: Date.now(),
     testFunctionName: `${TEST_FN_PREFIX}${Date.now()}`,
-    testDir: path.join(tmpdir(), `test-apply-command-${Date.now()}`),
+    testDir: path.join(tmpdir(), 'srtd-test', `test-apply-command-${Date.now()}`),
   };
 
   vi.mock('ink', async importOriginal => {

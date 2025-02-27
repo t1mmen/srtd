@@ -1,22 +1,22 @@
 {
   "$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
   "vcs": { "enabled": false, "clientKind": "git", "useIgnoreFile": false },
-  "files": { "ignoreUnknown": false, "ignore": [] },
+  "files": { "ignoreUnknown": false, "ignore": ["dist/**", "build/**", "coverage/**"] },
   "formatter": {
     "enabled": true,
     "useEditorconfig": true,
-    "formatWithErrors": false,
+    "formatWithErrors": true,
     "indentStyle": "space",
     "indentWidth": 2,
     "lineEnding": "lf",
     "lineWidth": 100,
     "attributePosition": "auto",
     "bracketSpacing": true,
-    "ignore": ["dist/**", "package-lock.json", "package.json"]
+    "ignore": ["dist/**", "package-lock.json", "package.json", "build/**", "coverage/**"]
   },
   "organizeImports": { "enabled": true },
   "linter": {
-    "ignore": ["dist/**", "package-lock.json", "package.json"],
+    "ignore": ["dist/**", "build/**", "package-lock.json", "package.json"],
     "enabled": true,
     "rules": {
       "recommended": true,
