@@ -128,7 +128,7 @@ export class TestResource {
     let dbCleanupSuccess = false;
 
     for (let attempt = 1; attempt <= 3; attempt++) {
-      let client: pg.PoolClient | undefined;
+      let client: PoolClient | undefined;
       try {
         client = await connect({ silent: true });
         await client.query('BEGIN');
