@@ -59,7 +59,9 @@ export async function disconnect(): Promise<void> {
   try {
     // First drain the pool by waiting for active queries to complete
     // but don't accept new clients
-    pool.on('error', () => {}); // Suppress errors during shutdown
+    pool.on('error', () => {
+      // Suppress errors during shutdown - empty handler on purpose
+    });
 
     // End the pool with a timeout
     const endPromise = pool.end();

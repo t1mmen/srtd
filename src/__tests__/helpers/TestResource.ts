@@ -128,7 +128,7 @@ export class TestResource {
     let dbCleanupSuccess = false;
 
     for (let attempt = 1; attempt <= 3; attempt++) {
-      let client;
+      let client: pg.PoolClient | undefined;
       try {
         client = await connect({ silent: true });
         await client.query('BEGIN');
@@ -158,7 +158,9 @@ export class TestResource {
         if (client) {
           try {
             await client.query('ROLLBACK');
-          } catch {}
+          } catch {
+            // Ignore errors during rollback - empty catch on purpose
+          }
           client.release();
         }
 
