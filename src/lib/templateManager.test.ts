@@ -868,7 +868,7 @@ describe('TemplateManager', () => {
         error
       );
       // Skip test if DB connection fails rather than failing the build
-      if (error.message && error.message.includes('Database connection failed')) {
+      if (error.message?.includes('Database connection failed')) {
         console.log('Skipping test due to database connection issues');
         return;
       }
@@ -999,7 +999,7 @@ describe('TemplateManager', () => {
         error
       );
       // Skip test if DB connection fails rather than failing the build
-      if (error.message && error.message.includes('Database connection failed')) {
+      if (error.message?.includes('Database connection failed')) {
         console.log('Skipping test due to database connection issues');
         return;
       }

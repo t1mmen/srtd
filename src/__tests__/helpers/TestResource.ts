@@ -118,7 +118,7 @@ export class TestResource {
     for (const client of this.dbClients) {
       try {
         client.release();
-      } catch (e) {
+      } catch (_e) {
         // Ignore errors when releasing clients
       }
     }
