@@ -23,6 +23,7 @@
     "dev": "tsc --watch",
     "test": "vitest",
     "test:coverage": "vitest run --coverage --reporter=junit --outputFile=test-report.junit.xml",
+    "test:e2e": "vitest run src/__tests__/e2e/",
     "start": "tsx src/cli.tsx",
     "start:link": "npm run build && npm link && chmod u+x ./dist/cli.js && srtd",
     "precommit:safe": "lefthook run pre-commit",
