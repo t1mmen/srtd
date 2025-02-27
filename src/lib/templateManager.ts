@@ -446,10 +446,12 @@ export class TemplateManager extends EventEmitter implements Disposable {
     if (this.silent) return;
     logger[logLevel](msg);
   }
+
   async processTemplates(options: {
     apply?: boolean;
     generateFiles?: boolean;
     force?: boolean;
+    bundle?: boolean;
   }): Promise<ProcessedTemplateResult> {
     const templates = await this.findTemplates();
     const result: ProcessedTemplateResult = { errors: [], applied: [], built: [], skipped: [] };
@@ -493,33 +495,96 @@ export class TemplateManager extends EventEmitter implements Disposable {
     }
 
     if (options.generateFiles) {
-      let built = 0;
-      let skipped = 0;
+      if (options.bundle) {
+        const timestamp = await getNextTimestamp(this.buildLog);
+        const prefix = this.config.migrationPrefix ? `${this.config.migrationPrefix}-` : '';
+        const migrationName = `${timestamp}_${prefix}bundle.sql`;
+        const migrationPath = path.join(this.config.migrationDir, migrationName);
 
-      this.log('Building migration files from templates...', 'success');
-
-      for (const templatePath of templates) {
-        const isWip = await isWipTemplate(templatePath);
-        if (!isWip) {
+        let migrationContent = '';
+        for (const templatePath of templates) {
           const template = await this.getTemplateStatus(templatePath);
-          if (options.force || template.currentHash !== template.buildState.lastBuildHash) {
-            await this.buildTemplate(templatePath, options.force);
-            result.built.push(template.name);
-            built++;
-          } else {
+          const isWip = await isWipTemplate(templatePath);
+          const relPath = path.relative(this.baseDir, templatePath);
+
+          if (isWip) {
+            this.log(`Skipping WIP template: ${template.name}`, 'skip');
             result.skipped.push(template.name);
+            continue;
+          }
+
+          const content = await fs.readFile(templatePath, 'utf-8');
+          const currentHash = await calculateMD5(content);
+
+          if (!options.force && this.buildLog.templates[relPath]?.lastBuildHash === currentHash) {
+            this.log(`Skipping unchanged template: ${template.name}`, 'skip');
+            result.skipped.push(template.name);
+            continue;
+          }
+
+          const header = `-- Template: ${this.config.templateDir}/${template.name}.sql\n`;
+          const banner = this.config.banner ? `-- ${this.config.banner}\n` : '\n';
+          const lastBuildAt = this.buildLog.templates[relPath]?.lastMigrationFile;
+          const footer = `${this.config.footer}\n-- Last built: ${lastBuildAt || 'Never'}\n-- Built with https://github.com/t1mmen/srtd\n`;
+
+          const safeContent = this.config.wrapInTransaction
+            ? `BEGIN;\n\n${content}\n\nCOMMIT;`
+            : content;
+          migrationContent += `${header}${banner}\n${safeContent}\n${footer}\n\n`;
+
+          this.buildLog.templates[relPath] = {
+            ...this.buildLog.templates[relPath],
+            lastBuildHash: currentHash,
+            lastBuildDate: new Date().toISOString(),
+            lastMigrationFile: migrationName,
+            lastBuildError: undefined,
+          };
+
+          this.invalidateCache(templatePath);
+          result.built.push(template.name);
+        }
+
+        try {
+          await fs.writeFile(path.resolve(this.baseDir, migrationPath), migrationContent);
+          await this.saveBuildLogs();
+          this.log(`Generated bundled migration file: ${migrationName}`, 'success');
+        } catch (error) {
+          this.log(`Failed to write bundled migration file: ${error}`, 'error');
+          result.errors.push({
+            file: migrationName,
+            templateName: 'bundle',
+            error: error instanceof Error ? error.message : String(error),
+          });
+        }
+      } else {
+        let built = 0;
+        let skipped = 0;
+
+        this.log('Building migration files from templates...', 'success');
+
+        for (const templatePath of templates) {
+          const isWip = await isWipTemplate(templatePath);
+          if (!isWip) {
+            const template = await this.getTemplateStatus(templatePath);
+            if (options.force || template.currentHash !== template.buildState.lastBuildHash) {
+              await this.buildTemplate(templatePath, options.force);
+              result.built.push(template.name);
+              built++;
+            } else {
+              result.skipped.push(template.name);
+              skipped++;
+            }
+          } else {
+            result.skipped.push(path.basename(templatePath, '.sql'));
             skipped++;
           }
-        } else {
-          result.skipped.push(path.basename(templatePath, '.sql'));
-          skipped++;
         }
-      }
 
-      if (built > 0) {
-        this.log(`Generated ${built} migration file(s)`, 'success');
-      } else if (skipped > 0) {
-        this.log('No new changes to build', 'skip');
+        if (built > 0) {
+          this.log(`Generated ${built} migration file(s)`, 'success');
+        } else if (skipped > 0) {
+          this.log('No new changes to build', 'skip');
+        }
       }
     }
 

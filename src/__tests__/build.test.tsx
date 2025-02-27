@@ -8,10 +8,10 @@ import Build from '../commands/build.js';
 import { TEST_FN_PREFIX } from './vitest.setup.js';
 
 vi.mock('../hooks/useTemplateProcessor', () => ({
-  useTemplateProcessor: vi.fn().mockImplementation(({ apply }) => ({
+  useTemplateProcessor: vi.fn().mockImplementation(({ apply, bundle }) => ({
     isProcessing: false,
     result: {
-      built: ['test.sql'],
+      built: bundle ? ['bundle.sql'] : ['test.sql'],
       applied: apply ? ['test.sql'] : [],
       skipped: [],
       errors: [],
@@ -71,5 +71,10 @@ describe('Build Command', () => {
     // Use more precise matching that accounts for newlines
     expect(lastFrame()).toMatch(/Built:\s*\n\s*✔ test\.sql/);
     expect(lastFrame()).toMatch(/Applied:\s*\n\s*▶ test\.sql/);
+  });
+
+  test('handles bundle flag', async () => {
+    const { lastFrame } = render(<Build options={{ force: false, bundle: true }} />);
+    expect(lastFrame()).toMatch(/Built:\s*\n\s*✔ bundle\.sql/);
   });
 });
