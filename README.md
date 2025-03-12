@@ -53,6 +53,12 @@ Built specifically for projects using the standard [Supabase](https://supabase.c
 
 ### Installation
 
+
+> [!WARNING]
+> Projects using React 19 may not work with per-project installation of `srtd` (ref [Ink CLI issue](https://github.com/vadimdemedes/ink/issues/688)). Until resolved, **global installation is recommended.**
+
+
+
 ```bash
 # Global installation
 npm install -g @t1mmen/srtd
