@@ -1,5 +1,32 @@
 # srtd
 
+## 0.5.0
+
+### Minor Changes
+
+- c5bba36: ### New `--bundle` option for `build` command
+
+  - Added a new `--bundle` option to the `build` command to produce a single final migration.
+  - Updated the `useTemplateProcessor` hook to handle the `--bundle` option.
+  - Updated the `TemplateManager` class to support bundling all templates into a single migration file when the `--bundle` option is used.
+  - Updated the `README.md` file to document the new `--bundle` option for the `build` command.
+  - Added tests to cover the new `--bundle` option.
+  - Ensured the bundled file name doesn’t become too long, but still hints at the templates it contains.
+  - Ensured the build log correctly references the bundled files for all template records.
+  - Ensured the comments in the final migrations have mentions of the original template it came from.
+
+### Patch Changes
+
+- e1fa468: Improve test stability and coverage
+
+  - Created a reusable TestResource class for consistent resource management
+  - Provides isolated filesystem and database resources for all tests
+  - Added proper cleanup via the disposable pattern with automated resource tracking
+  - Implemented resilient assertion patterns to reduce flaky tests
+  - Enabled parallelized test execution with increased concurrency
+  - Fixed TypeScript errors in tests
+  - Added E2E test framework for simple CLI operation validation
+
 ## 0.4.7
 
 ### Patch Changes
