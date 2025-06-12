@@ -8,7 +8,7 @@
   },
   "type": "module",
   "engines": {
-    "node": ">=20"
+    "node": ">=20.18.1"
   },
   "scripts": {
     "clean": "rm -rf dist; rm -rf build; rm -rf coverage; npm run supabase:stop",
@@ -60,6 +60,7 @@
   ],
   "keywords": [
     "cli",
+    "declarative",
     "migrations",
     "database",
     "postgresql",
@@ -71,18 +72,22 @@
     "database-migrations",
     "supabase-cli"
   ],
+  "resolutions": {
+    "ink": "^6.0.0",
+    "react": "^19.0.0"
+  },
   "dependencies": {
     "@inkjs/ui": "^2.0.0",
     "chokidar": "^4.0.3",
-    "conf": "^13.1.0",
+    "conf": "^14.0.0",
     "figures": "^6.1.0",
     "glob": "^10.0.0",
-    "ink": "^5.1.0",
+    "ink": "^6.0.0",
     "pastel": "^3.0.0",
     "pg": "^8.13.1",
-    "react": "^18.3.0",
+    "react": "^19.0.0",
     "update-notifier": "^7.3.1",
-    "zod": "^3.24.1"
+    "zod": "^3.25.55"
   },
   "devDependencies": {
     "@biomejs/biome": "1.9.4",
@@ -91,14 +96,15 @@
     "@types/glob": "^8.1.0",
     "@types/node": "^20.17.10",
     "@types/pg": "^8.11.10",
-    "@types/react": "^18.3.0",
+    "@types/react": "^19.0.0",
     "@types/update-notifier": "^6.0.8",
     "@vitest/coverage-v8": "^3.0.7",
     "chalk": "^5.4.1",
     "ink-testing-library": "^4.0.0",
     "lefthook": "^1.10.1",
-    "tsx": "^4.19.2",
-    "typescript": "^5.7.2",
-    "vitest": "^3.0.7"
-  }
+    "tsx": "^4.19.4",
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.2"
+  },
+  "packageManager": "npm@11.4.1"
 }
