@@ -131,7 +131,7 @@
             "description": "Create the core state machine logic with defined states (unseen, synced, changed, applied, built, error) and valid state transitions",
             "dependencies": [],
             "details": "Define TypeScript enums/types for states, create state transition rules matrix, implement validateTransition() method to ensure only valid state changes occur, add transition event emitters for debugging/logging",
-            "status": "in-progress",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -140,7 +140,7 @@
             "description": "Create the core state management API with getTemplateStatus(), markAsApplied(), markAsBuilt(), markAsError() and other state transition methods",
             "dependencies": ["3.1"],
             "details": "Implement Map-based in-memory storage for template states, create methods for each state transition (markAsUnseen, markAsSynced, markAsChanged, etc.), add getTemplateStatus() to retrieve current state, implement getAllTemplateStatuses() for bulk operations, ensure thread-safe state updates",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -149,7 +149,7 @@
             "description": "Create methods for loading and saving state to .buildlog.json and .buildlog.local.json files with proper merging logic",
             "dependencies": ["3.2"],
             "details": "Implement loadBuildLog() to read from both JSON files, create saveBuildLog() with atomic writes, implement merge strategy for local vs remote buildlogs, add file locking to prevent concurrent writes, handle missing/corrupted files gracefully, implement auto-save on state changes",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -158,7 +158,7 @@
             "description": "Move template hash comparison and status determination logic from TemplateManager (lines 87-135) into StateService",
             "dependencies": ["3.2", "3.3"],
             "details": "Extract getTemplateHash() and compareHashes() methods, refactor determineTemplateStatus() logic that checks applied/built hashes, implement hasTemplateChanged() method, move template metadata storage (lastAppliedHash, lastBuiltHash, timestamps), ensure backward compatibility with existing buildlog format",
-            "status": "pending",
+            "status": "in-progress",
             "testStrategy": ""
           },
           {
@@ -565,7 +565,7 @@
     ],
     "metadata": {
       "created": "2025-08-18T06:59:50.695Z",
-      "updated": "2025-08-18T07:45:04.551Z",
+      "updated": "2025-08-18T08:59:43.731Z",
       "description": "Tasks for master context"
     }
   }

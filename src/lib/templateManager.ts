@@ -2,6 +2,7 @@ import EventEmitter from 'node:events';
 import path from 'node:path';
 import { FileSystemService } from '../services/FileSystemService.js';
 import type { WatchEvent } from '../services/FileSystemService.js';
+import { StateService } from '../services/StateService.js';
 import type { BuildLog, ProcessedTemplateResult, TemplateStatus } from '../types.js';
 import { applyMigration } from '../utils/applyMigration.js';
 import { calculateMD5 } from '../utils/calculateMD5.js';
@@ -19,6 +20,7 @@ interface TemplateCache {
 
 export class TemplateManager extends EventEmitter implements Disposable {
   private fileSystemService: FileSystemService;
+  private stateService: StateService;
   private baseDir: string;
   private buildLog: BuildLog;
   private localBuildLog: BuildLog;
@@ -58,6 +60,12 @@ export class TemplateManager extends EventEmitter implements Disposable {
       },
     });
 
+    // Initialize StateService
+    this.stateService = new StateService({
+      baseDir,
+      autoSave: true,
+    });
+
     // Set up event forwarding from FileSystemService
     this.fileSystemService.on('template:changed', (event: WatchEvent) => {
       void this.handleTemplateChange(event.path);
@@ -70,10 +78,23 @@ export class TemplateManager extends EventEmitter implements Disposable {
     this.fileSystemService.on('error', (error: Error) => {
       this.log(`File system error: ${error.message}`, 'error');
     });
+
+    // Set up event forwarding from StateService
+    this.stateService.on('state:transition', event => {
+      this.log(
+        `Template state transition: ${event.templatePath} ${event.fromState} -> ${event.toState}`,
+        'info'
+      );
+    });
+
+    this.stateService.on('error', (error: Error) => {
+      this.log(`State service error: ${error.message}`, 'error');
+    });
   }
 
   [Symbol.dispose](): void {
     void this.fileSystemService.dispose();
+    void this.stateService.dispose();
     this.removeAllListeners();
   }
 
@@ -81,7 +102,12 @@ export class TemplateManager extends EventEmitter implements Disposable {
     const config = await getConfig(baseDir);
     const buildLog = await loadBuildLog(baseDir, 'common');
     const localBuildLog = await loadBuildLog(baseDir, 'local');
-    return new TemplateManager(baseDir, buildLog, localBuildLog, config, options);
+    const templateManager = new TemplateManager(baseDir, buildLog, localBuildLog, config, options);
+
+    // Initialize StateService
+    await templateManager.stateService.initialize();
+
+    return templateManager;
   }
 
   private isCacheValid(cache: TemplateCache): boolean {
@@ -104,9 +130,16 @@ export class TemplateManager extends EventEmitter implements Disposable {
 
     try {
       const templateFile = await this.fileSystemService.readTemplate(templatePath);
+
+      // Update StateService with current template state
+      const stateInfo = this.stateService.getTemplateStatus(templatePath);
+      if (!stateInfo || this.stateService.hasTemplateChanged(templatePath, templateFile.hash)) {
+        await this.stateService.markAsChanged(templatePath, templateFile.hash);
+      }
+
       const relPath = templateFile.relativePath;
 
-      // Merge build and apply states
+      // Merge build and apply states (keeping backward compatibility)
       const buildState = {
         ...this.buildLog.templates[relPath],
         ...this.localBuildLog.templates[relPath],
@@ -193,12 +226,11 @@ export class TemplateManager extends EventEmitter implements Disposable {
       }
 
       const template = await this.getTemplateStatus(templatePath);
-      const relPath = path.relative(this.baseDir, templatePath);
+      const templateFile = await this.fileSystemService.readTemplate(templatePath);
 
+      // Use StateService for hash comparison
       const needsProcessing =
-        force ||
-        !this.localBuildLog.templates[relPath]?.lastAppliedHash ||
-        this.localBuildLog.templates[relPath]?.lastAppliedHash !== template.currentHash;
+        force || this.stateService.hasTemplateChanged(templatePath, templateFile.hash);
 
       if (needsProcessing) {
         this.emit('templateChanged', template);
@@ -299,6 +331,10 @@ export class TemplateManager extends EventEmitter implements Disposable {
         // Always calculate fresh hash after successful apply
         const currentHash = await calculateMD5(content);
 
+        // Update StateService
+        await this.stateService.markAsApplied(templatePath, currentHash);
+
+        // Keep backward compatibility with buildlog system
         if (!this.localBuildLog.templates[relPath]) {
           this.localBuildLog.templates[relPath] = {};
         }
@@ -315,7 +351,9 @@ export class TemplateManager extends EventEmitter implements Disposable {
         return { errors: [], applied: [template.name], skipped: [], built: [] };
       }
 
-      // On error, don't update hash but track the error
+      // On error, update StateService and keep backward compatibility
+      await this.stateService.markAsError(templatePath, result.error, 'apply');
+
       this.localBuildLog.templates[relPath] = {
         ...this.localBuildLog.templates[relPath],
         lastAppliedError: result.error,
@@ -347,7 +385,9 @@ export class TemplateManager extends EventEmitter implements Disposable {
     const content = templateFile.content;
     const currentHash = templateFile.hash;
 
-    if (!force && this.buildLog.templates[relPath]?.lastBuildHash === currentHash) {
+    // Use StateService for hash comparison
+    const stateInfo = this.stateService.getTemplateStatus(templatePath);
+    if (!force && stateInfo?.lastBuiltHash === currentHash) {
       this.log(`Skipping unchanged template: ${template.name}`, 'skip');
       return;
     }
@@ -368,6 +408,10 @@ export class TemplateManager extends EventEmitter implements Disposable {
     try {
       await this.fileSystemService.writeFile(migrationPath, migrationContent);
 
+      // Update StateService
+      await this.stateService.markAsBuilt(templatePath, currentHash, migrationName);
+
+      // Keep backward compatibility with buildlog system
       this.buildLog.templates[relPath] = {
         ...this.buildLog.templates[relPath],
         lastBuildHash: currentHash,
@@ -380,9 +424,15 @@ export class TemplateManager extends EventEmitter implements Disposable {
       await this.saveBuildLogs();
       this.emit('templateBuilt', template);
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+
+      // Update StateService
+      await this.stateService.markAsError(templatePath, errorMessage, 'build');
+
+      // Keep backward compatibility
       this.buildLog.templates[relPath] = {
         ...this.buildLog.templates[relPath],
-        lastBuildError: error instanceof Error ? error.message : String(error),
+        lastBuildError: errorMessage,
       };
 
       await this.saveBuildLogs();
@@ -465,7 +515,9 @@ export class TemplateManager extends EventEmitter implements Disposable {
           const content = templateFile.content;
           const currentHash = templateFile.hash;
 
-          if (!options.force && this.buildLog.templates[relPath]?.lastBuildHash === currentHash) {
+          // Use StateService for hash comparison
+          const stateInfo = this.stateService.getTemplateStatus(templatePath);
+          if (!options.force && stateInfo?.lastBuiltHash === currentHash) {
             this.log(`Skipping unchanged template: ${template.name}`, 'skip');
             result.skipped.push(template.name);
             continue;
@@ -518,7 +570,11 @@ export class TemplateManager extends EventEmitter implements Disposable {
           const isWip = await isWipTemplate(templatePath);
           if (!isWip) {
             const template = await this.getTemplateStatus(templatePath);
-            if (options.force || template.currentHash !== template.buildState.lastBuildHash) {
+            const templateFile = await this.fileSystemService.readTemplate(templatePath);
+
+            // Use StateService for hash comparison
+            const stateInfo = this.stateService.getTemplateStatus(templatePath);
+            if (options.force || stateInfo?.lastBuiltHash !== templateFile.hash) {
               await this.buildTemplate(templatePath, options.force);
               result.built.push(template.name);
               built++;
