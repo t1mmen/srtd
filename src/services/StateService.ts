@@ -59,7 +59,14 @@ export interface StateServiceConfig {
  * Valid state transitions matrix
  */
 const VALID_TRANSITIONS: Record<TemplateState, TemplateState[]> = {
-  [TemplateState.UNSEEN]: [TemplateState.SYNCED, TemplateState.CHANGED, TemplateState.ERROR],
+  [TemplateState.UNSEEN]: [
+    TemplateState.UNSEEN, // Allow self-transition for updates
+    TemplateState.SYNCED,
+    TemplateState.CHANGED,
+    TemplateState.APPLIED, // Allow direct apply for new templates
+    TemplateState.BUILT, // Allow direct build for new templates
+    TemplateState.ERROR,
+  ],
   [TemplateState.SYNCED]: [
     TemplateState.CHANGED,
     TemplateState.APPLIED,
@@ -209,9 +216,12 @@ export class StateService extends EventEmitter {
       // Determine state based on metadata
       const state = this.determineStateFromMetadata(metadata);
 
-      this.templateStates.set(templatePath, {
+      // Convert relative path to absolute path for storage key
+      const absolutePath = path.resolve(this.config.baseDir, templatePath);
+
+      this.templateStates.set(absolutePath, {
         state,
-        templatePath,
+        templatePath: absolutePath,
         lastAppliedHash: metadata.lastAppliedHash,
         lastBuiltHash: metadata.lastBuildHash,
         lastAppliedDate: metadata.lastAppliedDate,
@@ -374,7 +384,7 @@ export class StateService extends EventEmitter {
       lastAppliedHash: hash,
       lastAppliedDate: new Date().toISOString(),
       currentHash: hash,
-      lastError: undefined,
+      lastError: undefined, // Clear any previous errors on successful apply
     });
   }
 
@@ -388,7 +398,7 @@ export class StateService extends EventEmitter {
       lastBuiltHash: hash,
       lastBuiltDate: new Date().toISOString(),
       currentHash: hash,
-      lastError: undefined,
+      lastError: undefined, // Clear any previous errors on successful build
     });
 
     // Update migration file reference

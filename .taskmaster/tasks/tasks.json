@@ -158,7 +158,7 @@
             "description": "Move template hash comparison and status determination logic from TemplateManager (lines 87-135) into StateService",
             "dependencies": ["3.2", "3.3"],
             "details": "Extract getTemplateHash() and compareHashes() methods, refactor determineTemplateStatus() logic that checks applied/built hashes, implement hasTemplateChanged() method, move template metadata storage (lastAppliedHash, lastBuiltHash, timestamps), ensure backward compatibility with existing buildlog format",
-            "status": "in-progress",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -167,7 +167,7 @@
             "description": "Create thorough unit tests covering all state transitions, persistence operations, and edge cases",
             "dependencies": ["3.1", "3.2", "3.3", "3.4"],
             "details": "Test all valid and invalid state transitions, verify persistence to both JSON files, test concurrent state updates and race conditions, validate hash comparison logic, test state recovery from corrupted files, verify merge logic between local and remote buildlogs, test memory cleanup and resource disposal",
-            "status": "pending",
+            "status": "in-progress",
             "testStrategy": ""
           }
         ]
@@ -565,7 +565,7 @@
     ],
     "metadata": {
       "created": "2025-08-18T06:59:50.695Z",
-      "updated": "2025-08-18T08:59:43.731Z",
+      "updated": "2025-08-18T09:02:07.891Z",
       "description": "Tasks for master context"
     }
   }
