@@ -1,8 +1,7 @@
 import EventEmitter from 'node:events';
-import fs from 'node:fs/promises';
 import path from 'node:path';
-import type { FSWatcher } from 'chokidar';
-import { glob } from 'glob';
+import { FileSystemService } from '../services/FileSystemService.js';
+import type { WatchEvent } from '../services/FileSystemService.js';
 import type { BuildLog, ProcessedTemplateResult, TemplateStatus } from '../types.js';
 import { applyMigration } from '../utils/applyMigration.js';
 import { calculateMD5 } from '../utils/calculateMD5.js';
@@ -17,17 +16,9 @@ interface TemplateCache {
   status: TemplateStatus;
   lastChecked: number;
 }
-// Track watchers globally
-declare global {
-  var __srtd_watchers: FSWatcher[];
-}
-
-if (!global.__srtd_watchers) {
-  global.__srtd_watchers = [];
-}
 
 export class TemplateManager extends EventEmitter implements Disposable {
-  private watcher: FSWatcher | null = null;
+  private fileSystemService: FileSystemService;
   private baseDir: string;
   private buildLog: BuildLog;
   private localBuildLog: BuildLog;
@@ -53,13 +44,36 @@ export class TemplateManager extends EventEmitter implements Disposable {
     this.buildLog = buildLog;
     this.localBuildLog = localBuildLog;
     this.config = config;
+
+    // Initialize FileSystemService
+    this.fileSystemService = new FileSystemService({
+      baseDir,
+      templateDir: config.templateDir,
+      filter: config.filter,
+      migrationDir: config.migrationDir,
+      watchOptions: {
+        ignoreInitial: false,
+        stabilityThreshold: 200,
+        pollInterval: 100,
+      },
+    });
+
+    // Set up event forwarding from FileSystemService
+    this.fileSystemService.on('template:changed', (event: WatchEvent) => {
+      void this.handleTemplateChange(event.path);
+    });
+
+    this.fileSystemService.on('template:added', (event: WatchEvent) => {
+      void this.handleTemplateChange(event.path);
+    });
+
+    this.fileSystemService.on('error', (error: Error) => {
+      this.log(`File system error: ${error.message}`, 'error');
+    });
   }
 
   [Symbol.dispose](): void {
-    if (this.watcher) {
-      void this.watcher.close();
-      this.watcher = null;
-    }
+    void this.fileSystemService.dispose();
     this.removeAllListeners();
   }
 
@@ -79,9 +93,7 @@ export class TemplateManager extends EventEmitter implements Disposable {
   }
 
   async findTemplates(): Promise<string[]> {
-    const templatePath = path.join(this.baseDir, this.config.templateDir, this.config.filter);
-    const matches = await glob(templatePath);
-    return matches;
+    return this.fileSystemService.findTemplates();
   }
 
   async getTemplateStatus(templatePath: string): Promise<TemplateStatus> {
@@ -91,9 +103,8 @@ export class TemplateManager extends EventEmitter implements Disposable {
     }
 
     try {
-      const content = await fs.readFile(templatePath, 'utf-8');
-      const currentHash = await calculateMD5(content);
-      const relPath = path.relative(this.baseDir, templatePath);
+      const templateFile = await this.fileSystemService.readTemplate(templatePath);
+      const relPath = templateFile.relativePath;
 
       // Merge build and apply states
       const buildState = {
@@ -102,9 +113,9 @@ export class TemplateManager extends EventEmitter implements Disposable {
       };
 
       const status = {
-        name: path.basename(templatePath, '.sql'),
+        name: templateFile.name,
         path: templatePath,
-        currentHash,
+        currentHash: templateFile.hash,
         migrationHash: null,
         buildState,
         wip: await isWipTemplate(templatePath),
@@ -169,10 +180,7 @@ export class TemplateManager extends EventEmitter implements Disposable {
       this.invalidateCache(templatePath);
 
       // Check if file exists first
-      const exists = await fs
-        .stat(templatePath)
-        .then(() => true)
-        .catch(() => false);
+      const exists = await this.fileSystemService.fileExists(templatePath);
       if (!exists) {
         const templateName = path.basename(templatePath, '.sql');
         this.log(`Template file not found: ${templatePath}`, 'warn');
@@ -268,82 +276,21 @@ export class TemplateManager extends EventEmitter implements Disposable {
   }
 
   async watch(): Promise<{ close: () => Promise<void> }> {
-    const chokidar = await import('chokidar');
-    const templatePath = path.join(this.baseDir, this.config.templateDir);
+    // Start watching templates using FileSystemService
+    await this.fileSystemService.watchTemplates();
 
-    // Use more appropriate values for stabilityThreshold and pollInterval
-    // This prevents excessive file events and improves reliability
-    const watcher = chokidar.watch(templatePath, {
-      ignoreInitial: false,
-      ignored: ['**/!(*.sql)'],
-      persistent: true,
-      awaitWriteFinish: {
-        stabilityThreshold: 200, // Increased from 50ms to 200ms
-        pollInterval: 100, // Increased from 50ms to 100ms
-      },
-    });
-
-    // Track watcher globally
-    global.__srtd_watchers.push(watcher);
-
-    // Do initial scan once, but don't wait for each file to be processed
-    // This prevents blocking and makes tests more reliable
-    const existingFiles = await glob(path.join(templatePath, this.config.filter));
-    for (const file of existingFiles) {
-      // Don't await here - queue the files and let the queue process them
-      void this.handleTemplateChange(file);
-    }
-
-    // Use debouncing for file change events
-    // This prevents multiple rapid events for the same file
-    const debouncedHandlers = new Map<string, NodeJS.Timeout>();
-
-    const debouncedHandleEvent = (filepath: string) => {
-      if (path.extname(filepath) !== '.sql') return;
-
-      // Clear any existing debounce timer for this file
-      const existingTimer = debouncedHandlers.get(filepath);
-      if (existingTimer) {
-        clearTimeout(existingTimer);
-      }
-
-      // Set a new debounce timer
-      const timer = setTimeout(() => {
-        void this.handleTemplateChange(filepath);
-        debouncedHandlers.delete(filepath);
-      }, 100); // 100ms debounce delay
-
-      debouncedHandlers.set(filepath, timer);
-    };
-
-    watcher
-      .on('add', debouncedHandleEvent)
-      .on('change', debouncedHandleEvent)
-      .on('error', error => {
-        this.log(`Watcher error: ${error}`, 'error');
-      });
-
-    // Update cleanup
-    this.watcher = watcher;
     return {
       close: async () => {
-        // Clear any pending debounced handlers
-        for (const timer of debouncedHandlers.values()) {
-          clearTimeout(timer);
-        }
-        debouncedHandlers.clear();
-
-        await watcher.close();
-        const idx = global.__srtd_watchers.indexOf(watcher);
-        if (idx > -1) global.__srtd_watchers.splice(idx, 1);
+        await this.fileSystemService.stopWatching();
       },
     };
   }
 
   async applyTemplate(templatePath: string): Promise<ProcessedTemplateResult> {
     const template = await this.getTemplateStatus(templatePath);
-    const content = await fs.readFile(templatePath, 'utf-8');
-    const relPath = path.relative(this.baseDir, templatePath);
+    const templateFile = await this.fileSystemService.readTemplate(templatePath);
+    const content = templateFile.content;
+    const relPath = templateFile.relativePath;
 
     try {
       const result = await applyMigration(content, template.name, this.silent);
@@ -389,15 +336,16 @@ export class TemplateManager extends EventEmitter implements Disposable {
   async buildTemplate(templatePath: string, force = false): Promise<void> {
     const template = await this.getTemplateStatus(templatePath);
     const isWip = await isWipTemplate(templatePath);
-    const relPath = path.relative(this.baseDir, templatePath);
+    const templateFile = await this.fileSystemService.readTemplate(templatePath);
+    const relPath = templateFile.relativePath;
 
     if (isWip) {
       this.log(`Skipping WIP template: ${template.name}`, 'skip');
       return;
     }
 
-    const content = await fs.readFile(templatePath, 'utf-8');
-    const currentHash = await calculateMD5(content);
+    const content = templateFile.content;
+    const currentHash = templateFile.hash;
 
     if (!force && this.buildLog.templates[relPath]?.lastBuildHash === currentHash) {
       this.log(`Skipping unchanged template: ${template.name}`, 'skip');
@@ -407,7 +355,7 @@ export class TemplateManager extends EventEmitter implements Disposable {
     const timestamp = await getNextTimestamp(this.buildLog);
     const prefix = this.config.migrationPrefix ? `${this.config.migrationPrefix}-` : '';
     const migrationName = `${timestamp}_${prefix}${template.name}.sql`;
-    const migrationPath = path.join(this.config.migrationDir, migrationName);
+    const migrationPath = this.fileSystemService.getMigrationPath(template.name, timestamp);
 
     const header = `-- Generated with srtd from template: ${this.config.templateDir}/${template.name}.sql\n`;
     const banner = this.config.banner ? `-- ${this.config.banner}\n` : '\n';
@@ -418,7 +366,7 @@ export class TemplateManager extends EventEmitter implements Disposable {
     const migrationContent = `${header}${banner}\n${safeContent}\n${footer}`;
 
     try {
-      await fs.writeFile(path.resolve(this.baseDir, migrationPath), migrationContent);
+      await this.fileSystemService.writeFile(migrationPath, migrationContent);
 
       this.buildLog.templates[relPath] = {
         ...this.buildLog.templates[relPath],
@@ -513,8 +461,9 @@ export class TemplateManager extends EventEmitter implements Disposable {
             continue;
           }
 
-          const content = await fs.readFile(templatePath, 'utf-8');
-          const currentHash = await calculateMD5(content);
+          const templateFile = await this.fileSystemService.readTemplate(templatePath);
+          const content = templateFile.content;
+          const currentHash = templateFile.hash;
 
           if (!options.force && this.buildLog.templates[relPath]?.lastBuildHash === currentHash) {
             this.log(`Skipping unchanged template: ${template.name}`, 'skip');
@@ -545,7 +494,10 @@ export class TemplateManager extends EventEmitter implements Disposable {
         }
 
         try {
-          await fs.writeFile(path.resolve(this.baseDir, migrationPath), migrationContent);
+          await this.fileSystemService.writeFile(
+            path.resolve(this.baseDir, migrationPath),
+            migrationContent
+          );
           await this.saveBuildLogs();
           this.log(`Generated bundled migration file: ${migrationName}`, 'success');
         } catch (error) {

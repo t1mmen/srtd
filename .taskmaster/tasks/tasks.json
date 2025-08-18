@@ -9,7 +9,7 @@
         "testStrategy": "Verify all Ink/React imports are removed, ensure Terminal-Kit is properly installed, create basic smoke tests for Terminal-Kit initialization and component rendering. Test that the package installs cleanly in projects using React 19.",
         "priority": "high",
         "dependencies": [],
-        "status": "in-progress",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -53,7 +53,7 @@
             "description": "Update all 27 command and component files to use new Terminal-Kit-based UI components",
             "dependencies": ["1.4"],
             "details": "Replace React imports with Terminal-Kit wrapper imports in all command files. Convert JSX syntax to Terminal-Kit imperative API calls. Update component lifecycle methods from React hooks to Terminal-Kit patterns. Replace useState and useEffect with Terminal-Kit state management. Update event handlers to use Terminal-Kit event system. Maintain exact visual output and user interaction patterns. Test each migrated component for functional parity.",
-            "status": "in-progress",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -62,7 +62,7 @@
             "description": "Rewrite all tests to work with Terminal-Kit instead of ink-testing-library",
             "dependencies": ["1.5"],
             "details": "Replace ink-testing-library with Terminal-Kit testing utilities. Create mock Terminal-Kit screen for unit testing. Update component tests to use Terminal-Kit API assertions. Rewrite integration tests for new event handling system. Create visual regression tests comparing outputs. Update CI/CD pipeline test commands. Verify all existing test cases pass with Terminal-Kit implementation.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           }
         ]
@@ -75,7 +75,7 @@
         "testStrategy": "Unit tests for glob pattern matching, file reading, hash calculation, mock file system for testing watch events, verify proper event emission for add/change/remove operations, test cleanup and resource disposal.",
         "priority": "high",
         "dependencies": [],
-        "status": "pending",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -83,7 +83,7 @@
             "description": "Implement the FileSystemService class structure with findTemplates() and readTemplate() methods",
             "dependencies": [],
             "details": "Create src/services/FileSystemService.ts with: class extending EventEmitter, constructor accepting config, findTemplates() method using glob patterns from config to locate template files, readTemplate() method that reads file content and calculates hash using crypto module. Include proper TypeScript interfaces for return types and configuration options.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -92,7 +92,7 @@
             "description": "Add watchTemplates() method with chokidar integration and proper event emission",
             "dependencies": ["2.1"],
             "details": "Implement watchTemplates() method using chokidar library to monitor template directories, emit standardized events (template:added, template:changed, template:removed) with template path and metadata, implement proper cleanup() and dispose() methods to stop watchers and remove listeners, handle chokidar configuration options from config, ensure proper error handling for file system access issues.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -101,7 +101,7 @@
             "description": "Migrate existing file system operations from TemplateManager to FileSystemService",
             "dependencies": ["2.1", "2.2"],
             "details": "Extract file system logic from TemplateManager.ts lines 81-85 (glob pattern handling) and lines 270-340 (file watching setup), refactor code to use the new FileSystemService methods, update TemplateManager to consume FileSystemService instead of direct file operations, ensure all file paths and glob patterns are properly handled, maintain backward compatibility with existing configuration structure.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -110,7 +110,7 @@
             "description": "Create thorough test suite with mocked file system operations",
             "dependencies": ["2.3"],
             "details": "Create src/services/__tests__/FileSystemService.test.ts with: mock fs and glob modules for isolated testing, test findTemplates() with various glob patterns and edge cases, test readTemplate() with hash calculation verification, test file watching events using mock chokidar, verify proper event emission for add/change/remove operations, test cleanup and resource disposal, test error handling for missing files and permission issues.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           }
         ]
@@ -565,7 +565,7 @@
     ],
     "metadata": {
       "created": "2025-08-18T06:59:50.695Z",
-      "updated": "2025-08-18T07:23:46.557Z",
+      "updated": "2025-08-18T07:43:53.328Z",
       "description": "Tasks for master context"
     }
   }
