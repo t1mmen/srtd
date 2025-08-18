@@ -1,0 +1,572 @@
+{
+  "master": {
+    "tasks": [
+      {
+        "id": 1,
+        "title": "Remove Ink/React Dependencies and Setup Terminal-Kit",
+        "description": "Replace the React-based Ink TUI framework with Terminal-Kit to eliminate distribution issues and React 19 conflicts",
+        "details": "Uninstall Ink, @inkjs/ui, React and related dependencies from package.json. Install terminal-kit as the new TUI framework. This is a critical first step to address the major distribution pain point. Terminal-Kit provides an event-driven, imperative API that doesn't rely on VDOM, eliminating React dependency conflicts. Create a new UI abstraction layer to wrap Terminal-Kit components for consistent usage throughout the application.",
+        "testStrategy": "Verify all Ink/React imports are removed, ensure Terminal-Kit is properly installed, create basic smoke tests for Terminal-Kit initialization and component rendering. Test that the package installs cleanly in projects using React 19.",
+        "priority": "high",
+        "dependencies": [],
+        "status": "in-progress",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Analyze and Document Current Ink/React Usage",
+            "description": "Conduct comprehensive analysis of all 27 files using React/Ink components and create detailed migration documentation",
+            "dependencies": [],
+            "details": "Scan and catalog all React/Ink imports across the codebase. Document each component's usage pattern, props, and functionality. Create a mapping table of Ink components to their Terminal-Kit equivalents. Identify custom React hooks and state management patterns that need replacement. Document all event handlers and interactive elements. Create a priority list for migration based on component complexity and usage frequency.",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Design Terminal-Kit Abstraction Layer Architecture",
+            "description": "Create a robust wrapper/abstraction layer design for Terminal-Kit to ensure consistent API usage throughout the application",
+            "dependencies": ["1.1"],
+            "details": "Design base AbstractComponent class for all Terminal-Kit wrappers. Define consistent lifecycle methods (init, render, update, destroy). Create event handling system to replace React's synthetic events. Design state management pattern for Terminal-Kit components. Define prop validation and type checking approach. Create component composition patterns to replace React's component tree. Document the abstraction layer API and usage patterns.",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Remove React/Ink Dependencies and Update Build Configuration",
+            "description": "Uninstall all React/Ink packages and update build tooling to work without JSX/React transpilation",
+            "dependencies": ["1.2"],
+            "details": "Remove from package.json: react, react-reconciler, ink, @inkjs/ui, ink-testing-library. Install terminal-kit and any required dependencies. Update tsconfig.json to remove JSX configuration. Update build scripts to remove React-specific transformations. Update ESLint and Prettier configurations to remove React rules. Verify package-lock.json is clean of React dependencies. Test that npm install works without conflicts in React 19 projects.",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Implement Core Terminal-Kit UI Components",
+            "description": "Create Terminal-Kit equivalents for essential UI components (Spinner, Box, Text, Select)",
+            "dependencies": ["1.3"],
+            "details": "Implement Spinner component with customizable animation and colors. Create Box component with border styles and padding support. Build Text component with color, bold, underline formatting. Develop Select component for interactive menu selections. Implement layout utilities for positioning and alignment. Create consistent styling system for colors and themes. Ensure all components follow the abstraction layer design patterns.",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 5,
+            "title": "Migrate Command Files to Terminal-Kit Components",
+            "description": "Update all 27 command and component files to use new Terminal-Kit-based UI components",
+            "dependencies": ["1.4"],
+            "details": "Replace React imports with Terminal-Kit wrapper imports in all command files. Convert JSX syntax to Terminal-Kit imperative API calls. Update component lifecycle methods from React hooks to Terminal-Kit patterns. Replace useState and useEffect with Terminal-Kit state management. Update event handlers to use Terminal-Kit event system. Maintain exact visual output and user interaction patterns. Test each migrated component for functional parity.",
+            "status": "in-progress",
+            "testStrategy": ""
+          },
+          {
+            "id": 6,
+            "title": "Update Test Suite for Terminal-Kit Migration",
+            "description": "Rewrite all tests to work with Terminal-Kit instead of ink-testing-library",
+            "dependencies": ["1.5"],
+            "details": "Replace ink-testing-library with Terminal-Kit testing utilities. Create mock Terminal-Kit screen for unit testing. Update component tests to use Terminal-Kit API assertions. Rewrite integration tests for new event handling system. Create visual regression tests comparing outputs. Update CI/CD pipeline test commands. Verify all existing test cases pass with Terminal-Kit implementation.",
+            "status": "pending",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "title": "Implement FileSystemService",
+        "description": "Create a dedicated service for all file system operations, replacing file system logic in TemplateManager",
+        "details": "Create src/services/FileSystemService.ts implementing: findTemplates() using glob patterns from config, readTemplate() for content and hash calculation, watchTemplates() using chokidar with proper event emission (template:added, template:changed, template:removed), proper cleanup and disposal methods. The service should be completely decoupled from business logic and only handle raw file operations. Use EventEmitter for change notifications.",
+        "testStrategy": "Unit tests for glob pattern matching, file reading, hash calculation, mock file system for testing watch events, verify proper event emission for add/change/remove operations, test cleanup and resource disposal.",
+        "priority": "high",
+        "dependencies": [],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create FileSystemService class with core file operations",
+            "description": "Implement the FileSystemService class structure with findTemplates() and readTemplate() methods",
+            "dependencies": [],
+            "details": "Create src/services/FileSystemService.ts with: class extending EventEmitter, constructor accepting config, findTemplates() method using glob patterns from config to locate template files, readTemplate() method that reads file content and calculates hash using crypto module. Include proper TypeScript interfaces for return types and configuration options.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Implement file watching with chokidar",
+            "description": "Add watchTemplates() method with chokidar integration and proper event emission",
+            "dependencies": ["2.1"],
+            "details": "Implement watchTemplates() method using chokidar library to monitor template directories, emit standardized events (template:added, template:changed, template:removed) with template path and metadata, implement proper cleanup() and dispose() methods to stop watchers and remove listeners, handle chokidar configuration options from config, ensure proper error handling for file system access issues.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Extract and refactor file system logic from TemplateManager",
+            "description": "Migrate existing file system operations from TemplateManager to FileSystemService",
+            "dependencies": ["2.1", "2.2"],
+            "details": "Extract file system logic from TemplateManager.ts lines 81-85 (glob pattern handling) and lines 270-340 (file watching setup), refactor code to use the new FileSystemService methods, update TemplateManager to consume FileSystemService instead of direct file operations, ensure all file paths and glob patterns are properly handled, maintain backward compatibility with existing configuration structure.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Add comprehensive unit tests for FileSystemService",
+            "description": "Create thorough test suite with mocked file system operations",
+            "dependencies": ["2.3"],
+            "details": "Create src/services/__tests__/FileSystemService.test.ts with: mock fs and glob modules for isolated testing, test findTemplates() with various glob patterns and edge cases, test readTemplate() with hash calculation verification, test file watching events using mock chokidar, verify proper event emission for add/change/remove operations, test cleanup and resource disposal, test error handling for missing files and permission issues.",
+            "status": "pending",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "title": "Implement StateService",
+        "description": "Create a centralized state management service as the single source of truth for template status",
+        "details": "Create src/services/StateService.ts with explicit state machine for templates (unseen, synced, changed, applied, built, error). Manage in-memory state with methods: getTemplateStatus(), markAsApplied(), markAsBuilt(), markAsError(). Handle loading/saving from .buildlog.json and .buildlog.local.json. Implement hash comparison logic and state transitions. This replaces the complex state management scattered throughout TemplateManager.",
+        "testStrategy": "Unit tests for all state transitions, verify state persistence to JSON files, test state loading and merging from multiple sources, validate hash comparison logic, test concurrent state updates and race conditions.",
+        "priority": "high",
+        "dependencies": [],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Design and implement state machine with transitions",
+            "description": "Create the core state machine logic with defined states (unseen, synced, changed, applied, built, error) and valid state transitions",
+            "dependencies": [],
+            "details": "Define TypeScript enums/types for states, create state transition rules matrix, implement validateTransition() method to ensure only valid state changes occur, add transition event emitters for debugging/logging",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Implement in-memory state management methods",
+            "description": "Create the core state management API with getTemplateStatus(), markAsApplied(), markAsBuilt(), markAsError() and other state transition methods",
+            "dependencies": ["3.1"],
+            "details": "Implement Map-based in-memory storage for template states, create methods for each state transition (markAsUnseen, markAsSynced, markAsChanged, etc.), add getTemplateStatus() to retrieve current state, implement getAllTemplateStatuses() for bulk operations, ensure thread-safe state updates",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Implement buildlog persistence layer",
+            "description": "Create methods for loading and saving state to .buildlog.json and .buildlog.local.json files with proper merging logic",
+            "dependencies": ["3.2"],
+            "details": "Implement loadBuildLog() to read from both JSON files, create saveBuildLog() with atomic writes, implement merge strategy for local vs remote buildlogs, add file locking to prevent concurrent writes, handle missing/corrupted files gracefully, implement auto-save on state changes",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Extract and refactor hash comparison logic from TemplateManager",
+            "description": "Move template hash comparison and status determination logic from TemplateManager (lines 87-135) into StateService",
+            "dependencies": ["3.2", "3.3"],
+            "details": "Extract getTemplateHash() and compareHashes() methods, refactor determineTemplateStatus() logic that checks applied/built hashes, implement hasTemplateChanged() method, move template metadata storage (lastAppliedHash, lastBuiltHash, timestamps), ensure backward compatibility with existing buildlog format",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 5,
+            "title": "Add comprehensive unit tests for StateService",
+            "description": "Create thorough unit tests covering all state transitions, persistence operations, and edge cases",
+            "dependencies": ["3.1", "3.2", "3.3", "3.4"],
+            "details": "Test all valid and invalid state transitions, verify persistence to both JSON files, test concurrent state updates and race conditions, validate hash comparison logic, test state recovery from corrupted files, verify merge logic between local and remote buildlogs, test memory cleanup and resource disposal",
+            "status": "pending",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "title": "Implement DatabaseService",
+        "description": "Create a dedicated service for all database interactions",
+        "details": "Create src/services/DatabaseService.ts handling: connection management using pg library, executeSQL() method for running template content, proper transaction handling based on config.wrapInTransaction, connection pooling and cleanup, clear error reporting. Completely decouple from template logic - this service only knows about SQL execution. Return structured results with success/error status.",
+        "testStrategy": "Integration tests with test database, mock pg client for unit tests, verify transaction wrapping behavior, test connection pooling and cleanup, validate error handling and reporting, test concurrent query execution.",
+        "priority": "high",
+        "dependencies": [],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Refactor existing connection management into DatabaseService class",
+            "description": "Extract and refactor the existing pg pool management and retry logic from databaseConnection.ts into a new DatabaseService class",
+            "dependencies": [],
+            "details": "Create src/services/DatabaseService.ts with a class-based structure. Move the existing pg pool initialization, connection management, and retry logic from databaseConnection.ts. Set up proper constructor to accept configuration options. Implement connection pooling with configurable pool size, idle timeout, and connection limits. Add proper cleanup methods for graceful shutdown. Ensure the service maintains no knowledge of template logic.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Implement executeSQL method with transaction handling",
+            "description": "Create the core executeSQL method that handles SQL execution with optional transaction wrapping based on configuration",
+            "dependencies": ["4.1"],
+            "details": "Implement executeSQL(sql: string, config: ExecutionConfig) method that accepts raw SQL content and execution configuration. Add logic to check config.wrapInTransaction flag and wrap SQL in BEGIN/COMMIT/ROLLBACK as needed. Implement proper transaction isolation levels. Handle nested transactions gracefully. Return structured results with { success: boolean, data?: any, error?: Error, rowCount?: number } format. Ensure proper parameterized query support for security.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Add comprehensive error handling and integration tests",
+            "description": "Implement robust error handling throughout the service and create comprehensive integration tests",
+            "dependencies": ["4.2"],
+            "details": "Add detailed error handling for connection failures, query timeouts, transaction rollbacks, and pool exhaustion. Implement proper error categorization (connection errors, syntax errors, constraint violations, etc.). Create integration tests using a test database to verify connection pooling, concurrent query execution, transaction behavior, and error scenarios. Add unit tests with mocked pg client for isolated testing. Ensure proper logging for debugging and monitoring.",
+            "status": "pending",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "title": "Implement MigrationBuilder Service",
+        "description": "Create a service responsible for generating Supabase migration files from templates",
+        "details": "Create src/services/MigrationBuilder.ts with: generateMigration() taking template content and metadata, adding configured banner/footer from config, proper timestamp generation using getNextTimestamp utility, transaction wrapping based on config, writing migration files to configured directory. Should be pure - taking input and producing migration file content without side effects beyond file writing.",
+        "testStrategy": "Unit tests for migration content generation, verify proper banner/footer inclusion, test timestamp generation and uniqueness, validate transaction wrapping logic, test file writing with proper permissions, verify migration file format matches Supabase requirements.",
+        "priority": "medium",
+        "dependencies": [],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create MigrationBuilder class with core structure",
+            "description": "Set up the MigrationBuilder service class with constructor, configuration loading, and basic structure",
+            "dependencies": [],
+            "details": "Create src/services/MigrationBuilder.ts file with: MigrationBuilder class definition, constructor that accepts configuration object, private properties for storing config values (banner, footer, migration directory path, transaction wrapping settings), proper TypeScript interfaces for configuration and migration metadata types, initialization logic to validate required config values",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Implement generateMigration method",
+            "description": "Create the main generateMigration method that assembles migration content with proper formatting",
+            "dependencies": ["5.1"],
+            "details": "Implement generateMigration() method that: accepts template content string and metadata object (name, description), calls getNextTimestamp utility to generate unique timestamp, assembles migration content in order (banner from config, metadata comments, transaction BEGIN if configured, template content, transaction COMMIT if configured, footer from config), returns formatted migration content string ready for file writing, handles edge cases like empty content or missing metadata",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Add file writing capability and tests",
+            "description": "Implement the file writing logic and comprehensive unit tests for the service",
+            "dependencies": ["5.2"],
+            "details": "Add writeMigration() method that: takes generated content and filename, writes to configured migration directory using fs.promises.writeFile, ensures directory exists (create if needed), generates filename format: {timestamp}_{name}.sql, returns file path on success. Create comprehensive unit tests covering: migration content generation with various configurations, banner/footer inclusion, transaction wrapping logic, timestamp uniqueness, file writing with proper permissions, error handling for invalid inputs or file system errors",
+            "status": "pending",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "title": "Implement Orchestrator Service",
+        "description": "Create the central coordinator that manages the unidirectional data flow between all services",
+        "details": "Create src/services/Orchestrator.ts as the main controller: listen to FileSystemService events, query StateService for template status, coordinate DatabaseService for applies and MigrationBuilder for builds, update StateService with results. Implement command handlers for apply(), build(), watch(), register(), etc. This replaces the complex intertwined logic in TemplateManager. Ensure strict unidirectional flow: FileSystem Event -> Orchestrator -> StateService (check) -> Action -> StateService (update).",
+        "testStrategy": "Integration tests for full command flows, mock all services for unit tests, verify proper event handling and service coordination, test error propagation and recovery, validate state consistency after operations, test concurrent template processing.",
+        "priority": "high",
+        "dependencies": [2, 3, 4, 5],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Design Orchestrator architecture and service interfaces",
+            "description": "Define the core architecture for unidirectional data flow and create interfaces for service coordination",
+            "dependencies": [],
+            "details": "Create the initial Orchestrator.ts file structure with TypeScript interfaces for service dependencies. Define the event flow architecture: FileSystem Event -> Orchestrator -> StateService (check) -> Action -> StateService (update). Design command handler interfaces for apply(), build(), watch(), register(), promote(), and clear(). Create type definitions for service communication contracts and event payloads. Document the coordination patterns and ensure no circular dependencies between services.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Implement FileSystemService event listening and coordination",
+            "description": "Set up event listeners for FileSystemService and implement the event handling pipeline",
+            "dependencies": ["6.1"],
+            "details": "Implement event listeners for template:added, template:changed, and template:removed events from FileSystemService. Create event handler methods that process incoming file system events. Implement queuing mechanism for sequential template processing to avoid race conditions. Add debouncing logic for rapid file changes. Ensure proper error handling and event propagation. Create logging for all incoming events and their processing status.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Implement StateService integration and state queries",
+            "description": "Integrate StateService for checking template status and updating state after operations",
+            "dependencies": ["6.1"],
+            "details": "Implement methods to query StateService for template status (getTemplateStatus). Create state transition logic based on operation results. Implement state update methods after successful apply/build operations (markAsApplied, markAsBuilt, markAsError). Add state validation before executing operations. Implement conflict resolution for concurrent state updates. Ensure atomic state updates to prevent inconsistencies.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Implement command handlers and service coordination",
+            "description": "Create command handler methods that coordinate DatabaseService and MigrationBuilder operations",
+            "dependencies": ["6.2", "6.3"],
+            "details": "Implement apply() command: check state, coordinate DatabaseService.executeSQL(), update state. Implement build() command: check state, coordinate MigrationBuilder.generateMigration(), update state. Implement watch() command with continuous monitoring. Implement register() for new template discovery. Implement promote() for state transitions. Implement clear() for state reset. Add proper error handling and rollback logic for failed operations.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 5,
+            "title": "Refactor TemplateManager logic into Orchestrator",
+            "description": "Extract and refactor complex logic from TemplateManager's processTemplate and processNextTemplate methods",
+            "dependencies": ["6.4"],
+            "details": "Analyze existing TemplateManager.processTemplate() and processNextTemplate() methods. Extract queue processing logic and adapt to new service architecture. Refactor template processing pipeline to use new service interfaces. Migrate error handling and retry logic. Ensure feature parity with existing functionality. Remove circular dependencies and simplify control flow. Implement proper cleanup and disposal methods for resource management.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 6,
+            "title": "Add integration tests for command flows",
+            "description": "Create comprehensive integration tests for all command handlers and service coordination",
+            "dependencies": ["6.5"],
+            "details": "Create integration test suite for full command flows (apply, build, watch, register). Mock all dependent services (FileSystemService, StateService, DatabaseService, MigrationBuilder) for unit tests. Test event handling and proper service coordination sequences. Verify error propagation and recovery mechanisms. Test concurrent template processing and queue management. Validate state consistency after each operation. Test edge cases like service failures and race conditions.",
+            "status": "pending",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 7,
+        "title": "Migrate CLI Commands to New Architecture",
+        "description": "Refactor all existing CLI commands to use the new service architecture instead of TemplateManager",
+        "details": "Update all command files in src/commands/: apply.tsx, build.tsx, watch.tsx, register.tsx, promote.tsx, clear.tsx, init.tsx. Replace TemplateManager usage with Orchestrator. Maintain exact same CLI interface and behavior for backward compatibility. Remove React/Ink components and replace with Terminal-Kit based UI components. Ensure all existing command-line flags and options continue to work.",
+        "testStrategy": "End-to-end tests for all CLI commands, verify backward compatibility with existing workflows, test all command-line flags and options, integration tests with real file system and database, verify output format matches current implementation.",
+        "priority": "high",
+        "dependencies": [6],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Refactor apply.tsx to use Orchestrator and Terminal-Kit",
+            "description": "Replace TemplateManager with Orchestrator in the apply command and convert React/Ink UI to Terminal-Kit components",
+            "dependencies": [],
+            "details": "Update src/commands/apply.tsx to use the new Orchestrator service instead of TemplateManager. Replace all React/Ink components (Box, Text, Spinner, etc.) with Terminal-Kit equivalents. Maintain the same CLI interface including all flags like --force, --dry-run, etc. Ensure the command still handles template application workflow correctly with the new architecture.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Refactor build.tsx to use new architecture",
+            "description": "Update the build command to use Orchestrator and StateService, replacing TemplateManager and React components",
+            "dependencies": [],
+            "details": "Modify src/commands/build.tsx to utilize the Orchestrator for template building operations. Replace all React/Ink UI components with Terminal-Kit based alternatives. Ensure the command properly integrates with StateService for tracking build status. Maintain backward compatibility with existing build flags and options.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Refactor watch.tsx with new event system",
+            "description": "Update the watch command to use the new architecture's event system and Terminal-Kit for real-time UI updates",
+            "dependencies": [],
+            "details": "Refactor src/commands/watch.tsx to use the Orchestrator's event system for file watching and change detection. Replace React/Ink's reactive UI with Terminal-Kit's event-driven updates. Ensure the watch mode properly triggers apply/build operations through the new service architecture. Maintain support for all watch-related flags.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Refactor register.tsx and promote.tsx commands",
+            "description": "Update template registration and promotion commands to use new services",
+            "dependencies": [],
+            "details": "Update src/commands/register.tsx and src/commands/promote.tsx to use Orchestrator and appropriate services instead of TemplateManager. Replace React/Ink UI components with Terminal-Kit equivalents. Ensure template registration and promotion workflows work correctly with the new architecture while maintaining the same CLI interface.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 5,
+            "title": "Refactor clear.tsx and init.tsx commands",
+            "description": "Update utility commands for clearing state and initialization to use new architecture",
+            "dependencies": [],
+            "details": "Modify src/commands/clear.tsx to properly clear state using StateService instead of TemplateManager. Update src/commands/init.tsx to initialize projects with the new architecture. Replace all React/Ink components with Terminal-Kit. Ensure these utility commands maintain their current behavior and CLI options.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 6,
+            "title": "Create Terminal-Kit UI component library",
+            "description": "Build reusable Terminal-Kit components to replace common React/Ink patterns used across commands",
+            "dependencies": ["7.1", "7.2", "7.3", "7.4", "7.5"],
+            "details": "Create a set of reusable Terminal-Kit UI components in src/ui/ that mirror the functionality of the React/Ink components being replaced. Include components for progress bars, spinners, status displays, error messages, and table layouts. Ensure consistent styling and behavior across all commands. This will be used to update all command files consistently.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 7,
+            "title": "Verify backward compatibility and update tests",
+            "description": "Ensure all CLI commands maintain exact interface compatibility and update integration tests",
+            "dependencies": ["7.1", "7.2", "7.3", "7.4", "7.5", "7.6"],
+            "details": "Thoroughly test all refactored commands to ensure they maintain the exact same CLI interface, including all flags, options, and argument parsing. Verify output formats match the current implementation. Update or create integration tests for each command. Test edge cases and error handling. Ensure commands work correctly with existing srtd.config.json files and .buildlog.json state files.",
+            "status": "pending",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 8,
+        "title": "Build Terminal-Kit UI Components",
+        "description": "Create Terminal-Kit based UI components to replace all Ink/React components",
+        "details": "Create new UI components using Terminal-Kit: StatusDisplay for showing template status badges, TemplateList for displaying template files, ProcessingResults for apply/build results, InteractiveMenu for main command selection, ProgressIndicator for long operations, Branding component for consistent header/footer. Implement event-driven updates instead of React's declarative model. Ensure visual parity with current Ink-based UI.",
+        "testStrategy": "Visual regression tests comparing Terminal-Kit output to current Ink output, unit tests for each component's rendering logic, test keyboard interaction and navigation, verify proper terminal cleanup on exit, test in different terminal emulators.",
+        "priority": "medium",
+        "dependencies": [1],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Build StatusDisplay Component",
+            "description": "Create Terminal-Kit based StatusDisplay component for showing template status badges",
+            "dependencies": [],
+            "details": "Implement StatusDisplay component using Terminal-Kit's text styling and positioning APIs. Support all template states (unseen, synced, changed, applied, built, error) with appropriate colors and symbols. Use Terminal-Kit's StyleSheet for consistent theming. Component should accept status prop and render inline badges similar to current Ink StatBadge component. Implement proper terminal escape sequences for colors and positioning.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Create TemplateList Component",
+            "description": "Implement Terminal-Kit based TemplateList for displaying template files with proper formatting",
+            "dependencies": [],
+            "details": "Build TemplateList component using Terminal-Kit's table or grid layout features. Display template paths, status badges (using StatusDisplay), and metadata. Support scrolling for long lists using Terminal-Kit's scrollable areas. Implement column alignment and truncation for long paths. Handle keyboard navigation (up/down arrows) for template selection. Ensure proper clearing and redrawing when list updates.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Implement ProcessingResults Component",
+            "description": "Create ProcessingResults component for displaying apply/build operation outputs",
+            "dependencies": ["8.1"],
+            "details": "Develop ProcessingResults component to show operation results using Terminal-Kit's text areas and styling. Display success/error messages with appropriate colors, show SQL execution results or build outputs, implement collapsible sections for verbose output. Support real-time streaming of results during operations. Use Terminal-Kit's grabInput for interactive result exploration (expand/collapse details).",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Build InteractiveMenu Component",
+            "description": "Create InteractiveMenu for main command selection with keyboard navigation",
+            "dependencies": [],
+            "details": "Implement InteractiveMenu using Terminal-Kit's singleColumnMenu or gridMenu APIs. Support keyboard navigation (arrow keys, enter, escape), highlight current selection with Terminal-Kit styling, display command descriptions and hotkeys. Implement proper focus management and input handling. Support both single-select and multi-select modes for batch operations. Handle menu state transitions and emit selection events.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 5,
+            "title": "Create ProgressIndicator and Branding Components",
+            "description": "Implement ProgressIndicator for long operations and Branding for consistent header/footer",
+            "dependencies": [],
+            "details": "Build ProgressIndicator using Terminal-Kit's progressBar API with support for determinate and indeterminate progress, status text updates, and operation cancellation. Create Branding component for consistent header/footer display using Terminal-Kit's text positioning and styling, include version info and current mode/status. Ensure both components properly handle terminal resize events and maintain visual consistency.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 6,
+            "title": "Implement Event-Driven Update System",
+            "description": "Replace React's declarative model with Terminal-Kit event-driven updates",
+            "dependencies": ["8.1", "8.2", "8.3", "8.4", "8.5"],
+            "details": "Create central UI manager that coordinates all Terminal-Kit components through events. Implement component lifecycle (mount, update, unmount) without React, handle component re-rendering on state changes using Terminal-Kit's draw/clear methods. Set up event listeners for FileSystemService and StateService changes, implement efficient partial screen updates instead of full redraws. Ensure proper cleanup of Terminal-Kit resources and event listeners on exit.",
+            "status": "pending",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 9,
+        "title": "Implement Comprehensive Test Suite",
+        "description": "Create thorough unit, integration, and end-to-end tests for the rewritten architecture",
+        "details": "Achieve >80% code coverage across all services. Unit tests for each service in isolation using mocks. Integration tests for service interactions. End-to-end tests simulating real user workflows: create template, watch mode, apply, build, promote WIP templates. Test error scenarios and edge cases. Performance tests to ensure no regression from current implementation. Create test fixtures and helpers for common scenarios.",
+        "testStrategy": "Use Vitest for all test types, create test database for integration tests, use file system mocks for unit tests, measure and assert on code coverage metrics, create automated test runs in CI/CD pipeline, benchmark performance against current implementation.",
+        "priority": "high",
+        "dependencies": [2, 3, 4, 5, 6, 7],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Unit Tests for Core Services",
+            "description": "Create comprehensive unit tests for FileSystemService, StateService, DatabaseService, MigrationBuilder, and Orchestrator",
+            "dependencies": [],
+            "details": "Implement unit tests with mocking for each service in isolation. FileSystemService: test glob patterns, file reading, hash calculation, watch events. StateService: test all state transitions, persistence, hash comparison. DatabaseService: mock pg client, test query execution, transactions. MigrationBuilder: test content generation, timestamp handling. Orchestrator: mock all dependencies, test event handling and command flows. Achieve >90% coverage per service.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Integration Tests for Service Interactions",
+            "description": "Build integration tests that verify correct interaction between multiple services working together",
+            "dependencies": ["9.1"],
+            "details": "Create integration tests using real file system and test database. Test FileSystemService + StateService interactions for template discovery and state tracking. Test StateService + DatabaseService for apply operations. Test StateService + MigrationBuilder for build operations. Test Orchestrator coordinating all services in watch mode. Use test fixtures and helpers for common scenarios. Verify proper event flow and state consistency.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "End-to-End Tests for User Workflows",
+            "description": "Implement E2E tests covering complete user workflows from CLI commands to final outcomes",
+            "dependencies": ["9.2"],
+            "details": "Create E2E tests simulating real user workflows: srtd create (template creation), srtd watch (file monitoring and auto-apply), srtd apply (manual template application), srtd build (migration generation), srtd promote (WIP template promotion). Test error scenarios like malformed SQL, missing files, database connection failures. Use actual CLI invocation with test database. Verify outputs match expected results.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Performance Benchmarks and Regression Tests",
+            "description": "Create performance tests to ensure the rewritten architecture performs at least as well as current implementation",
+            "dependencies": ["9.3"],
+            "details": "Implement performance benchmarks comparing new vs old implementation. Measure: template discovery time with 100+ templates, watch mode responsiveness to file changes, database apply execution time, migration build generation speed, memory usage during long-running watch sessions. Create automated regression tests that fail if performance degrades more than 10%. Use benchmark.js or similar for accurate measurements.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 5,
+            "title": "CI/CD Pipeline with Coverage Requirements",
+            "description": "Setup automated test execution in CI/CD with strict coverage requirements and reporting",
+            "dependencies": ["9.1", "9.2", "9.3", "9.4"],
+            "details": "Configure GitHub Actions or similar CI/CD pipeline. Run all test suites on every PR and commit to main. Enforce >80% overall code coverage, failing builds if not met. Generate and publish coverage reports using c8 or nyc. Setup test database provisioning for integration tests in CI. Configure parallel test execution for faster feedback. Add badge to README showing current coverage percentage. Create test matrix for different Node versions.",
+            "status": "pending",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 10,
+        "title": "Migration Path and Documentation",
+        "description": "Create migration guide, update documentation, and ensure smooth upgrade path for existing users",
+        "details": "Update README.md with any changes to installation or usage. Create MIGRATION.md guide for users upgrading from 0.x to 1.0. Ensure backward compatibility with existing srtd.config.json and .buildlog.json formats. Update inline code documentation and JSDoc comments. Create architectural decision records (ADRs) documenting the rewrite rationale and design choices. Update the changelog and prepare release notes highlighting improvements and any breaking changes.",
+        "testStrategy": "Test upgrade scenarios from 0.4.x to 1.0, verify config file compatibility, test that existing .buildlog.json files work correctly, review documentation for accuracy and completeness, test all examples in documentation actually work.",
+        "priority": "medium",
+        "dependencies": [9],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create MIGRATION.md Guide",
+            "description": "Write comprehensive migration guide for users upgrading from 0.x to 1.0",
+            "dependencies": [],
+            "details": "Create MIGRATION.md file documenting the complete upgrade path from srtd 0.x to 1.0. Include sections for: breaking changes list, step-by-step migration instructions, config file format changes (if any), command-line interface changes, troubleshooting common migration issues, rollback procedures if needed. Ensure backward compatibility notes for srtd.config.json and .buildlog.json formats are clearly documented. Include code examples showing before/after for any API or configuration changes.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Update README.md and Core Documentation",
+            "description": "Update main README with new architecture, installation, and usage changes",
+            "dependencies": [],
+            "details": "Update README.md to reflect the new Terminal-Kit based architecture. Document removal of React/Ink dependencies and benefits. Update installation instructions if changed. Document any new CLI commands or flags. Update configuration examples with any new options. Add section explaining the architectural improvements (event-driven vs React VDOM). Update badges, compatibility notes (especially React 19 compatibility), and system requirements. Ensure all code examples work with the new implementation.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Create Architectural Decision Records (ADRs)",
+            "description": "Document key architectural decisions and design rationale for the 1.0 rewrite",
+            "dependencies": [],
+            "details": "Create ADR documents in docs/adr/ directory covering: ADR-001 for React/Ink to Terminal-Kit migration rationale, ADR-002 for service-oriented architecture design, ADR-003 for event-driven pattern adoption, ADR-004 for backward compatibility approach. Each ADR should follow standard format: Status, Context, Decision, Consequences. Document why these changes improve distribution, performance, and maintainability. Include metrics or issues that drove each decision.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Prepare Release Notes and Changelog",
+            "description": "Update changelog and create comprehensive release notes for version 1.0",
+            "dependencies": ["10.1", "10.2", "10.3"],
+            "details": "Update CHANGELOG.md following Keep a Changelog format. Create detailed release notes highlighting: removal of React/Ink dependencies solving distribution issues, React 19 compatibility, performance improvements from event-driven architecture, new service-based modular design, backward compatibility maintenance, migration path availability. Include sections for Features, Breaking Changes, Bug Fixes, and Performance Improvements. Prepare announcement template for GitHub release. Verify all documented features match actual implementation.",
+            "status": "pending",
+            "testStrategy": ""
+          }
+        ]
+      }
+    ],
+    "metadata": {
+      "created": "2025-08-18T06:59:50.695Z",
+      "updated": "2025-08-18T07:23:46.557Z",
+      "description": "Tasks for master context"
+    }
+  }
+}

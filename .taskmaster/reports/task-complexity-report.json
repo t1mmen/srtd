@@ -1,0 +1,93 @@
+{
+  "meta": {
+    "generatedAt": "2025-08-18T07:02:43.775Z",
+    "tasksAnalyzed": 10,
+    "totalTasks": 10,
+    "analysisCount": 10,
+    "thresholdScore": 5,
+    "projectName": "Taskmaster",
+    "usedResearch": false
+  },
+  "complexityAnalysis": [
+    {
+      "taskId": 1,
+      "taskTitle": "Remove Ink/React Dependencies and Setup Terminal-Kit",
+      "complexityScore": 7,
+      "recommendedSubtasks": 6,
+      "expansionPrompt": "Break down the migration from React/Ink to Terminal-Kit into steps: 1) Analyze and document all current Ink/React component usage across 27 files, 2) Create Terminal-Kit wrapper/abstraction layer with consistent API, 3) Remove React/Ink dependencies from package.json and update build configuration, 4) Create Terminal-Kit equivalents for core UI components (Spinner, Box, Text), 5) Update all command files to use new Terminal-Kit components, 6) Update test files to work with Terminal-Kit instead of ink-testing-library",
+      "reasoning": "Found 27 files using React/Ink across commands, components, and tests. Need to replace UI framework entirely while maintaining functionality. Requires creating new abstraction layer and updating all UI components, commands, and tests."
+    },
+    {
+      "taskId": 2,
+      "taskTitle": "Implement FileSystemService",
+      "complexityScore": 5,
+      "recommendedSubtasks": 4,
+      "expansionPrompt": "Create FileSystemService with: 1) Implement core file operations (findTemplates using glob, readTemplate with hash calculation), 2) Implement file watching with chokidar and proper event emission, 3) Extract and refactor file system logic from TemplateManager (lines 81-85, 270-340), 4) Add comprehensive unit tests with mocked file system",
+      "reasoning": "Extracting existing functionality from TemplateManager which already has glob and chokidar implementations. Mainly involves refactoring and decoupling existing code with proper event handling."
+    },
+    {
+      "taskId": 3,
+      "taskTitle": "Implement StateService",
+      "complexityScore": 6,
+      "recommendedSubtasks": 5,
+      "expansionPrompt": "Build StateService for centralized state management: 1) Design state machine with transitions (unseen, synced, changed, applied, built, error), 2) Implement in-memory state management methods (getTemplateStatus, state transitions), 3) Implement buildlog persistence (loading/saving .buildlog.json and .buildlog.local.json), 4) Refactor hash comparison and template status logic from TemplateManager (lines 87-135), 5) Add unit tests for state transitions and persistence",
+      "reasoning": "Complex state management currently scattered in TemplateManager. Requires extracting template status logic, build log handling, and implementing proper state machine with persistence across two JSON files."
+    },
+    {
+      "taskId": 4,
+      "taskTitle": "Implement DatabaseService",
+      "complexityScore": 4,
+      "recommendedSubtasks": 3,
+      "expansionPrompt": "Create DatabaseService for database operations: 1) Refactor connection management from databaseConnection.ts with pg pool handling, 2) Implement executeSQL method with transaction wrapping based on config, 3) Add error handling, connection pooling, and comprehensive integration tests",
+      "reasoning": "Existing databaseConnection.ts already has pg pool management and retry logic. Main work is refactoring into a service pattern and adding transaction handling."
+    },
+    {
+      "taskId": 5,
+      "taskTitle": "Implement MigrationBuilder Service",
+      "complexityScore": 3,
+      "recommendedSubtasks": 3,
+      "expansionPrompt": "Build MigrationBuilder service: 1) Implement generateMigration method with banner/footer from config, 2) Add timestamp generation using existing getNextTimestamp utility and transaction wrapping, 3) Implement file writing to migration directory with tests",
+      "reasoning": "Relatively straightforward service extracting migration generation logic. Uses existing utilities like getNextTimestamp. Main complexity is proper file generation with configured formatting."
+    },
+    {
+      "taskId": 6,
+      "taskTitle": "Implement Orchestrator Service",
+      "complexityScore": 8,
+      "recommendedSubtasks": 6,
+      "expansionPrompt": "Create Orchestrator as central coordinator: 1) Design service coordination architecture with unidirectional data flow, 2) Implement event listening from FileSystemService and state queries, 3) Coordinate DatabaseService for applies and MigrationBuilder for builds, 4) Implement command handlers (apply, build, watch, register, promote, clear), 5) Refactor complex logic from TemplateManager's processTemplate and processNextTemplate methods, 6) Add integration tests for full command flows",
+      "reasoning": "Most complex service requiring coordination of all other services. Must replace intricate logic in TemplateManager including queue processing, event handling, and command orchestration."
+    },
+    {
+      "taskId": 7,
+      "taskTitle": "Migrate CLI Commands to New Architecture",
+      "complexityScore": 7,
+      "recommendedSubtasks": 7,
+      "expansionPrompt": "Refactor all CLI commands: 1) Update apply.tsx to use Orchestrator instead of TemplateManager, 2) Update build.tsx with new architecture, 3) Update watch.tsx for new event system, 4) Update register.tsx and promote.tsx commands, 5) Update clear.tsx and init.tsx commands, 6) Replace React/Ink UI with Terminal-Kit components in all commands, 7) Ensure backward compatibility for all CLI flags and options",
+      "reasoning": "Found 9 command files all using React/Ink and TemplateManager. Each needs refactoring to new architecture while maintaining exact CLI interface. Significant UI replacement work required."
+    },
+    {
+      "taskId": 8,
+      "taskTitle": "Build Terminal-Kit UI Components",
+      "complexityScore": 6,
+      "recommendedSubtasks": 6,
+      "expansionPrompt": "Create Terminal-Kit UI components: 1) Build StatusDisplay component for template status badges, 2) Create TemplateList for file display with proper formatting, 3) Implement ProcessingResults for apply/build output, 4) Build InteractiveMenu for command selection, 5) Create ProgressIndicator and Branding components, 6) Implement event-driven updates replacing React's declarative model",
+      "reasoning": "Need to recreate 8+ React components (Branding, ProcessingResults, StatBadge, etc.) in Terminal-Kit with event-driven architecture. Requires understanding current visual design and recreating with different paradigm."
+    },
+    {
+      "taskId": 9,
+      "taskTitle": "Implement Comprehensive Test Suite",
+      "complexityScore": 8,
+      "recommendedSubtasks": 5,
+      "expansionPrompt": "Build comprehensive test coverage: 1) Create unit tests for all new services (FileSystem, State, Database, MigrationBuilder, Orchestrator), 2) Build integration tests for service interactions, 3) Implement end-to-end tests for user workflows (create, watch, apply, build, promote), 4) Add performance benchmarks comparing to current implementation, 5) Setup CI/CD pipeline with coverage requirements >80%",
+      "reasoning": "Extensive testing required for 5+ new services plus integration and e2e tests. Existing test infrastructure uses ink-testing-library which needs replacement. Must ensure no regression from current implementation."
+    },
+    {
+      "taskId": 10,
+      "taskTitle": "Migration Path and Documentation",
+      "complexityScore": 4,
+      "recommendedSubtasks": 4,
+      "expansionPrompt": "Create migration documentation: 1) Write MIGRATION.md guide for 0.x to 1.0 upgrade path, 2) Update README.md with new architecture and any usage changes, 3) Create ADRs documenting architectural decisions and design rationale, 4) Update changelog, prepare release notes, and verify backward compatibility",
+      "reasoning": "Documentation and migration work with clear scope. Main complexity is ensuring smooth upgrade path and documenting all changes comprehensively."
+    }
+  ]
+}
