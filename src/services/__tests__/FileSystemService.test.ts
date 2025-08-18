@@ -3,14 +3,12 @@
  * Tests all file system operations with mocked dependencies
  */
 
-import { EventEmitter } from 'node:events';
 import type { Stats } from 'node:fs';
 import fs from 'node:fs/promises';
-import path from 'node:path';
 import { glob } from 'glob';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { FileSystemService } from '../FileSystemService.js';
-import type { FileSystemConfig, TemplateFile, WatchEvent } from '../FileSystemService.js';
+import type { FileSystemConfig, WatchEvent } from '../FileSystemService.js';
 
 // Mock modules
 vi.mock('node:fs/promises');
@@ -399,7 +397,7 @@ describe('FileSystemService', () => {
   });
 
   describe('event emission', () => {
-    it('should emit specific event types', done => {
+    it('should emit specific event types', (done: any) => {
       const events: string[] = [];
 
       service.on('template:added', () => events.push('added'));

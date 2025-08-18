@@ -84,14 +84,14 @@ export class Box extends AbstractComponent<BoxProps> {
       width = this.terminal.width,
       height = 3,
       paddingTop = 0,
-      paddingBottom = 0,
+      paddingBottom: _paddingBottom = 0,
       paddingLeft = 0,
-      paddingRight = 0,
+      paddingRight: _paddingRight = 0,
       padding = 0,
       marginTop = 0,
-      marginBottom = 0,
+      marginBottom: _marginBottom = 0,
       marginLeft = 0,
-      marginRight = 0,
+      marginRight: _marginRight = 0,
       margin = 0,
       borderStyle = 'single',
       borderColor,
@@ -102,30 +102,30 @@ export class Box extends AbstractComponent<BoxProps> {
 
     // Calculate actual padding and margin
     const actualPaddingTop = paddingTop || padding;
-    const actualPaddingBottom = paddingBottom || padding;
+    // const _actualPaddingBottom = paddingBottom || padding;
     const actualPaddingLeft = paddingLeft || padding;
-    const actualPaddingRight = paddingRight || padding;
+    // const _actualPaddingRight = paddingRight || padding;
     const actualMarginTop = marginTop || margin;
     const actualMarginLeft = marginLeft || margin;
 
     // Get border characters
     const chars = BORDER_CHARS[borderStyle];
 
-    // Store current position
-    this.startX = this.terminal.cx || 0;
-    this.startY = this.terminal.cy || 0;
+    // Store current position (Terminal-Kit doesn't expose cursor position directly)
+    this.startX = 0;
+    this.startY = 0;
 
     // Apply margin
     if (actualMarginTop > 0) {
       this.terminal.moveTo(this.startX, this.startY + actualMarginTop);
     }
     if (actualMarginLeft > 0) {
-      this.terminal.moveTo(this.startX + actualMarginLeft, this.terminal.cy || 0);
+      this.terminal.moveTo(this.startX + actualMarginLeft, this.startY + actualMarginTop);
     }
 
     // Store box start position after margins
-    const boxStartX = this.terminal.cx || 0;
-    const boxStartY = this.terminal.cy || 0;
+    const boxStartX = this.startX + actualMarginLeft;
+    const boxStartY = this.startY + actualMarginTop;
 
     // Apply border color if specified
     const drawWithColor = (text: string) => {

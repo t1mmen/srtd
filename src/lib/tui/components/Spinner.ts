@@ -37,7 +37,6 @@ export interface SpinnerProps {
 export class Spinner extends HookedComponent<SpinnerProps> {
   private frameIndex = 0;
   private frames: string[];
-  private intervalId?: NodeJS.Timeout;
   private lastLineLength = 0;
 
   constructor(terminal: Terminal, props: SpinnerProps) {
@@ -45,7 +44,7 @@ export class Spinner extends HookedComponent<SpinnerProps> {
     this.frames = SPINNER_FRAMES[props.type || 'dots'];
   }
 
-  protected setupEffects(): void {
+  protected override setupEffects(): void {
     const interval = this.props.interval || 80;
 
     this.useInterval(
@@ -86,7 +85,7 @@ export class Spinner extends HookedComponent<SpinnerProps> {
       this.terminal(output);
     }
 
-    this.lastLineLength = output.length;
+    this.lastLineLength = output?.length || 0;
   }
 
   public stop(): void {

@@ -11,7 +11,6 @@ import {
   DatabaseErrorType,
   DatabaseService,
   type DatabaseServiceConfig,
-  type SqlExecutionResult,
 } from '../DatabaseService.js';
 
 // Mock pg module
@@ -21,10 +20,10 @@ const mockConnect = vi.fn();
 const mockEnd = vi.fn();
 const mockOn = vi.fn();
 
-const mockClient: PoolClient = {
+const mockClient = {
   query: mockQuery,
   release: mockRelease,
-} as PoolClient;
+} as unknown as PoolClient;
 
 const mockPool = {
   connect: mockConnect,
@@ -267,7 +266,7 @@ describe('DatabaseService', () => {
     it('should rollback on SQL error', async () => {
       const sql = 'INVALID SQL';
       const sqlError = new Error('syntax error');
-      sqlError.code = '42601';
+      (sqlError as any).code = '42601';
 
       mockQuery
         .mockResolvedValueOnce(undefined) // BEGIN
@@ -339,7 +338,7 @@ describe('DatabaseService', () => {
   describe('error categorization', () => {
     it('should categorize connection errors', async () => {
       const connectionError = new Error('ECONNREFUSED');
-      connectionError.code = 'ECONNREFUSED';
+      (connectionError as any).code = 'ECONNREFUSED';
       mockQuery.mockRejectedValue(connectionError);
 
       const result = await service.executeSQL('SELECT 1', { silent: true });
@@ -350,7 +349,7 @@ describe('DatabaseService', () => {
 
     it('should categorize syntax errors', async () => {
       const syntaxError = new Error('syntax error');
-      syntaxError.code = '42601';
+      (syntaxError as any).code = '42601';
       mockQuery.mockRejectedValue(syntaxError);
 
       const result = await service.executeSQL('INVALID SQL', { silent: true });
@@ -361,7 +360,7 @@ describe('DatabaseService', () => {
 
     it('should categorize constraint violations', async () => {
       const constraintError = new Error('unique violation');
-      constraintError.code = '23505';
+      (constraintError as any).code = '23505';
       mockQuery.mockRejectedValue(constraintError);
 
       const result = await service.executeSQL('INSERT...', { silent: true });
@@ -372,7 +371,7 @@ describe('DatabaseService', () => {
 
     it('should categorize transaction errors', async () => {
       const transactionError = new Error('deadlock detected');
-      transactionError.code = '40P01';
+      (transactionError as any).code = '40P01';
       mockQuery.mockRejectedValue(transactionError);
 
       const result = await service.executeSQL('UPDATE...', { silent: true });
@@ -383,7 +382,7 @@ describe('DatabaseService', () => {
 
     it('should categorize timeout errors', async () => {
       const timeoutError = new Error('connection timeout');
-      timeoutError.code = 'ETIMEOUT';
+      (timeoutError as any).code = 'ETIMEOUT';
       mockQuery.mockRejectedValue(timeoutError);
 
       const result = await service.executeSQL('SELECT 1', { silent: true });
@@ -449,9 +448,9 @@ describe('DatabaseService', () => {
 
       const results = await Promise.all(promises);
 
-      expect(results[0].success).toBe(true);
-      expect(results[1].success).toBe(false);
-      expect(results[2].success).toBe(true);
+      expect(results[0]?.success).toBe(true);
+      expect(results[1]?.success).toBe(false);
+      expect(results[2]?.success).toBe(true);
     });
   });
 

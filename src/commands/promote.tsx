@@ -1,17 +1,15 @@
+// src/commands/promote.tsx
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { Select, Spinner } from '@inkjs/ui';
 import figures from 'figures';
 import { glob } from 'glob';
-import { Box, Text, useApp } from 'ink';
 import { argument } from 'pastel';
-import React, { useCallback, useEffect, useState } from 'react';
+import { terminal } from 'terminal-kit';
 import zod from 'zod';
-import Branding from '../components/Branding.js';
-import Quittable from '../components/Quittable.js';
-import { COLOR_ERROR, COLOR_SUCCESS, COLOR_WARNING } from '../components/customTheme.js';
+import { Branding } from '../components/Branding.js';
 import type { CLIConfig } from '../types.js';
 import { getConfig } from '../utils/config.js';
+import { findProjectRoot } from '../utils/findProjectRoot.js';
 import { loadBuildLog } from '../utils/loadBuildLog.js';
 import { saveBuildLog } from '../utils/saveBuildLog.js';
 
@@ -29,167 +27,206 @@ interface Props {
   args?: zod.infer<typeof args>;
 }
 
-export default function Promote({ args: templateArgs }: Props) {
-  const { exit } = useApp();
-  const [templates, setTemplates] = useState<string[]>([]);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
-  const [config, setConfig] = useState<CLIConfig | null>(null);
+export default async function Promote({ args: templateArgs }: Props) {
+  const term = terminal;
 
-  const findWipTemplates = useCallback(async () => {
-    try {
-      const config = await getConfig(process.cwd());
-      setConfig(config);
-      const templatePath = path.join(process.cwd(), config.templateDir);
-      const pattern = `**/*${config.wipIndicator}*.sql`;
-      const matches = await glob(pattern, { cwd: templatePath });
-      const fullPaths = matches.map(m => path.join(templatePath, m));
-      setTemplates(fullPaths);
-      return fullPaths;
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      setError(`Failed to find WIP templates: ${msg}`);
-      return [];
+  try {
+    // Initialize branding
+    const branding = new Branding(term, { subtitle: '🚀 Promote WIP template' });
+    branding.mount();
+
+    // Get configuration
+    const projectRoot = await findProjectRoot();
+    const config = await getConfig(projectRoot);
+
+    // If templates were provided as arguments, promote them directly
+    if (templateArgs?.length && templateArgs[0]) {
+      await handleTemplatePromotion(templateArgs[0], config, projectRoot, term);
+      return;
     }
-  }, []);
 
-  const promoteTemplate = useCallback(
-    async (templatePath: string) => {
-      try {
-        const config = await getConfig(process.cwd());
-        const newPath = templatePath.replace(config.wipIndicator, '');
+    // Find WIP templates for interactive selection
+    term('\n');
+    term.yellow('⏳ Finding WIP templates...\n');
 
-        // Load build log before file operations
-        const buildLog = await loadBuildLog(process.cwd(), 'local');
-        const relOldPath = path.relative(process.cwd(), templatePath);
-        const relNewPath = path.relative(process.cwd(), newPath);
+    const wipTemplates = await findWipTemplates(config, projectRoot);
 
-        // Check if source file exists
-        await fs.access(templatePath);
-
-        // Rename the file
-        await fs.rename(templatePath, newPath);
-
-        // Update build logs if template was tracked
-        if (buildLog.templates[relOldPath]) {
-          buildLog.templates[relNewPath] = buildLog.templates[relOldPath];
-          delete buildLog.templates[relOldPath];
-          await saveBuildLog(process.cwd(), buildLog, 'local');
-        }
-
-        const templateName = path.basename(newPath, '.sql');
-        setSuccess(`Successfully promoted ${templateName}`);
-
-        // Exit after short delay
-        setTimeout(() => exit(), 0);
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err);
-        setError(`Failed to promote template: ${msg}`);
-      }
-    },
-    [exit]
-  );
-
-  useEffect(() => {
-    const init = async () => {
-      const config = await getConfig(process.cwd());
-      await findWipTemplates();
-
-      if (templateArgs?.length) {
-        // Handle CLI mode
-        const templateName = templateArgs[0];
-        const templateDir = path.join(process.cwd(), config.templateDir);
-        const pattern = `**/*${templateName}*`;
-        const matches = await glob(pattern, { cwd: templateDir });
-        const isWip = config.wipIndicator && templateName?.includes(config.wipIndicator);
-        if (matches.length === 0 || !isWip) {
-          setError(`No WIP template found matching: ${templateName} in ${config.templateDir}`);
-          exit();
-        }
-
-        if (!isWip) {
-          setError(`Template is not a WIP template: ${templateName}`);
-          exit();
-        }
-
-        const match = matches[0] ? path.join(templateDir, matches[0]) : '';
-        if (!match) {
-          setError(`No valid match found for template: ${templateName} in ${config.templateDir}`);
-          exit();
-        }
-        await promoteTemplate(match);
-      }
-    };
-
-    init();
-  }, [templateArgs, findWipTemplates, promoteTemplate, exit]);
-
-  // UI status displays
-  if (error) {
-    return (
-      <Box flexDirection="column">
-        <Branding subtitle="🚀 Promote WIP template" />
-        <Text color={COLOR_ERROR}>
-          {figures.cross} {error}
-        </Text>
-      </Box>
-    );
-  }
-
-  if (success) {
-    return (
-      <Box flexDirection="column">
-        <Branding subtitle="🚀 Promote WIP template" />
-        <Box gap={1} flexDirection="column">
-          <Text color={COLOR_SUCCESS}>
-            {figures.tick} {success}
-          </Text>
-          <Text dimColor>Run `build` command to generate migrations</Text>
-        </Box>
-      </Box>
-    );
-  }
-
-  // Interactive UI mode
-  if (!templateArgs?.length) {
-    if (templates.length === 0) {
-      return (
-        <Box flexDirection="column">
-          <Branding subtitle="🚀 Promote WIP template" />
-          <Text color={COLOR_WARNING}>
-            {figures.warning} No WIP templates found in {config?.templateDir}{' '}
-            <Text bold>({config?.wipIndicator})</Text>
-          </Text>
-          <Quittable />
-        </Box>
+    if (wipTemplates.length === 0) {
+      term.yellow(
+        `${figures.warning} No WIP templates found in ${config.templateDir} (${config.wipIndicator})\n`
       );
+      term('\n');
+      term.dim('Press q to quit\n');
+
+      // Set up keyboard input handling
+      term.grabInput(true);
+      term.on('key', (key: string) => {
+        if (key === 'q' || key === 'CTRL_C') {
+          term.processExit(0);
+        }
+      });
+      return;
     }
 
-    const menuItems = templates.map(t => ({
-      label: path.basename(t),
-      value: t,
-    }));
+    await showInteractiveSelection(wipTemplates, config, projectRoot, term);
+  } catch (error) {
+    term('\n');
+    term.red('❌ Error promoting template:\n');
+    term.red(error instanceof Error ? error.message : String(error));
+    term('\n');
+    process.exit(1);
+  }
+}
 
-    return (
-      <Box flexDirection="column">
-        <Branding subtitle="🚀 Promote WIP template" />
-        <Box gap={1} marginBottom={1}>
-          <Text>Select a template to promote</Text>
-          <Text dimColor>(removes {config?.wipIndicator} in filename)</Text>
-        </Box>
-        <Box gap={1} flexDirection="column">
-          <Select visibleOptionCount={30} options={menuItems} onChange={promoteTemplate} />
-        </Box>
-        <Quittable />
-      </Box>
+async function findWipTemplates(config: CLIConfig, projectRoot: string): Promise<string[]> {
+  const templatePath = path.join(projectRoot, config.templateDir);
+  const pattern = `**/*${config.wipIndicator}*.sql`;
+  const matches = await glob(pattern, { cwd: templatePath });
+  return matches.map(m => path.join(templatePath, m));
+}
+
+async function handleTemplatePromotion(
+  templateName: string,
+  config: CLIConfig,
+  projectRoot: string,
+  term: any
+): Promise<void> {
+  const templateDir = path.join(projectRoot, config.templateDir);
+  const pattern = `**/*${templateName}*`;
+  const matches = await glob(pattern, { cwd: templateDir });
+  const isWip = config.wipIndicator && templateName?.includes(config.wipIndicator);
+
+  if (matches.length === 0 || !isWip) {
+    term('\n');
+    term.red(
+      `${figures.cross} No WIP template found matching: ${templateName} in ${config.templateDir}\n`
     );
+    process.exit(1);
   }
 
-  // Loading state for CLI mode
-  return (
-    <Box flexDirection="column">
-      <Branding subtitle="🚀 Promote WIP template" />
-      <Spinner label="Loading..." />
-    </Box>
-  );
+  if (!isWip) {
+    term('\n');
+    term.red(`${figures.cross} Template is not a WIP template: ${templateName}\n`);
+    process.exit(1);
+  }
+
+  const match = matches[0] ? path.join(templateDir, matches[0]) : '';
+  if (!match) {
+    term('\n');
+    term.red(
+      `${figures.cross} No valid match found for template: ${templateName} in ${config.templateDir}\n`
+    );
+    process.exit(1);
+  }
+
+  await promoteTemplate(match, config, projectRoot, term);
+}
+
+async function promoteTemplate(
+  templatePath: string,
+  config: CLIConfig,
+  projectRoot: string,
+  term: any
+): Promise<void> {
+  try {
+    const newPath = templatePath.replace(config.wipIndicator, '');
+
+    term('\n');
+    term.yellow('⏳ Promoting template...\n');
+
+    // Load build log before file operations
+    const buildLog = await loadBuildLog(projectRoot, 'local');
+    const relOldPath = path.relative(projectRoot, templatePath);
+    const relNewPath = path.relative(projectRoot, newPath);
+
+    // Check if source file exists
+    await fs.access(templatePath);
+
+    // Rename the file
+    await fs.rename(templatePath, newPath);
+
+    // Update build logs if template was tracked
+    if (buildLog.templates[relOldPath]) {
+      buildLog.templates[relNewPath] = buildLog.templates[relOldPath];
+      delete buildLog.templates[relOldPath];
+      await saveBuildLog(projectRoot, buildLog, 'local');
+    }
+
+    const templateName = path.basename(newPath, '.sql');
+    term.green(`${figures.tick} Successfully promoted ${templateName}\n`);
+    term.dim('Run `build` command to generate migrations\n');
+
+    process.exit(0);
+  } catch (err) {
+    term('\n');
+    term.red(
+      `${figures.cross} Failed to promote template: ${err instanceof Error ? err.message : String(err)}\n`
+    );
+    process.exit(1);
+  }
+}
+
+async function showInteractiveSelection(
+  wipTemplates: string[],
+  config: CLIConfig,
+  projectRoot: string,
+  term: any
+): Promise<void> {
+  let currentIndex = 0;
+
+  function renderScreen() {
+    term.clear();
+
+    // Render branding again
+    const branding = new Branding(term, { subtitle: '🚀 Promote WIP template' });
+    branding.mount();
+
+    term('\n');
+    term('Select a template to promote:\n');
+    term.dim(`(removes ${config.wipIndicator} in filename)\n\n`);
+
+    wipTemplates.forEach((templatePath, index) => {
+      const isCurrent = index === currentIndex;
+      const templateName = path.basename(templatePath);
+
+      const prefix = isCurrent ? '▶ ' : '  ';
+
+      if (isCurrent) {
+        term.cyan.bold(`${prefix}${templateName}\n`);
+      } else {
+        term(`${prefix}${templateName}\n`);
+      }
+    });
+
+    // Controls
+    term('\n');
+    term.dim('Use arrow keys to navigate, Enter to promote, q to quit\n');
+  }
+
+  // Set up keyboard input handling
+  term.grabInput();
+  term.on('key', async (key: string) => {
+    if (key === 'q' || key === 'CTRL_C') {
+      term.processExit(0);
+    } else if (key === 'UP') {
+      currentIndex = Math.max(0, currentIndex - 1);
+      renderScreen();
+    } else if (key === 'DOWN') {
+      currentIndex = Math.min(wipTemplates.length - 1, currentIndex + 1);
+      renderScreen();
+    } else if (key === 'ENTER') {
+      const selectedTemplate = wipTemplates[currentIndex];
+      if (selectedTemplate) {
+        await promoteTemplate(selectedTemplate, config, projectRoot, term);
+      }
+    }
+  });
+
+  // Initial render
+  renderScreen();
+
+  // Keep the process alive
+  process.on('SIGINT', () => {
+    term.processExit(0);
+  });
 }

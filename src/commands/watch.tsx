@@ -1,28 +1,23 @@
-// src/components/watch.tsx
+// src/commands/watch.tsx
 import path from 'node:path';
-import { Spinner } from '@inkjs/ui';
 import figures from 'figures';
-import { Box, Text, useInput } from 'ink';
-import React, { useMemo } from 'react';
-import Branding from '../components/Branding.js';
-import Quittable from '../components/Quittable.js';
-import { StatBadge } from '../components/StatBadge.js';
-import { TimeSince } from '../components/TimeSince.js';
-import {
-  COLOR_ACCENT,
-  COLOR_ERROR,
-  COLOR_SUCCESS,
-  COLOR_WARNING,
-} from '../components/customTheme.js';
-import { useFullscreen } from '../hooks/useFullscreen.js';
-import { useTemplateManager } from '../hooks/useTemplateManager.js';
-import type { TemplateUpdate } from '../hooks/useTemplateManager.js';
+import { terminal } from 'terminal-kit';
+import { Branding } from '../components/Branding.js';
+import { Orchestrator } from '../services/Orchestrator.js';
 import type { TemplateStatus } from '../types.js';
-import { store } from '../utils/store.js';
+import { getConfig } from '../utils/config.js';
+import { findProjectRoot } from '../utils/findProjectRoot.js';
 
 const MAX_FILES = 10;
 const MAX_CHANGES = 15;
 const PATH_DISPLAY_LENGTH = 15;
+
+interface TemplateUpdate {
+  type: 'applied' | 'changed' | 'error';
+  template: TemplateStatus;
+  timestamp: string;
+  error?: string;
+}
 
 function formatTemplateDisplay(templatePath: string, templateDir: string): string {
   const parts = templatePath.split(path.sep);
@@ -39,200 +34,277 @@ function formatTemplateDisplay(templatePath: string, templateDir: string): strin
   return filename;
 }
 
-const TemplateRow = React.memo(
-  ({
-    template,
-    isLatest,
-    templateDir,
-  }: {
-    template: TemplateStatus;
-    isLatest: boolean;
-    templateDir?: string;
-  }) => {
-    const displayName = formatTemplateDisplay(template.path, templateDir ?? '');
-    const needsBuild =
-      !template.buildState.lastBuildDate ||
-      template.currentHash !== template.buildState.lastBuildHash;
+function formatTimeSince(date?: string): string {
+  if (!date) return 'never';
+  const now = new Date();
+  const then = new Date(date);
+  const diff = now.getTime() - then.getTime();
+  const seconds = Math.floor(diff / 1000);
+  const minutes = Math.floor(seconds / 60);
+  const hours = Math.floor(minutes / 60);
 
-    const color = template.buildState.lastAppliedError ? COLOR_ERROR : COLOR_SUCCESS;
-    return (
-      <Box marginLeft={2} gap={1}>
-        <Box width={2} justifyContent="center">
-          <Text color={color}>
-            {template.buildState.lastAppliedError
+  if (hours > 0) return `${hours}h ago`;
+  if (minutes > 0) return `${minutes}m ago`;
+  return `${seconds}s ago`;
+}
+
+export default async function Watch() {
+  const term = terminal;
+
+  // State tracking
+  const templates: TemplateStatus[] = [];
+  const updates: TemplateUpdate[] = [];
+  const errors = new Map<string, string>();
+  let isLoading = true;
+  let showUpdates = false;
+  let lastUpdateTime = Date.now();
+  void lastUpdateTime; // Track time for updates
+
+  try {
+    // Initialize branding
+    term.clear();
+    const branding = new Branding(term, { subtitle: '👀 Watch Mode' });
+    branding.mount();
+
+    // Initialize Orchestrator
+    const projectRoot = await findProjectRoot();
+    const config = await getConfig(projectRoot);
+    using orchestrator = await Orchestrator.create(projectRoot, config, { silent: true });
+
+    // Set up keyboard input handling
+    term.grabInput(true);
+    term.on('key', (key: string) => {
+      if (key === 'q' || key === 'CTRL_C') {
+        term.processExit(0);
+      } else if (key === 'u') {
+        showUpdates = !showUpdates;
+        renderScreen();
+      }
+    });
+
+    // Set up orchestrator event listeners
+    orchestrator.on('templateChanged', (template: TemplateStatus) => {
+      updates.push({
+        type: 'changed',
+        template,
+        timestamp: new Date().toISOString(),
+      });
+
+      // Update or add template
+      const existingIndex = templates.findIndex(t => t.path === template.path);
+      if (existingIndex >= 0) {
+        templates[existingIndex] = template;
+      } else {
+        templates.push(template);
+      }
+
+      lastUpdateTime = Date.now();
+      renderScreen();
+    });
+
+    orchestrator.on('templateApplied', (template: TemplateStatus) => {
+      updates.push({
+        type: 'applied',
+        template,
+        timestamp: new Date().toISOString(),
+      });
+
+      // Update template
+      const existingIndex = templates.findIndex(t => t.path === template.path);
+      if (existingIndex >= 0) {
+        templates[existingIndex] = template;
+      }
+
+      lastUpdateTime = Date.now();
+      renderScreen();
+    });
+
+    orchestrator.on('templateError', ({ template, error }) => {
+      updates.push({
+        type: 'error',
+        template,
+        timestamp: new Date().toISOString(),
+        error,
+      });
+
+      errors.set(template.path, error);
+      lastUpdateTime = Date.now();
+      renderScreen();
+    });
+
+    // Load initial templates
+    const templatePaths = await orchestrator.findTemplates();
+    for (const templatePath of templatePaths) {
+      try {
+        const template = await orchestrator.getTemplateStatusExternal(templatePath);
+        templates.push(template);
+      } catch (error) {
+        errors.set(templatePath, error instanceof Error ? error.message : String(error));
+      }
+    }
+
+    isLoading = false;
+
+    // Start watching
+    const watcher = await orchestrator.watch({
+      silent: false,
+      initialProcess: true,
+    });
+
+    // Render initial screen
+    renderScreen();
+
+    // Keep the process alive
+    process.on('SIGINT', () => {
+      void watcher.close().then(() => {
+        term.processExit(0);
+      });
+    });
+
+    // Render function
+    function renderScreen() {
+      // Clear screen and move to top
+      term.clear();
+
+      // Render branding again
+      const branding = new Branding(term, { subtitle: '👀 Watch Mode' });
+      branding.mount();
+
+      // Calculate stats
+      const stats = {
+        total: templates.length,
+        needsBuild: templates.filter(
+          t => !t.buildState.lastBuildDate || t.currentHash !== t.buildState.lastBuildHash
+        ).length,
+        recentlyChanged: templates.filter(t => {
+          const lastChanged = t.buildState.lastAppliedDate;
+          if (!lastChanged) return false;
+          return Date.now() - new Date(lastChanged).getTime() < 3600000; // 1 hour
+        }).length,
+        errors: errors.size,
+      };
+
+      // Render stats badges
+      term('\n');
+      term.green(`[Total: ${stats.total}] `);
+      if (stats.needsBuild > 0) {
+        term.yellow(`[Needs Build: ${stats.needsBuild}] `);
+      }
+      if (stats.recentlyChanged > 0) {
+        term.cyan(`[Recent Changes: ${stats.recentlyChanged}] `);
+      }
+      if (stats.errors > 0) {
+        term.red(`[Errors: ${stats.errors}] `);
+      }
+      term('\n\n');
+
+      // Render templates
+      if (isLoading) {
+        term.yellow('🔍 Finding templates...\n');
+      } else {
+        term.bold('Recently modified templates:\n');
+
+        const activeTemplates = templates.slice(-MAX_FILES);
+        const latestPath = templates.length > 0 ? templates[templates.length - 1]?.path : undefined;
+
+        if (activeTemplates.length === 0) {
+          term.dim('No templates found\n');
+        } else {
+          activeTemplates.forEach(template => {
+            const displayName = formatTemplateDisplay(template.path, config.templateDir);
+            const isLatest = template.path === latestPath;
+            const needsBuild =
+              !template.buildState.lastBuildDate ||
+              template.currentHash !== template.buildState.lastBuildHash;
+
+            const color = template.buildState.lastAppliedError ? 'red' : 'green';
+            const icon = template.buildState.lastAppliedError
               ? figures.cross
               : isLatest
                 ? figures.play
-                : figures.tick}
-          </Text>
-        </Box>
-        <Box width={35}>
-          <Text>{displayName}</Text>
-        </Box>
-        <Box minWidth={18}>
-          <Text dimColor>
-            applied <TimeSince date={template.buildState.lastAppliedDate} />
-          </Text>
-        </Box>
-        <Box>
-          <Text dimColor>
-            {template.wip ? (
-              <>wip</>
-            ) : needsBuild ? (
-              <>needs build</>
-            ) : (
-              <>
-                built <TimeSince date={template.buildState.lastBuildDate} /> ago
-              </>
-            )}
-          </Text>
-        </Box>
-      </Box>
-    );
-  }
-);
+                : figures.tick;
 
-TemplateRow.displayName = 'TemplateRow';
+            term('  ');
+            (term as any)[color](`${icon} `);
+            term(`${displayName.padEnd(35)} `);
+            term.dim(`applied ${formatTimeSince(template.buildState.lastAppliedDate)}`);
 
-const UpdateLog = React.memo(
-  ({
-    updates,
-    templateDir,
-  }: {
-    updates: TemplateUpdate[];
-    templateDir?: string;
-  }) => {
-    const sortedUpdates = useMemo(() => {
-      return [...updates]
-        .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()) // Newest first
-        .slice(0, MAX_CHANGES) // Take most recent
-        .reverse(); // Display oldest to newest
-    }, [updates]);
+            if (template.wip) {
+              term.dim(' wip');
+            } else if (needsBuild) {
+              term.dim(' needs build');
+            } else {
+              term.dim(` built ${formatTimeSince(template.buildState.lastBuildDate)} ago`);
+            }
+            term('\n');
+          });
+        }
 
-    const formatError = (error: unknown) => {
-      if (error instanceof Error) return error.message;
-      if (typeof error === 'string') return error;
-      if (typeof error === 'object' && error && 'error' in error) {
-        return String(error.error);
-      }
-      return String(error);
-    };
+        // Render update log if enabled
+        if (showUpdates) {
+          term('\n');
+          term.bold('Changelog:\n');
 
-    return (
-      <Box flexDirection="column" marginTop={1}>
-        <Text bold>Changelog:</Text>
-        {!sortedUpdates.length && <Spinner label="No updates yet, watching..." />}
-        {sortedUpdates.map(update => (
-          <Box key={`${update.template.path}-${update.timestamp}`} marginLeft={2}>
-            <Text
-              color={
+          const sortedUpdates = [...updates]
+            .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+            .slice(0, MAX_CHANGES)
+            .reverse();
+
+          if (sortedUpdates.length === 0) {
+            term.yellow('⏳ No updates yet, watching...\n');
+          } else {
+            sortedUpdates.forEach(update => {
+              const displayName = formatTemplateDisplay(update.template.path, config.templateDir);
+              const icon =
                 update.type === 'error'
-                  ? COLOR_ERROR
+                  ? figures.cross
                   : update.type === 'applied'
-                    ? COLOR_SUCCESS
-                    : COLOR_ACCENT
-              }
-            >
-              {update.type === 'error'
-                ? figures.cross
-                : update.type === 'applied'
-                  ? figures.play
-                  : figures.info}{' '}
-              {formatTemplateDisplay(update.template.path, templateDir ?? '')}:{' '}
-              {update.type === 'error'
-                ? formatError(update.error)
-                : update.type === 'applied'
-                  ? 'applied successfully'
-                  : 'changed'}
-            </Text>
-          </Box>
-        ))}
-      </Box>
-    );
-  }
-);
+                    ? figures.play
+                    : figures.info;
+              const color =
+                update.type === 'error' ? 'red' : update.type === 'applied' ? 'green' : 'cyan';
+              const message =
+                update.type === 'error'
+                  ? update.error || 'unknown error'
+                  : update.type === 'applied'
+                    ? 'applied successfully'
+                    : 'changed';
 
-UpdateLog.displayName = 'UpdateLog';
+              term('  ');
+              (term as any)[color](`${icon} ${displayName}: ${message}\n`);
+            });
+          }
+        }
 
-export default function Watch() {
-  useFullscreen();
+        // Render errors if any
+        if (errors.size > 0) {
+          term('\n');
+          term.red.bold('Errors:\n');
+          for (const [templatePath, error] of errors) {
+            const displayName = formatTemplateDisplay(templatePath, config.templateDir);
+            term('  ');
+            term.red(`${displayName}: ${error}\n`);
+          }
+        }
+      }
 
-  const { templates, updates, stats, isLoading, errors, latestPath, templateDir } =
-    useTemplateManager();
-  const [showUpdates, setShowUpdates] = React.useState(store.get('showWatchLogs'));
-  const activeTemplates = useMemo(() => templates.slice(-MAX_FILES), [templates]);
-  const hasErrors = errors.size > 0;
-
-  useInput(input => {
-    if (input === 'u') {
-      const show = !showUpdates;
-      setShowUpdates(show);
-      store.set('showWatchLogs', show);
+      // Render controls
+      term('\n');
+      term.dim('Press ');
+      term.bold('q');
+      term.dim(' to quit • Press ');
+      if (showUpdates) term.underline('u');
+      else term.bold('u');
+      term.dim(' to toggle updates\n');
     }
-  });
 
-  return (
-    <Box flexDirection="column">
-      <Branding subtitle="👀 Watch Mode" />
-
-      <Box marginBottom={1}>
-        <StatBadge label="Total" value={stats.total} color={COLOR_SUCCESS} />
-        {stats.needsBuild > 0 && (
-          <StatBadge label="Needs Build" value={stats.needsBuild} color={COLOR_WARNING} />
-        )}
-        {stats.recentlyChanged > 0 && (
-          <StatBadge label="Recent Changes" value={stats.recentlyChanged} color={COLOR_ACCENT} />
-        )}
-        {hasErrors && <StatBadge label="Errors" value={stats.errors} color={COLOR_ERROR} />}
-      </Box>
-
-      {isLoading ? (
-        <Text>🔍 Finding templates...</Text>
-      ) : (
-        <Box flexDirection="column">
-          <Text bold>Recently modified templates:</Text>
-          {activeTemplates.length === 0 && <Text dimColor>No templates found</Text>}
-          {activeTemplates.map(template => (
-            <TemplateRow
-              key={template.path}
-              template={template}
-              isLatest={template.path === latestPath}
-              templateDir={templateDir}
-            />
-          ))}
-
-          {showUpdates && <UpdateLog updates={updates} templateDir={templateDir} />}
-
-          {hasErrors && (
-            <Box flexDirection="column" marginTop={1}>
-              <Text bold color={COLOR_ERROR}>
-                Errors:
-              </Text>
-              {Array.from(errors.entries()).map(([path, error]) => (
-                <Box key={path} marginLeft={2} marginTop={1}>
-                  <Text color={COLOR_ERROR} wrap="wrap">
-                    {formatTemplateDisplay(path, templateDir ?? '')}: {String(error)}
-                  </Text>
-                </Box>
-              ))}
-            </Box>
-          )}
-        </Box>
-      )}
-
-      <Box marginY={1} flexDirection="row" gap={1}>
-        <Quittable />
-        <>
-          <Box marginY={1}>
-            <Text dimColor>•</Text>
-          </Box>
-          <Box marginY={1}>
-            <Text dimColor>Press </Text>
-            <Text underline={showUpdates}>u</Text>
-            <Text dimColor> to toggle updates</Text>
-          </Box>
-        </>
-      </Box>
-    </Box>
-  );
+    // Set up periodic refresh for time displays
+    setInterval(renderScreen, 30000); // Refresh every 30 seconds
+  } catch (error) {
+    term('\n');
+    term.red('❌ Error starting watch mode:\n');
+    term.red(error instanceof Error ? error.message : String(error));
+    term('\n');
+    process.exit(1);
+  }
 }

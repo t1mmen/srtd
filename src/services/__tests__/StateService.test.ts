@@ -3,9 +3,9 @@
  * Tests all state transitions, persistence operations, and edge cases
  */
 
-import { EventEmitter } from 'node:events';
+// import { EventEmitter } from 'node:events';
 import fs from 'node:fs/promises';
-import path from 'node:path';
+// import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { BuildLog } from '../../types.js';
 import { StateService, type StateServiceConfig, TemplateState } from '../StateService.js';
@@ -57,7 +57,7 @@ describe('StateService', () => {
     service = new StateService(config);
 
     // Mock file system operations
-    vi.mocked(fs.readFile).mockImplementation(async (filePath: string) => {
+    vi.mocked(fs.readFile).mockImplementation(async filePath => {
       if (filePath === config.buildLogPath) {
         return JSON.stringify(mockBuildLog);
       }
@@ -105,7 +105,7 @@ describe('StateService', () => {
     });
 
     it('should handle corrupted JSON files gracefully', async () => {
-      vi.mocked(fs.readFile).mockImplementation(async (filePath: string) => {
+      vi.mocked(fs.readFile).mockImplementation(async filePath => {
         if (filePath === config.buildLogPath) {
           return 'invalid json';
         }
@@ -227,7 +227,9 @@ describe('StateService', () => {
 
       for (let i = 0; i < testCases.length; i++) {
         const testPath = `/test/base/templates/test${i}.sql`;
-        const { from, to } = testCases[i];
+        const testCase = testCases[i];
+        if (!testCase) continue;
+        const { from, to } = testCase;
 
         // Set initial state
         if (from === TemplateState.UNSEEN) {
@@ -417,7 +419,7 @@ describe('StateService', () => {
       const testService = new StateService(config);
 
       // Mock buildlog with error
-      vi.mocked(fs.readFile).mockImplementation(async (filePath: string) => {
+      vi.mocked(fs.readFile).mockImplementation(async filePath => {
         if (filePath === config.buildLogPath) {
           return JSON.stringify({
             version: '1.0',
@@ -444,7 +446,7 @@ describe('StateService', () => {
     it('should determine BUILT state from build metadata', async () => {
       const testService = new StateService(config);
 
-      vi.mocked(fs.readFile).mockImplementation(async (filePath: string) => {
+      vi.mocked(fs.readFile).mockImplementation(async filePath => {
         if (filePath === config.buildLogPath) {
           return JSON.stringify({
             version: '1.0',
@@ -471,7 +473,7 @@ describe('StateService', () => {
     it('should determine APPLIED state from apply metadata', async () => {
       const testService = new StateService(config);
 
-      vi.mocked(fs.readFile).mockImplementation(async (filePath: string) => {
+      vi.mocked(fs.readFile).mockImplementation(async filePath => {
         if (filePath === config.localBuildLogPath) {
           return JSON.stringify({
             version: '1.0',

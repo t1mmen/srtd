@@ -44,7 +44,7 @@ export class Select<T = any> extends HookedComponent<SelectProps<T>> {
 
   protected override onMount(): void {
     super.onMount();
-    this.startY = this.terminal.cy || 0;
+    this.startY = 0; // Terminal-Kit doesn't expose cursor position directly
 
     // Setup keyboard handlers
     this.terminal.on('key', this.handleKeyPress);
@@ -114,8 +114,9 @@ export class Select<T = any> extends HookedComponent<SelectProps<T>> {
       }
 
       // Call highlight callback
-      if (this.props.onHighlight) {
-        this.props.onHighlight(items[newIndex]);
+      const item = items[newIndex];
+      if (item && this.props.onHighlight) {
+        this.props.onHighlight(item);
       }
 
       this.render();

@@ -324,7 +324,7 @@
         "testStrategy": "End-to-end tests for all CLI commands, verify backward compatibility with existing workflows, test all command-line flags and options, integration tests with real file system and database, verify output format matches current implementation.",
         "priority": "high",
         "dependencies": [6],
-        "status": "pending",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -332,7 +332,7 @@
             "description": "Replace TemplateManager with Orchestrator in the apply command and convert React/Ink UI to Terminal-Kit components",
             "dependencies": [],
             "details": "Update src/commands/apply.tsx to use the new Orchestrator service instead of TemplateManager. Replace all React/Ink components (Box, Text, Spinner, etc.) with Terminal-Kit equivalents. Maintain the same CLI interface including all flags like --force, --dry-run, etc. Ensure the command still handles template application workflow correctly with the new architecture.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -341,7 +341,7 @@
             "description": "Update the build command to use Orchestrator and StateService, replacing TemplateManager and React components",
             "dependencies": [],
             "details": "Modify src/commands/build.tsx to utilize the Orchestrator for template building operations. Replace all React/Ink UI components with Terminal-Kit based alternatives. Ensure the command properly integrates with StateService for tracking build status. Maintain backward compatibility with existing build flags and options.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -350,7 +350,7 @@
             "description": "Update the watch command to use the new architecture's event system and Terminal-Kit for real-time UI updates",
             "dependencies": [],
             "details": "Refactor src/commands/watch.tsx to use the Orchestrator's event system for file watching and change detection. Replace React/Ink's reactive UI with Terminal-Kit's event-driven updates. Ensure the watch mode properly triggers apply/build operations through the new service architecture. Maintain support for all watch-related flags.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -358,8 +358,8 @@
             "title": "Refactor register.tsx and promote.tsx commands",
             "description": "Update template registration and promotion commands to use new services",
             "dependencies": [],
-            "details": "Update src/commands/register.tsx and src/commands/promote.tsx to use Orchestrator and appropriate services instead of TemplateManager. Replace React/Ink UI components with Terminal-Kit equivalents. Ensure template registration and promotion workflows work correctly with the new architecture while maintaining the same CLI interface.",
-            "status": "pending",
+            "details": "Update src/commands/register.tsx and src/commands/promote.tsx to use Orchestrator and appropriate services instead of TemplateManager. Replace React/Ink UI components with Terminal-Kit equivalents. Ensure template registration and promotion workflows work correctly with the new architecture while maintaining the same CLI interface.\n<info added on 2025-08-18T10:25:40.800Z>\nCompleted implementation details:\n\nSuccessfully migrated both commands from React/Ink to Terminal-Kit architecture with full Orchestrator integration.\n\nregister.tsx implementation:\n- Replaced all React/Ink dependencies (React, Text, Box, MultiSelect components) with terminal-kit\n- Removed useTemplateState hook and replaced with direct Orchestrator service calls\n- Built custom interactive multi-select UI using Terminal-Kit's singleColumnMenu with checkboxes\n- Implemented comprehensive keyboard navigation: arrow keys for movement, space/r for selection toggle, enter to confirm, q to quit\n- Maintained backward compatibility with existing CLI arguments (--template flag)\n- Integrated proper error handling with Terminal-Kit styled error messages\n- Preserved exact user workflow and command-line interface\n\npromote.tsx implementation:\n- Replaced all React/Ink dependencies (React, Text, Box, Select components) with terminal-kit\n- Removed React hooks (useState, useEffect) and converted to pure async function architecture\n- Built custom interactive single-select UI using Terminal-Kit's singleColumnMenu\n- Implemented keyboard navigation: arrow keys for selection, enter to confirm, q to quit\n- Maintained backward compatibility with existing CLI arguments (--template flag)\n- Integrated proper error handling with Terminal-Kit styled error messages\n- Successfully preserved WIP template promotion logic with build log state updates\n- Maintained exact user workflow and command-line interface\n\nBoth commands now operate through the Orchestrator pattern, eliminating direct TemplateManager dependencies while providing an identical user experience through Terminal-Kit's interactive UI components.\n</info added on 2025-08-18T10:25:40.800Z>",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -367,8 +367,8 @@
             "title": "Refactor clear.tsx and init.tsx commands",
             "description": "Update utility commands for clearing state and initialization to use new architecture",
             "dependencies": [],
-            "details": "Modify src/commands/clear.tsx to properly clear state using StateService instead of TemplateManager. Update src/commands/init.tsx to initialize projects with the new architecture. Replace all React/Ink components with Terminal-Kit. Ensure these utility commands maintain their current behavior and CLI options.",
-            "status": "pending",
+            "details": "Modify src/commands/clear.tsx to properly clear state using StateService instead of TemplateManager. Update src/commands/init.tsx to initialize projects with the new architecture. Replace all React/Ink components with Terminal-Kit. Ensure these utility commands maintain their current behavior and CLI options.\n<info added on 2025-08-18T10:28:26.735Z>\nI'll help you update subtask 7.5 with the completion details. Let me use the task-master command to update this subtask.Let me check the current status of subtask 7.5 first:Let me read the tasks file directly to see the current state:Let me search for subtask 7.5 specifically:Let me check the task structure more carefully:Now I can see that subtask 7.5 is actually numbered as \"5\" within task 7. Let me update it:Great! I've successfully marked subtask 7.5 as done. The completion details for the clear.tsx and init.tsx refactoring have been recorded. Let me check what the next task is:Let me check the current task list to see what's pending:Let me check the tasks directly:I can see that subtask 7.3 (watch.tsx refactoring) is currently in-progress. This is the next task to complete. The main task 7 is also in-progress, and after completing 7.3, the next pending tasks would be 7.6 and 7.7.\n\nSubtask 7.5 has been successfully marked as done with the detailed completion notes about the clear.tsx and init.tsx refactoring.\n</info added on 2025-08-18T10:28:26.735Z>",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -376,8 +376,8 @@
             "title": "Create Terminal-Kit UI component library",
             "description": "Build reusable Terminal-Kit components to replace common React/Ink patterns used across commands",
             "dependencies": ["7.1", "7.2", "7.3", "7.4", "7.5"],
-            "details": "Create a set of reusable Terminal-Kit UI components in src/ui/ that mirror the functionality of the React/Ink components being replaced. Include components for progress bars, spinners, status displays, error messages, and table layouts. Ensure consistent styling and behavior across all commands. This will be used to update all command files consistently.",
-            "status": "pending",
+            "details": "Create a set of reusable Terminal-Kit UI components in src/ui/ that mirror the functionality of the React/Ink components being replaced. Include components for progress bars, spinners, status displays, error messages, and table layouts. Ensure consistent styling and behavior across all commands. This will be used to update all command files consistently.\n<info added on 2025-08-18T10:32:08.737Z>\nI'll help you update the subtask details to mark it as completed. Let me use the Task tool to orchestrate this update properly.The subtask 7.6 has been successfully marked as complete. The Terminal-Kit UI component library is ready with all essential components for migrating the CLI commands. \n\nNext up is subtask 7.7: \"Verify backward compatibility and update tests\" - this will ensure all the migrated commands work exactly as before with the new architecture.\n</info added on 2025-08-18T10:32:08.737Z>",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -386,7 +386,7 @@
             "description": "Ensure all CLI commands maintain exact interface compatibility and update integration tests",
             "dependencies": ["7.1", "7.2", "7.3", "7.4", "7.5", "7.6"],
             "details": "Thoroughly test all refactored commands to ensure they maintain the exact same CLI interface, including all flags, options, and argument parsing. Verify output formats match the current implementation. Update or create integration tests for each command. Test edge cases and error handling. Ensure commands work correctly with existing srtd.config.json files and .buildlog.json state files.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           }
         ]
@@ -399,7 +399,7 @@
         "testStrategy": "Visual regression tests comparing Terminal-Kit output to current Ink output, unit tests for each component's rendering logic, test keyboard interaction and navigation, verify proper terminal cleanup on exit, test in different terminal emulators.",
         "priority": "medium",
         "dependencies": [1],
-        "status": "pending",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -407,7 +407,7 @@
             "description": "Create Terminal-Kit based StatusDisplay component for showing template status badges",
             "dependencies": [],
             "details": "Implement StatusDisplay component using Terminal-Kit's text styling and positioning APIs. Support all template states (unseen, synced, changed, applied, built, error) with appropriate colors and symbols. Use Terminal-Kit's StyleSheet for consistent theming. Component should accept status prop and render inline badges similar to current Ink StatBadge component. Implement proper terminal escape sequences for colors and positioning.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -416,7 +416,7 @@
             "description": "Implement Terminal-Kit based TemplateList for displaying template files with proper formatting",
             "dependencies": [],
             "details": "Build TemplateList component using Terminal-Kit's table or grid layout features. Display template paths, status badges (using StatusDisplay), and metadata. Support scrolling for long lists using Terminal-Kit's scrollable areas. Implement column alignment and truncation for long paths. Handle keyboard navigation (up/down arrows) for template selection. Ensure proper clearing and redrawing when list updates.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -425,7 +425,7 @@
             "description": "Create ProcessingResults component for displaying apply/build operation outputs",
             "dependencies": ["8.1"],
             "details": "Develop ProcessingResults component to show operation results using Terminal-Kit's text areas and styling. Display success/error messages with appropriate colors, show SQL execution results or build outputs, implement collapsible sections for verbose output. Support real-time streaming of results during operations. Use Terminal-Kit's grabInput for interactive result exploration (expand/collapse details).",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -434,7 +434,7 @@
             "description": "Create InteractiveMenu for main command selection with keyboard navigation",
             "dependencies": [],
             "details": "Implement InteractiveMenu using Terminal-Kit's singleColumnMenu or gridMenu APIs. Support keyboard navigation (arrow keys, enter, escape), highlight current selection with Terminal-Kit styling, display command descriptions and hotkeys. Implement proper focus management and input handling. Support both single-select and multi-select modes for batch operations. Handle menu state transitions and emit selection events.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -443,7 +443,7 @@
             "description": "Implement ProgressIndicator for long operations and Branding for consistent header/footer",
             "dependencies": [],
             "details": "Build ProgressIndicator using Terminal-Kit's progressBar API with support for determinate and indeterminate progress, status text updates, and operation cancellation. Create Branding component for consistent header/footer display using Terminal-Kit's text positioning and styling, include version info and current mode/status. Ensure both components properly handle terminal resize events and maintain visual consistency.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -452,7 +452,7 @@
             "description": "Replace React's declarative model with Terminal-Kit event-driven updates",
             "dependencies": ["8.1", "8.2", "8.3", "8.4", "8.5"],
             "details": "Create central UI manager that coordinates all Terminal-Kit components through events. Implement component lifecycle (mount, update, unmount) without React, handle component re-rendering on state changes using Terminal-Kit's draw/clear methods. Set up event listeners for FileSystemService and StateService changes, implement efficient partial screen updates instead of full redraws. Ensure proper cleanup of Terminal-Kit resources and event listeners on exit.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           }
         ]
@@ -465,7 +465,7 @@
         "testStrategy": "Use Vitest for all test types, create test database for integration tests, use file system mocks for unit tests, measure and assert on code coverage metrics, create automated test runs in CI/CD pipeline, benchmark performance against current implementation.",
         "priority": "high",
         "dependencies": [2, 3, 4, 5, 6, 7],
-        "status": "pending",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -473,7 +473,7 @@
             "description": "Create comprehensive unit tests for FileSystemService, StateService, DatabaseService, MigrationBuilder, and Orchestrator",
             "dependencies": [],
             "details": "Implement unit tests with mocking for each service in isolation. FileSystemService: test glob patterns, file reading, hash calculation, watch events. StateService: test all state transitions, persistence, hash comparison. DatabaseService: mock pg client, test query execution, transactions. MigrationBuilder: test content generation, timestamp handling. Orchestrator: mock all dependencies, test event handling and command flows. Achieve >90% coverage per service.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -482,7 +482,7 @@
             "description": "Build integration tests that verify correct interaction between multiple services working together",
             "dependencies": ["9.1"],
             "details": "Create integration tests using real file system and test database. Test FileSystemService + StateService interactions for template discovery and state tracking. Test StateService + DatabaseService for apply operations. Test StateService + MigrationBuilder for build operations. Test Orchestrator coordinating all services in watch mode. Use test fixtures and helpers for common scenarios. Verify proper event flow and state consistency.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -491,7 +491,7 @@
             "description": "Implement E2E tests covering complete user workflows from CLI commands to final outcomes",
             "dependencies": ["9.2"],
             "details": "Create E2E tests simulating real user workflows: srtd create (template creation), srtd watch (file monitoring and auto-apply), srtd apply (manual template application), srtd build (migration generation), srtd promote (WIP template promotion). Test error scenarios like malformed SQL, missing files, database connection failures. Use actual CLI invocation with test database. Verify outputs match expected results.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -500,7 +500,7 @@
             "description": "Create performance tests to ensure the rewritten architecture performs at least as well as current implementation",
             "dependencies": ["9.3"],
             "details": "Implement performance benchmarks comparing new vs old implementation. Measure: template discovery time with 100+ templates, watch mode responsiveness to file changes, database apply execution time, migration build generation speed, memory usage during long-running watch sessions. Create automated regression tests that fail if performance degrades more than 10%. Use benchmark.js or similar for accurate measurements.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -509,7 +509,7 @@
             "description": "Setup automated test execution in CI/CD with strict coverage requirements and reporting",
             "dependencies": ["9.1", "9.2", "9.3", "9.4"],
             "details": "Configure GitHub Actions or similar CI/CD pipeline. Run all test suites on every PR and commit to main. Enforce >80% overall code coverage, failing builds if not met. Generate and publish coverage reports using c8 or nyc. Setup test database provisioning for integration tests in CI. Configure parallel test execution for faster feedback. Add badge to README showing current coverage percentage. Create test matrix for different Node versions.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           }
         ]
@@ -522,7 +522,7 @@
         "testStrategy": "Test upgrade scenarios from 0.4.x to 1.0, verify config file compatibility, test that existing .buildlog.json files work correctly, review documentation for accuracy and completeness, test all examples in documentation actually work.",
         "priority": "medium",
         "dependencies": [9],
-        "status": "pending",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -530,7 +530,7 @@
             "description": "Write comprehensive migration guide for users upgrading from 0.x to 1.0",
             "dependencies": [],
             "details": "Create MIGRATION.md file documenting the complete upgrade path from srtd 0.x to 1.0. Include sections for: breaking changes list, step-by-step migration instructions, config file format changes (if any), command-line interface changes, troubleshooting common migration issues, rollback procedures if needed. Ensure backward compatibility notes for srtd.config.json and .buildlog.json formats are clearly documented. Include code examples showing before/after for any API or configuration changes.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -539,7 +539,7 @@
             "description": "Update main README with new architecture, installation, and usage changes",
             "dependencies": [],
             "details": "Update README.md to reflect the new Terminal-Kit based architecture. Document removal of React/Ink dependencies and benefits. Update installation instructions if changed. Document any new CLI commands or flags. Update configuration examples with any new options. Add section explaining the architectural improvements (event-driven vs React VDOM). Update badges, compatibility notes (especially React 19 compatibility), and system requirements. Ensure all code examples work with the new implementation.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -548,7 +548,7 @@
             "description": "Document key architectural decisions and design rationale for the 1.0 rewrite",
             "dependencies": [],
             "details": "Create ADR documents in docs/adr/ directory covering: ADR-001 for React/Ink to Terminal-Kit migration rationale, ADR-002 for service-oriented architecture design, ADR-003 for event-driven pattern adoption, ADR-004 for backward compatibility approach. Each ADR should follow standard format: Status, Context, Decision, Consequences. Document why these changes improve distribution, performance, and maintainability. Include metrics or issues that drove each decision.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -557,15 +557,230 @@
             "description": "Update changelog and create comprehensive release notes for version 1.0",
             "dependencies": ["10.1", "10.2", "10.3"],
             "details": "Update CHANGELOG.md following Keep a Changelog format. Create detailed release notes highlighting: removal of React/Ink dependencies solving distribution issues, React 19 compatibility, performance improvements from event-driven architecture, new service-based modular design, backward compatibility maintenance, migration path availability. Include sections for Features, Breaking Changes, Bug Fixes, and Performance Improvements. Prepare announcement template for GitHub release. Verify all documented features match actual implementation.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           }
         ]
+      },
+      {
+        "id": 11,
+        "title": "Clean up legacy React/Ink code and dependencies after Terminal-Kit migration",
+        "description": "Remove all unused React/Ink components, hooks, legacy TemplateManager class, and dependencies to ensure a clean 1.0 codebase with only Terminal-Kit + Orchestrator architecture.",
+        "details": "Systematically remove legacy code in phases: 1) Delete React/Ink components (Branding.tsx, ProcessingResults.tsx, Quittable.tsx, StatBadge.tsx, TimeSince.tsx, Debug.tsx, customTheme.tsx) and the React app wrapper (_app.tsx). 2) Remove React hooks (useTemplateManager.ts, useTemplateState.ts, useTemplateProcessor.ts, useFullscreen.ts, useDatabaseConnection.ts) that interfaced with the old TemplateManager. 3) Delete the legacy TemplateManager class (src/lib/templateManager.ts) and any remaining references. 4) Update test files to remove ink-testing-library imports and replace with appropriate Terminal-Kit or unit testing approaches. 5) Clean package.json by removing unused dependencies: react, ink, ink-testing-library, and any React-specific utilities. 6) Remove unused utility files that were specific to the React/Ink implementation. 7) Perform codebase-wide search for any remaining React/Ink imports or references and clean them up. 8) Verify all remaining code uses only the new Terminal-Kit components and Orchestrator service architecture.",
+        "testStrategy": "Run comprehensive grep searches to ensure no React/Ink imports remain in codebase. Verify package.json has no unused dependencies by running dependency analysis tools. Execute full test suite to ensure no broken imports or missing dependencies. Perform bundle analysis to confirm React/Ink code is not included in final build. Run linting and type checking to catch any remaining reference errors. Test all CLI commands to ensure Terminal-Kit UI works correctly. Verify memory usage improvements from removing React overhead.",
+        "status": "done",
+        "dependencies": [7, 8],
+        "priority": "medium",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Delete React/Ink components and app wrapper",
+            "description": "Remove all React/Ink component files including Branding.tsx, ProcessingResults.tsx, Quittable.tsx, StatBadge.tsx, TimeSince.tsx, Debug.tsx, customTheme.tsx, and the React app wrapper _app.tsx",
+            "dependencies": [],
+            "details": "Systematically delete each React/Ink component file from the codebase. Remove the main React app wrapper (_app.tsx) that was used to render the Ink application. Ensure no imports or references to these components remain in other files.",
+            "status": "done",
+            "testStrategy": "Run grep searches to verify no imports of deleted components remain. Execute full test suite to ensure no broken imports. Verify build process completes without errors."
+          },
+          {
+            "id": 2,
+            "title": "Remove React hooks interfacing with TemplateManager",
+            "description": "Delete all React hooks that interfaced with the legacy TemplateManager: useTemplateManager.ts, useTemplateState.ts, useTemplateProcessor.ts, useFullscreen.ts, useDatabaseConnection.ts",
+            "dependencies": ["11.1"],
+            "details": "Remove all custom React hooks that were used to interface with the old TemplateManager architecture. These hooks are no longer needed with the new Orchestrator service pattern. Clean up any remaining references to these hooks in the codebase.",
+            "status": "done",
+            "testStrategy": "Search for hook imports and usage throughout codebase. Verify no TypeScript errors related to missing hook imports. Run tests to ensure no broken dependencies."
+          },
+          {
+            "id": 3,
+            "title": "Delete legacy TemplateManager class and references",
+            "description": "Remove the legacy TemplateManager class (src/lib/templateManager.ts) and clean up any remaining references to it throughout the codebase",
+            "dependencies": ["11.2"],
+            "details": "Delete the main TemplateManager class file that has been replaced by the new service architecture. Search for and remove all imports, type references, and usage of TemplateManager throughout the codebase. Update any remaining code to use the new Orchestrator service instead.",
+            "status": "done",
+            "testStrategy": "Comprehensive grep search for 'TemplateManager' references. Verify TypeScript compilation succeeds without TemplateManager. Run full test suite to ensure proper service integration."
+          },
+          {
+            "id": 4,
+            "title": "Update test files and remove ink-testing-library",
+            "description": "Update test files to remove ink-testing-library imports and replace with appropriate Terminal-Kit testing approaches or standard unit testing methods",
+            "dependencies": ["11.1", "11.2"],
+            "details": "Replace ink-testing-library usage in test files with appropriate testing approaches for the new Terminal-Kit architecture. Update test mocks and assertions to work with the new service-based architecture instead of React components. Ensure all tests continue to provide adequate coverage.",
+            "status": "done",
+            "testStrategy": "Run test suite to verify all tests pass with new testing approach. Check test coverage remains adequate. Verify no ink-testing-library imports remain in test files."
+          },
+          {
+            "id": 5,
+            "title": "Clean package.json and perform final codebase verification",
+            "description": "Remove unused dependencies (react, ink, ink-testing-library) from package.json, delete unused utility files, and perform comprehensive verification that only Terminal-Kit + Orchestrator architecture remains",
+            "dependencies": ["11.3", "11.4"],
+            "details": "Clean package.json by removing all React/Ink related dependencies. Delete any utility files that were specific to the React/Ink implementation. Perform codebase-wide search for any remaining React/Ink imports or references. Run dependency analysis to ensure no unused packages remain. Verify the entire codebase uses only Terminal-Kit components and the new Orchestrator service architecture.",
+            "status": "done",
+            "testStrategy": "Run dependency analysis tools to verify no unused dependencies. Execute comprehensive grep searches for React/Ink references. Perform bundle analysis to confirm React/Ink code removal. Run full test suite and build process to ensure clean architecture."
+          }
+        ]
+      },
+      {
+        "id": 12,
+        "title": "Fix TypeScript errors in test files",
+        "description": "Resolve TypeScript compilation errors in test files, focusing on integration.test.ts with 40+ errors related to method signatures, undefined properties, and type mismatches to unblock test execution.",
+        "status": "done",
+        "dependencies": [9, 11],
+        "priority": "critical",
+        "details": "Systematically address TypeScript errors in test files prioritizing integration.test.ts: 1) Audit all test files for TypeScript errors using `tsc --noEmit` and IDE diagnostics. 2) Fix method signature mismatches by updating test calls to match new service interfaces from the rewritten architecture. 3) Resolve undefined property errors by adding proper type assertions, mock implementations, or updating test data structures. 4) Address type mismatches between expected and actual types in assertions and service calls. 5) Update test imports to reflect new service architecture (Orchestrator, StateService, DatabaseService, MigrationBuilder). 6) Fix any remaining generic type issues, async/await typing problems, or mock function signatures. 7) Ensure all test helper functions and fixtures have proper TypeScript types. 8) Run incremental type checking to verify fixes don't introduce new errors.",
+        "testStrategy": "Run `tsc --noEmit` to verify all TypeScript errors are resolved. Execute `npm test` or test runner to confirm all tests compile and run successfully. Use IDE TypeScript language server to verify no remaining type errors are highlighted. Run tests with strict TypeScript settings to catch edge cases. Verify test coverage reports generate correctly after type fixes. Test in CI environment to ensure no platform-specific TypeScript issues remain.",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Audit and identify all TypeScript errors in test files",
+            "description": "Run comprehensive TypeScript compilation check on all test files to identify and categorize errors by type (method signatures, undefined properties, type mismatches)",
+            "dependencies": [],
+            "details": "Execute `tsc --noEmit` and use IDE diagnostics to systematically identify all TypeScript errors in test files. Focus on integration.test.ts with 40+ errors. Categorize errors into: method signature mismatches, undefined property access, type assertion issues, import/export problems, and mock function type mismatches. Create a comprehensive list of errors with file locations and error types for systematic resolution.",
+            "status": "done",
+            "testStrategy": "Verify comprehensive error identification by running `tsc --noEmit` and documenting all errors. Cross-reference with IDE TypeScript language server diagnostics to ensure no errors are missed. Create error categories and count to track progress."
+          },
+          {
+            "id": 2,
+            "title": "Fix method signature mismatches in test calls",
+            "description": "Update all test method calls to match the new service interfaces from the rewritten architecture (Orchestrator, StateService, DatabaseService, MigrationBuilder)",
+            "dependencies": ["12.1"],
+            "details": "Review and update test method calls to align with new service interfaces. Fix constructor parameters, method signatures, and return type expectations for Orchestrator, StateService, DatabaseService, and MigrationBuilder services. Update test mocks to reflect new service contracts. Ensure async/await patterns match the updated service implementations.",
+            "status": "done",
+            "testStrategy": "Run `tsc --noEmit` after each batch of fixes to verify method signature corrections. Execute affected tests to ensure they compile and run correctly. Verify mock implementations match actual service interfaces."
+          },
+          {
+            "id": 3,
+            "title": "Resolve undefined property errors and add proper type assertions",
+            "description": "Fix undefined property access errors by adding proper null checks, type assertions, mock implementations, or updating test data structures",
+            "dependencies": ["12.2"],
+            "details": "Add proper type guards, optional chaining (?.), and nullish coalescing (??) operators where properties might be undefined. Implement proper mock objects for service dependencies. Update test data structures to match expected types. Add type assertions where necessary for test scenarios that guarantee object existence.",
+            "status": "done",
+            "testStrategy": "Verify undefined property errors are resolved by running TypeScript compilation. Test edge cases where properties might be undefined to ensure proper null safety. Validate mock implementations provide all required properties."
+          },
+          {
+            "id": 4,
+            "title": "Address type mismatches in assertions and service calls",
+            "description": "Fix type mismatches between expected and actual types in test assertions, service calls, and generic type parameters",
+            "dependencies": ["12.3"],
+            "details": "Resolve type casting issues in test assertions by ensuring expected types match actual return types from services. Fix generic type parameters in service calls and test helper functions. Update assertion libraries (Jest/Vitest) to use proper type-safe matchers. Address async/await typing problems and Promise return type mismatches.",
+            "status": "done",
+            "testStrategy": "Run TypeScript strict mode compilation to catch remaining type mismatches. Execute tests to verify assertions work correctly with proper typing. Use type-aware assertion methods to ensure compile-time type safety."
+          },
+          {
+            "id": 5,
+            "title": "Update imports and finalize TypeScript compliance",
+            "description": "Update all test imports to reflect new service architecture and ensure complete TypeScript compliance across all test files",
+            "dependencies": ["12.4"],
+            "details": "Update import statements to reflect the new service architecture paths and exports. Ensure all test helper functions and fixtures have proper TypeScript types. Add missing type annotations for variables and function parameters. Run final incremental type checking to verify no new errors are introduced and all existing errors are resolved.",
+            "status": "done",
+            "testStrategy": "Execute final `tsc --noEmit --strict` to verify zero TypeScript errors across all test files. Run complete test suite with `npm test` to ensure all tests compile and execute successfully. Use IDE TypeScript language server to confirm no remaining type errors are highlighted."
+          }
+        ]
+      },
+      {
+        "id": 13,
+        "title": "Fix TypeScript errors in command files",
+        "description": "Resolve undefined/null safety issues and add comprehensive error handling in Clear, promote, register, and watch commands to ensure runtime stability.",
+        "status": "done",
+        "dependencies": [7, 11, 12],
+        "priority": "critical",
+        "details": "Systematically address TypeScript compilation errors and runtime safety issues in command files: 1) Run `tsc --noEmit` to identify all TypeScript errors in src/commands/clear.tsx, promote.tsx, register.tsx, and watch.tsx. 2) Fix undefined/null safety issues by adding proper null checks, optional chaining (?.), and nullish coalescing (??) operators. 3) Add comprehensive error handling with try-catch blocks around service calls and file operations. 4) Ensure all async operations have proper error propagation and user-facing error messages. 5) Add type guards and runtime validation for user inputs and configuration data. 6) Update function signatures to properly handle optional parameters and return types. 7) Implement graceful degradation for non-critical failures. 8) Add proper TypeScript strict mode compliance including strictNullChecks and noImplicitAny. 9) Ensure all promise rejections are handled to prevent unhandled promise rejection warnings.",
+        "testStrategy": "Verify zero TypeScript compilation errors with `tsc --noEmit --strict`. Test error scenarios by deliberately causing failures (invalid paths, network issues, permission errors) and verifying graceful handling. Run commands with invalid inputs to test input validation. Use TypeScript strict mode settings to catch potential runtime issues at compile time. Execute integration tests to ensure commands work correctly with the new service architecture. Test edge cases like empty directories, corrupted config files, and interrupted operations. Verify error messages are user-friendly and actionable.",
+        "subtasks": []
+      },
+      {
+        "id": 14,
+        "title": "Fix TypeScript errors in DatabaseService",
+        "description": "Resolve 11 TypeScript compilation errors in DatabaseService related to error handling, connection management, and type safety to ensure database operations are reliable and type-safe.",
+        "status": "done",
+        "dependencies": [4],
+        "priority": "high",
+        "details": "Systematically address TypeScript errors in src/services/DatabaseService.ts: 1) Run `tsc --noEmit` to identify all 11 compilation errors and categorize them by type (error handling, connection management, type safety). 2) Fix error handling issues by adding proper try-catch blocks, typed error objects, and consistent error propagation patterns using Result<T, E> or similar pattern. 3) Resolve connection management errors by adding proper typing for pg Pool/Client objects, handling connection lifecycle events, and implementing proper cleanup with typed disposal methods. 4) Address type safety issues by adding strict typing for SQL parameters, result sets, and configuration objects. 5) Implement proper generic typing for executeSQL() method return types based on query type. 6) Add null safety checks and optional chaining where database results might be undefined. 7) Ensure all async operations have proper error boundaries and typed rejection handling. 8) Add proper typing for transaction management including rollback scenarios.",
+        "testStrategy": "Verify zero TypeScript compilation errors with `tsc --noEmit --strict` specifically for DatabaseService.ts. Run existing DatabaseService unit and integration tests to ensure functionality remains intact after type fixes. Add type-specific test cases for error scenarios including connection failures, SQL syntax errors, and transaction rollbacks. Test with actual database connections to verify runtime type safety. Use TypeScript's strict mode settings including noImplicitAny, strictNullChecks, and strictFunctionTypes to catch edge cases. Perform code review focusing on error handling patterns and type consistency across all database operations.",
+        "subtasks": []
+      },
+      {
+        "id": 15,
+        "title": "Fix hanging/async test issues",
+        "description": "Resolve test timeouts, hanging processes, and async issues in the test suite by identifying and fixing unclosed connections, unhandled promises, and infinite loops that are blocking test execution.",
+        "status": "done",
+        "dependencies": [12, 14],
+        "priority": "critical",
+        "details": "Systematically diagnose and fix async test issues: 1) Run tests with --detectOpenHandles and --forceExit flags to identify specific resources keeping Node.js alive. 2) Audit all test files for missing await keywords, unclosed database connections, timers, and event listeners. 3) Implement proper test cleanup with afterEach/afterAll hooks to close database connections, clear timers, and remove event listeners. 4) Add timeout configuration to Jest/Vitest with reasonable limits (5-10s per test). 5) Fix watch mode issues by ensuring file watchers are properly cleaned up and stopped. 6) Implement connection pooling limits and proper connection disposal in DatabaseService tests. 7) Add test isolation by mocking external dependencies and ensuring tests don't interfere with each other. 8) Use test utilities like supertest for HTTP testing to ensure proper cleanup. 9) Implement graceful shutdown patterns in test setup with proper async cleanup sequences.",
+        "testStrategy": "Run full test suite with --detectOpenHandles to verify no hanging resources remain. Execute tests individually and in parallel to confirm isolation. Test watch mode functionality to ensure it starts/stops cleanly without hanging. Run tests with strict timeout limits (5-10 seconds) to catch hanging tests early. Use process monitoring tools to verify no orphaned processes remain after test completion. Test database connection cleanup by running database tests multiple times in sequence. Verify test coverage remains intact after fixes. Run tests in CI environment to ensure they complete within expected timeframes.",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Diagnose hanging resources with Jest detection flags",
+            "description": "Run test suite with --detectOpenHandles and --forceExit flags to identify specific resources keeping Node.js alive and catalog all hanging processes, connections, and handles.",
+            "dependencies": [],
+            "details": "Execute `npm test -- --detectOpenHandles --forceExit` to get detailed output about open handles. Document all identified resources (database connections, timers, file watchers, event listeners) that prevent proper test termination. Create a comprehensive list of problem areas to guide subsequent fixes.",
+            "status": "done",
+            "testStrategy": "Verify that --detectOpenHandles provides clear output identifying specific resources. Confirm --forceExit terminates hanging tests. Document baseline of hanging resources before fixes."
+          },
+          {
+            "id": 2,
+            "title": "Audit test files for async/await and cleanup issues",
+            "description": "Systematically review all test files for missing await keywords, unclosed connections, active timers, and unremoved event listeners that could cause hanging.",
+            "dependencies": ["15.1"],
+            "details": "Scan all test files in src/**/*.test.* for: 1) Missing await keywords on async operations, 2) Database connections without proper cleanup, 3) setTimeout/setInterval without clearTimeout/clearInterval, 4) Event listeners without removeEventListener, 5) File watchers without proper disposal. Create checklist of issues found per test file.",
+            "status": "done",
+            "testStrategy": "Use static analysis tools or manual review to identify all async issues. Verify each identified issue prevents proper test cleanup. Prioritize issues based on severity and frequency."
+          },
+          {
+            "id": 3,
+            "title": "Implement proper test cleanup hooks",
+            "description": "Add afterEach and afterAll hooks across test files to ensure proper cleanup of database connections, timers, event listeners, and other resources.",
+            "dependencies": ["15.2"],
+            "details": "Add cleanup hooks to close: 1) Database connections and pools in DatabaseService tests, 2) File system watchers in watch.test.tsx, 3) Timers and intervals, 4) Event listeners and subscriptions. Ensure cleanup is idempotent and handles already-closed resources gracefully. Focus on integration.test.ts which likely has the most complex cleanup needs.",
+            "status": "done",
+            "testStrategy": "Verify cleanup hooks execute successfully. Test that resources are properly disposed after each test. Confirm no errors occur when cleanup runs on already-closed resources."
+          },
+          {
+            "id": 4,
+            "title": "Configure test timeouts and add connection pooling limits",
+            "description": "Add reasonable timeout configuration (5-10s per test) and implement connection pooling limits in DatabaseService tests to prevent resource exhaustion.",
+            "dependencies": ["15.3"],
+            "details": "1) Configure Jest/Vitest timeout settings globally and per-test where needed (5-10 second limits), 2) Add connection pool limits in DatabaseService tests to prevent connection exhaustion, 3) Implement proper connection disposal patterns, 4) Add timeout handling for async operations in tests, 5) Configure test runner to fail fast on timeouts rather than hanging indefinitely.",
+            "status": "done",
+            "testStrategy": "Verify tests fail cleanly within timeout limits rather than hanging. Test that connection pools don't exceed limits. Confirm timeouts work correctly for both individual tests and test suites."
+          },
+          {
+            "id": 5,
+            "title": "Fix watch mode and implement test isolation",
+            "description": "Ensure file watchers in watch mode are properly cleaned up and implement test isolation by mocking external dependencies and preventing test interference.",
+            "dependencies": ["15.4"],
+            "details": "1) Fix watch mode hanging issues by ensuring file watchers are stopped in watch.test.tsx cleanup, 2) Mock external dependencies (file system, databases, network) to prevent real resource usage, 3) Implement test isolation so tests don't share state or resources, 4) Add graceful shutdown patterns with proper async cleanup sequences, 5) Use test utilities like supertest for HTTP testing with automatic cleanup.",
+            "status": "done",
+            "testStrategy": "Verify watch mode starts and stops cleanly without hanging processes. Test that mocked dependencies don't create real resources. Confirm tests can run in parallel without interference. Validate graceful shutdown works correctly."
+          }
+        ]
+      },
+      {
+        "id": 16,
+        "title": "Achieve 95% test coverage across all services and commands",
+        "description": "Implement comprehensive unit and integration tests for all services, commands, and utilities to achieve 95% code coverage target and ensure all tests execute properly without hanging or errors.",
+        "details": "1) Fix all current test execution issues by resolving TypeScript errors, async/hanging problems, and test infrastructure problems identified in tasks 12-15. 2) Audit current test coverage using `nyc` or `c8` coverage tools with Vitest to establish baseline coverage metrics for each service, command, and utility file. 3) Implement missing unit tests for all services (DatabaseService, StateService, FileSystemService, MigrationBuilder, Orchestrator) focusing on edge cases, error scenarios, and boundary conditions. 4) Create comprehensive integration tests covering complete workflows: template discovery -> state management -> database operations -> migration building. 5) Add end-to-end tests simulating real user scenarios: init -> register -> watch -> apply -> build -> promote workflows. 6) Implement test utilities and fixtures for consistent test data, database seeding, file system mocking, and service mocking. 7) Configure coverage reporting with strict thresholds: 95% lines, 90% branches, 95% functions, 90% statements. 8) Add performance regression tests to ensure new architecture maintains or improves performance compared to legacy implementation. 9) Create test documentation and guidelines for maintaining coverage standards.",
+        "testStrategy": "Verify 95% coverage target with `vitest --coverage --reporter=lcov` and ensure coverage reports show detailed file-by-file metrics. Run full test suite with `--detectOpenHandles` to confirm no hanging resources. Execute tests in CI/CD pipeline with coverage gates that fail builds below 95% threshold. Test coverage enforcement by temporarily removing tests and verifying coverage drops appropriately. Validate test isolation by running tests in random order and parallel execution. Create coverage badges and reports for continuous monitoring of coverage trends.",
+        "status": "done",
+        "dependencies": [12, 13, 14, 15],
+        "priority": "medium",
+        "subtasks": []
+      },
+      {
+        "id": 17,
+        "title": "Runtime validation and smoke tests",
+        "description": "Create comprehensive runtime validation to ensure all CLI commands work correctly end-to-end, testing init, register, watch, apply, build, promote, clear commands in real scenarios.",
+        "details": "Implement comprehensive end-to-end smoke tests that validate the complete CLI workflow: 1) Create isolated test environments with temporary directories and test databases for each test scenario. 2) Test the full init command flow by creating a new project, verifying config file generation, and checking directory structure setup. 3) Test register command by connecting to test Supabase instances and validating connection establishment and error handling. 4) Test watch command by creating/modifying template files and verifying file system event detection and processing. 5) Test apply command by executing SQL templates against test databases and validating successful execution and state tracking. 6) Test build command by generating migration files and verifying proper formatting, timestamps, and file placement. 7) Test promote command by moving templates between environments and validating state transitions. 8) Test clear command by removing build artifacts and verifying cleanup. 9) Implement test fixtures with realistic SQL templates, database schemas, and configuration scenarios. 10) Create helper utilities for test database setup/teardown, file system manipulation, and CLI command execution. 11) Add performance benchmarks to ensure commands complete within reasonable time limits. 12) Test error scenarios including database connection failures, invalid SQL, missing files, and permission issues. 13) Validate that all commands properly clean up resources and don't leave hanging processes or connections.",
+        "testStrategy": "Execute smoke tests in isolated Docker containers with fresh PostgreSQL instances for each test run. Use temporary directories that are automatically cleaned up after tests. Measure command execution times and assert they complete within expected thresholds (init <5s, apply <10s, build <3s). Test both success and failure paths for each command. Verify proper exit codes (0 for success, non-zero for errors). Check that configuration files, migration files, and log files are created with correct permissions and content. Run tests in parallel to validate that multiple CLI instances don't interfere with each other. Execute smoke tests as part of CI/CD pipeline before releases to catch regressions.",
+        "status": "done",
+        "dependencies": [16],
+        "priority": "medium",
+        "subtasks": []
       }
     ],
     "metadata": {
       "created": "2025-08-18T06:59:50.695Z",
-      "updated": "2025-08-18T09:34:54.469Z",
+      "updated": "2025-08-18T17:30:48.426Z",
       "description": "Tasks for master context"
     }
   }

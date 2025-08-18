@@ -3,7 +3,6 @@ import type { Terminal } from 'terminal-kit';
 import { AbstractComponent } from '../lib/tui/index.js';
 import type { ProcessedTemplateResult } from '../types.js';
 import { renderStatBadge } from './StatBadge.js';
-import { COLOR_ERROR, COLOR_SKIP, COLOR_SUCCESS } from './customTheme.js';
 
 interface ProcessingResultsProps {
   result: ProcessedTemplateResult;

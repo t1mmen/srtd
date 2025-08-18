@@ -321,7 +321,7 @@ export class Orchestrator extends EventEmitter implements Disposable {
     const relPath = templateFile.relativePath;
 
     // Get state from StateService
-    const stateInfo = this.stateService.getTemplateStatus(templatePath);
+    // const stateInfo = this.stateService.getTemplateStatus(templatePath);
 
     // Merge build logs (keeping backward compatibility)
     const buildState = {

@@ -1,23 +1,65 @@
 import fs from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { render } from 'ink-testing-library';
-import React from 'react';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import Apply from '../commands/apply.js';
 import { connect } from '../utils/databaseConnection.js';
 import { TEST_FN_PREFIX } from './vitest.setup.js';
 
-vi.mock('../hooks/useTemplateProcessor', () => ({
-  useTemplateProcessor: vi.fn().mockImplementation(() => ({
-    isProcessing: false,
-    result: {
-      built: [],
-      applied: ['test.sql'],
-      skipped: [],
-      errors: [],
-    },
-  })),
+// Mock terminal-kit to capture output
+let terminalOutput: string[] = [];
+const mockTerminal = {
+  clear: vi.fn(),
+  processExit: vi.fn(),
+  yellow: vi.fn((text: string) => {
+    terminalOutput.push(`YELLOW: ${text}`);
+  }),
+  green: vi.fn((text: string) => {
+    terminalOutput.push(`GREEN: ${text}`);
+  }),
+  red: vi.fn((text: string) => {
+    terminalOutput.push(`RED: ${text}`);
+  }),
+  cyan: vi.fn((text: string) => {
+    terminalOutput.push(`CYAN: ${text}`);
+  }),
+  dim: vi.fn((text: string) => {
+    terminalOutput.push(`DIM: ${text}`);
+  }),
+  bold: vi.fn((text: string) => {
+    terminalOutput.push(`BOLD: ${text}`);
+  }),
+  eraseDisplayBelow: vi.fn(),
+  up: vi.fn(),
+  '(': vi.fn((text: string) => {
+    terminalOutput.push(text);
+  }),
+};
+
+// Make the mock callable
+Object.setPrototypeOf(mockTerminal, Function.prototype);
+(mockTerminal as any)['('] = (text: string) => {
+  terminalOutput.push(text);
+};
+
+vi.mock('terminal-kit', () => ({
+  terminal: mockTerminal,
+}));
+
+// Mock the Branding component
+vi.mock('../components/Branding.js', () => ({
+  Branding: class {
+    constructor() {}
+    mount() {}
+  },
+}));
+
+// Mock the ProcessingResults component
+vi.mock('../components/ProcessingResults.js', () => ({
+  ProcessingResults: class {
+    constructor() {}
+    mount() {}
+  },
 }));
 
 describe('Apply Command', () => {
@@ -27,15 +69,6 @@ describe('Apply Command', () => {
     testDir: path.join(tmpdir(), 'srtd-test', `test-apply-command-${Date.now()}`),
   };
 
-  vi.mock('ink', async importOriginal => {
-    const actual = (await importOriginal()) as typeof import('ink');
-    const mockExit = vi.fn();
-    return {
-      ...actual,
-      useApp: () => ({ exit: mockExit }),
-    };
-  });
-
   async function createTestTemplate(content: string) {
     const templateDir = path.join(testContext.testDir, 'test-templates');
     await fs.mkdir(templateDir, { recursive: true });
@@ -44,6 +77,12 @@ describe('Apply Command', () => {
   }
 
   beforeEach(async () => {
+    // Clear terminal output
+    terminalOutput = [];
+
+    // Reset all mocks
+    vi.clearAllMocks();
+
     const validSQL = `
       CREATE OR REPLACE FUNCTION ${testContext.testFunctionName}()
       RETURNS void AS $$
@@ -63,13 +102,62 @@ describe('Apply Command', () => {
     await fs.rm(testContext.testDir, { recursive: true, force: true });
   });
 
-  test('shows progress and success', async () => {
-    const { lastFrame } = render(<Apply options={{ force: false }} />);
-    expect(lastFrame()).toMatch(/▶ test\.sql/);
+  test('executes without errors', async () => {
+    // Mock process.exit to prevent actual exit
+    const mockExit = vi.spyOn(process, 'exit').mockImplementation(() => {
+      throw new Error('process.exit called');
+    });
+
+    try {
+      await Apply({ options: { force: false } });
+    } catch (error) {
+      // Expected to throw due to mocked process.exit
+      expect(String(error)).toContain('process.exit called');
+    }
+
+    // Verify that the terminal was used
+    expect(mockTerminal.yellow).toHaveBeenCalled();
+
+    mockExit.mockRestore();
   });
 
   test('handles force flag', async () => {
-    const { lastFrame } = render(<Apply options={{ force: true }} />);
-    expect(lastFrame()).toMatch(/▶ test\.sql/);
+    // Mock process.exit to prevent actual exit
+    const mockExit = vi.spyOn(process, 'exit').mockImplementation(() => {
+      throw new Error('process.exit called');
+    });
+
+    try {
+      await Apply({ options: { force: true } });
+    } catch (error) {
+      // Expected to throw due to mocked process.exit
+      expect(String(error)).toContain('process.exit called');
+    }
+
+    // Verify that the terminal was used
+    expect(mockTerminal.yellow).toHaveBeenCalled();
+
+    mockExit.mockRestore();
+  });
+
+  test('shows loading messages', async () => {
+    // Mock process.exit to prevent actual exit
+    const mockExit = vi.spyOn(process, 'exit').mockImplementation(() => {
+      throw new Error('process.exit called');
+    });
+
+    try {
+      await Apply({ options: { force: false } });
+    } catch (error) {
+      // Expected to throw due to mocked process.exit
+    }
+
+    // Check that loading message was shown
+    const hasLoadingMessage = terminalOutput.some(
+      output => output.includes('Applying templates') || output.includes('⏳')
+    );
+    expect(hasLoadingMessage).toBe(true);
+
+    mockExit.mockRestore();
   });
 });

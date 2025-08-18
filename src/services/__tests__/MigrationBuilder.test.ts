@@ -5,7 +5,7 @@
  */
 
 import fs from 'node:fs/promises';
-import path from 'node:path';
+// import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { BuildLog } from '../../types.js';
 import {
@@ -453,7 +453,7 @@ describe('MigrationBuilder', () => {
     });
 
     it('should handle BuildLog updates correctly', async () => {
-      const _initialTimestamp = mockBuildLog.lastTimestamp;
+      // const _initialTimestamp = mockBuildLog.lastTimestamp;
 
       await builder.generateMigration(templateMetadata, mockBuildLog);
 
@@ -463,7 +463,7 @@ describe('MigrationBuilder', () => {
 
     it('should maintain configuration immutability', () => {
       const originalConfig = builder.getConfig();
-      const modifiedConfig = originalConfig;
+      const modifiedConfig = { ...originalConfig };
       modifiedConfig.banner = 'Modified banner';
 
       const currentConfig = builder.getConfig();
@@ -486,9 +486,9 @@ describe('MigrationBuilder', () => {
       const results = await Promise.all(promises);
 
       expect(results).toHaveLength(3);
-      expect(results[0].timestamp).toBe('20240101123456');
-      expect(results[1].timestamp).toBe('20240101123457');
-      expect(results[2].timestamp).toBe('20240101123458');
+      expect(results[0]?.timestamp).toBe('20240101123456');
+      expect(results[1]?.timestamp).toBe('20240101123457');
+      expect(results[2]?.timestamp).toBe('20240101123458');
 
       // All should have unique filenames
       const filenames = results.map(r => r.fileName);

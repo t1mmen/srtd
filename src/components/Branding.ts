@@ -1,8 +1,7 @@
 import type { Terminal } from 'terminal-kit';
 import packageJson from '../../package.json' with { type: 'json' };
-import { useDatabaseConnection } from '../hooks/useDatabaseConnection.js';
-import { AbstractComponent, Box, Text } from '../lib/tui/index.js';
-import { COLOR_ERROR, COLOR_SUPABASE, COLOR_WARNING } from './customTheme.js';
+import { AbstractComponent } from '../lib/tui/index.js';
+import { connect } from '../utils/databaseConnection.js';
 
 interface BrandingProps {
   subtitle?: string;
@@ -13,19 +12,30 @@ export class Branding extends AbstractComponent<BrandingProps> {
     super(terminal, props);
   }
 
-  protected render(): void {
+  protected async render(): Promise<void> {
     const { subtitle } = this.props;
-    const { error, isConnected } = useDatabaseConnection();
 
-    const badgeColor = error ? COLOR_ERROR : isConnected ? COLOR_SUPABASE : COLOR_WARNING;
+    // Check database connection status
+    let isConnected = false;
+    try {
+      const client = await connect();
+      if (client) {
+        isConnected = true;
+        client.release();
+      }
+    } catch {
+      isConnected = false;
+    }
 
     // Clear and position
     this.terminal('\n');
 
     // Render badge
-    const bgColorMethod =
-      badgeColor === COLOR_ERROR ? 'bgRed' : badgeColor === COLOR_SUPABASE ? 'bgGreen' : 'bgYellow';
-    (this.terminal as any)[bgColorMethod].white(' srtd ');
+    if (isConnected) {
+      this.terminal.bgGreen.white(' srtd ');
+    } else {
+      this.terminal.bgYellow.white(' srtd ');
+    }
 
     this.terminal(' ');
 

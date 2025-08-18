@@ -93,15 +93,16 @@ export class DatabaseService extends EventEmitter {
    * Categorize database errors for better error handling
    */
   private categorizeError(error: unknown): DatabaseError {
-    const errorCode = error?.code;
-    const errorMessage = error?.message || String(error);
+    const pgError = error as any;
+    const errorCode = pgError?.code;
+    const errorMessage = pgError?.message || String(error);
 
     // Connection errors
     if (errorCode === 'ECONNREFUSED' || errorCode === 'ENOTFOUND' || errorCode === 'ECONNRESET') {
       return {
         type: DatabaseErrorType.CONNECTION_ERROR,
         message: 'Database connection failed',
-        originalError: error,
+        originalError: error instanceof Error ? error : new Error(String(error)),
         code: errorCode,
         detail: errorMessage,
       };
@@ -112,7 +113,7 @@ export class DatabaseService extends EventEmitter {
       return {
         type: DatabaseErrorType.POOL_EXHAUSTED,
         message: 'Database connection pool exhausted',
-        originalError: error,
+        originalError: error instanceof Error ? error : new Error(String(error)),
         code: errorCode,
         detail: errorMessage,
       };
@@ -123,7 +124,7 @@ export class DatabaseService extends EventEmitter {
       return {
         type: DatabaseErrorType.TIMEOUT_ERROR,
         message: 'Database operation timed out',
-        originalError: error,
+        originalError: error instanceof Error ? error : new Error(String(error)),
         code: errorCode,
         detail: errorMessage,
       };
@@ -136,7 +137,7 @@ export class DatabaseService extends EventEmitter {
         return {
           type: DatabaseErrorType.SYNTAX_ERROR,
           message: 'SQL syntax error',
-          originalError: error,
+          originalError: error instanceof Error ? error : new Error(String(error)),
           code: errorCode,
           detail: errorMessage,
         };
@@ -147,7 +148,7 @@ export class DatabaseService extends EventEmitter {
         return {
           type: DatabaseErrorType.CONSTRAINT_VIOLATION,
           message: 'Database constraint violation',
-          originalError: error,
+          originalError: error instanceof Error ? error : new Error(String(error)),
           code: errorCode,
           detail: errorMessage,
         };
@@ -158,7 +159,7 @@ export class DatabaseService extends EventEmitter {
         return {
           type: DatabaseErrorType.TRANSACTION_ERROR,
           message: 'Transaction error',
-          originalError: error,
+          originalError: error instanceof Error ? error : new Error(String(error)),
           code: errorCode,
           detail: errorMessage,
         };
@@ -169,7 +170,7 @@ export class DatabaseService extends EventEmitter {
     return {
       type: DatabaseErrorType.UNKNOWN_ERROR,
       message: errorMessage,
-      originalError: error,
+      originalError: error instanceof Error ? error : new Error(String(error)),
       code: errorCode,
       detail: errorMessage,
     };
@@ -304,7 +305,7 @@ export class DatabaseService extends EventEmitter {
       return {
         success: true,
         rows: result.rows,
-        rowCount: result.rowCount,
+        rowCount: result.rowCount ?? 0,
         data: result.rows,
       };
     } catch (error) {
