@@ -418,7 +418,7 @@ describe('MigrationBuilder', () => {
     });
 
     it('should handle very long template content', async () => {
-      const longContent = 'CREATE TABLE test (' + 'col TEXT, '.repeat(1000) + 'id SERIAL);';
+      const longContent = `CREATE TABLE test (${'col TEXT, '.repeat(1000)}id SERIAL);`;
       const longTemplate = {
         ...templateMetadata,
         content: longContent,
@@ -453,7 +453,7 @@ describe('MigrationBuilder', () => {
     });
 
     it('should handle BuildLog updates correctly', async () => {
-      const initialTimestamp = mockBuildLog.lastTimestamp;
+      const _initialTimestamp = mockBuildLog.lastTimestamp;
 
       await builder.generateMigration(templateMetadata, mockBuildLog);
 
