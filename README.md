@@ -324,6 +324,12 @@ npm run format          # Format code
 npm run test:coverage   # Test coverage
 ```
 
+### Cross-Platform Hash Consistency
+
+To ensure template hashes are consistent across operating systems, all line endings (\r\n on Windows, \n on Unix/macOS) are normalized to Unix-style (\n) before computing the MD5 hash.
+
+This prevents unnecessary rebuilding of migrations caused solely by line-ending differences, ensuring that only actual changes to template content trigger new migration files.
+
 ## Contributing 🤝
 
 While feature-complete for our needs, we welcome:
