@@ -57,7 +57,7 @@ jobs:
       - name: Setup Biome
         uses: biomejs/setup-biome@v2
         with:
-          version: latest
+          version: 1.9.4
 
       - name: Run Biome
         run: biome ci .
@@ -123,9 +123,8 @@ jobs:
         id: changesets
         if: steps.check.outputs.is_release == 'false'
         run: |
-          # Check if there are any changeset files (excluding README and config)
-          CHANGESETS=$(find .changeset -name "*.md" ! -name "README.md" | head -1)
-          if [ -n "$CHANGESETS" ]; then
+          # Use changeset status to reliably check for pending changesets
+          if npx changeset status 2>/dev/null | grep -q "changeset"; then
             echo "has_changesets=true" >> $GITHUB_OUTPUT
           else
             echo "has_changesets=false" >> $GITHUB_OUTPUT
@@ -145,8 +144,10 @@ jobs:
           npx changeset version --snapshot next
           npx changeset publish --tag next
 
-          # Reset git state so changesets/action can create the Version Packages PR
-          git checkout .
+          # Reset specific files so changesets/action can create the Version Packages PR
+          git restore .changeset
+          git restore package.json
+          git restore CHANGELOG.md 2>/dev/null || true
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
