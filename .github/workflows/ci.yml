@@ -47,13 +47,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-          cache: 'npm'
+          # Deliberately NOT caching npm due to rollup platform dependency issues
 
       - name: Install dependencies
-        run: |
-          npm cache clean --force
-          rm -rf node_modules
-          npm install --prefer-offline=false
+        run: npm ci
         env:
           NODE_ENV: development
 
