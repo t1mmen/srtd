@@ -12,3 +12,48 @@ coverage
 
 # srtd's local logs should not be committed, as they're per-environment specific
 .srtd.buildlog.local.json
+
+# Logs
+yarn-debug.log*
+yarn-error.log*
+dev-debug.log
+# Dependency directories
+node_modules/
+# Environment variables
+# Editor directories and files
+.idea
+# Ignore VS Code directory but not Taskmaster/project specific settings
+.vscode/*
+!.vscode/settings.json
+!.vscode/mcp.json
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+# OS specific
+
+.vscode
+
+# Task files
+# tasks.json
+# tasks/ 
+
+# Local tooling configs (LLM/AI assistants)
+.claude/
+.cursor/
+.toolbox/
+.llm/
+.codex/
+.serena/
+.taskmaster/
+.mcp.json
+BACKLOG.md
+TODO.md
+.buildlog.json
+.buildlog.local.json
+CLAUDE.md
+AGENTS.md
+.rules
+opencode.json
+demo.tape

@@ -18,63 +18,57 @@ const defaultConfig: CLIConfig = {
   pgConnection: 'postgresql://postgres:postgres@localhost:54322/postgres',
 };
 
-let cachedConfig: CLIConfig | undefined;
+/**
+ * Per-directory config cache to support multiple projects in same process
+ */
+const configCache = new Map<string, CLIConfig>();
 
+/**
+ * Get config for a specific directory.
+ * Caches per directory to support multi-project scenarios.
+ */
 export async function getConfig(dir: string = process.cwd()): Promise<CLIConfig> {
-  if (cachedConfig) return cachedConfig;
+  const resolvedDir = path.resolve(dir);
 
+  const cached = configCache.get(resolvedDir);
+  if (cached) return cached;
+
+  let config: CLIConfig;
   try {
-    const configPath = path.join(dir, CONFIG_FILE);
+    const configPath = path.join(resolvedDir, CONFIG_FILE);
     const content = await fs.readFile(configPath, 'utf-8');
-    cachedConfig = { ...defaultConfig, ...JSON.parse(content) };
+    config = { ...defaultConfig, ...JSON.parse(content) };
   } catch {
-    cachedConfig = defaultConfig;
+    config = { ...defaultConfig };
   }
 
-  if (!cachedConfig) {
-    throw new Error('Config not initialized');
-  }
-  return cachedConfig;
+  configCache.set(resolvedDir, config);
+  return config;
+}
+
+/**
+ * Clear the config cache (useful for testing)
+ */
+export function clearConfigCache(): void {
+  configCache.clear();
 }
 
 export async function saveConfig(baseDir: string, config: Partial<CLIConfig>): Promise<void> {
-  const configPath = path.join(baseDir, CONFIG_FILE);
+  const resolvedDir = path.resolve(baseDir);
+  const configPath = path.join(resolvedDir, CONFIG_FILE);
   const finalConfig = { ...defaultConfig, ...config };
   // Add newline at the end to satisfy linters
   await fs.writeFile(configPath, `${JSON.stringify(finalConfig, null, 2)}\n`).catch(e => {
     logger.error(`Failed to save config: ${e.message}`);
   });
-  cachedConfig = finalConfig;
+  configCache.set(resolvedDir, finalConfig);
 }
 
 export async function resetConfig(baseDir: string): Promise<void> {
-  cachedConfig = defaultConfig;
-  await fs.unlink(path.join(baseDir, CONFIG_FILE)).catch(() => {
+  const resolvedDir = path.resolve(baseDir);
+  configCache.delete(resolvedDir);
+  await fs.unlink(path.join(resolvedDir, CONFIG_FILE)).catch(() => {
     /* ignore */
   });
-  await saveConfig(baseDir, {});
-}
-
-export async function clearBuildLogs(
-  baseDir: string,
-  type: 'local' | 'shared' | 'both'
-): Promise<void> {
-  const config = cachedConfig || defaultConfig;
-
-  const ops = [];
-  if (type === 'local' || type === 'both') {
-    ops.push(
-      fs.unlink(path.join(baseDir, config.localBuildLog)).catch(() => {
-        /* ignore */
-      })
-    );
-  }
-  if (type === 'shared' || type === 'both') {
-    ops.push(
-      fs.unlink(path.join(baseDir, config.buildLog)).catch(() => {
-        /* ignore */
-      })
-    );
-  }
-  await Promise.all(ops);
+  await saveConfig(resolvedDir, {});
 }

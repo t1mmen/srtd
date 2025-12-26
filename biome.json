@@ -31,7 +31,6 @@
         "noWith": "error"
       },
       "correctness": {
-        "noChildrenProp": "error",
         "noConstAssign": "error",
         "noConstantCondition": "error",
         "noEmptyCharacterClassInRegex": "error",
@@ -53,14 +52,11 @@
         "noUnusedLabels": "error",
         "noUnusedVariables": "error",
         "useArrayLiterals": "off",
-        "useExhaustiveDependencies": "warn",
-        "useHookAtTopLevel": "error",
         "useIsNan": "error",
-        "useJsxKeyInIterable": "error",
         "useValidForDirection": "error",
         "useYield": "error"
       },
-      "security": { "noDangerouslySetInnerHtmlWithChildren": "error" },
+      "security": {},
       "style": {
         "noNamespace": "error",
         "useAsConstAssertion": "error",
@@ -78,7 +74,6 @@
         "noDebugger": "error",
         "noDuplicateCase": "error",
         "noDuplicateClassMembers": "error",
-        "noDuplicateJsxProps": "error",
         "noDuplicateObjectKeys": "error",
         "noDuplicateParameters": "error",
         "noEmptyBlockStatements": "error",
@@ -103,18 +98,28 @@
   },
   "javascript": {
     "formatter": {
-      "jsxQuoteStyle": "double",
       "quoteProperties": "asNeeded",
       "trailingCommas": "es5",
       "semicolons": "always",
       "arrowParentheses": "asNeeded",
-      "bracketSameLine": false,
       "quoteStyle": "single",
-      "attributePosition": "auto",
       "bracketSpacing": true
     }
   },
   "overrides": [
+    {
+      "include": ["**/*.test.ts", "**/*.test.tsx", "**/__tests__/**"],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noExplicitAny": "off"
+          },
+          "style": {
+            "useTemplate": "off"
+          }
+        }
+      }
+    },
     {
       "include": ["*.ts", "*.tsx", "*.mts", "*.cts"],
       "linter": {
