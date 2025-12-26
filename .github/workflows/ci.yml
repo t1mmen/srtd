@@ -51,8 +51,9 @@ jobs:
 
       - name: Install dependencies
         run: |
+          npm cache clean --force
           rm -rf node_modules
-          npm install
+          npm install --prefer-offline=false
         env:
           NODE_ENV: development
 
