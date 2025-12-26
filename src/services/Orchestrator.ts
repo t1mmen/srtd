@@ -424,9 +424,8 @@ export class Orchestrator extends EventEmitter implements Disposable {
 
     if (options.bundle) {
       return await this.executeBundledBuild(templates, options);
-    } else {
-      return await this.executeIndividualBuilds(templates, options);
     }
+    return await this.executeIndividualBuilds(templates, options);
   }
 
   /**

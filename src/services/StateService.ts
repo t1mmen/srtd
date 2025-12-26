@@ -152,7 +152,7 @@ export class StateService extends EventEmitter {
       const content = await fs.readFile(buildLogPath, 'utf-8');
       this.buildLog = JSON.parse(content);
     } catch (error) {
-      if ((error as any).code !== 'ENOENT') {
+      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
         this.emit('error', new Error(`Failed to load build log: ${error}`));
       }
     }
@@ -162,7 +162,7 @@ export class StateService extends EventEmitter {
       const content = await fs.readFile(localBuildLogPath, 'utf-8');
       this.localBuildLog = JSON.parse(content);
     } catch (error) {
-      if ((error as any).code !== 'ENOENT') {
+      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
         this.emit('error', new Error(`Failed to load local build log: ${error}`));
       }
     }

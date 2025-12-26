@@ -93,7 +93,7 @@ export class DatabaseService extends EventEmitter {
    * Categorize database errors for better error handling
    */
   private categorizeError(error: unknown): DatabaseError {
-    const pgError = error as any;
+    const pgError = error as { code?: string; message?: string };
     const errorCode = pgError?.code;
     const errorMessage = pgError?.message || String(error);
 

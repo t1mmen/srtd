@@ -45,15 +45,11 @@ export function renderScreen(
   const needsBuild = templates.filter(
     t => !t.buildState.lastBuildDate || t.currentHash !== t.buildState.lastBuildHash
   ).length;
-  console.log(chalk.bold('srtd') + chalk.dim(' - Watch Mode'));
+  console.log(`${chalk.bold('srtd')}${chalk.dim(' - Watch Mode')}`);
   console.log();
-  console.log(
-    chalk.green(`[Total: ${templates.length}]`) +
-      ' ' +
-      (needsBuild > 0 ? chalk.yellow(`[Needs Build: ${needsBuild}]`) : '') +
-      ' ' +
-      (errors.size > 0 ? chalk.red(`[Errors: ${errors.size}]`) : '')
-  );
+  const needsBuildStr = needsBuild > 0 ? chalk.yellow(`[Needs Build: ${needsBuild}]`) : '';
+  const errorsStr = errors.size > 0 ? chalk.red(`[Errors: ${errors.size}]`) : '';
+  console.log(`${chalk.green(`[Total: ${templates.length}]`)} ${needsBuildStr} ${errorsStr}`);
   console.log();
 
   // History section (if toggled on)

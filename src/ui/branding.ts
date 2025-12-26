@@ -36,15 +36,7 @@ export async function renderBranding(
   if (subtitle) {
     title = subtitle;
   } else {
-    title =
-      chalk.green.bold('S') +
-      'upabase ' +
-      chalk.green.bold('R') +
-      'epeatable ' +
-      chalk.green.bold('T') +
-      'emplate ' +
-      chalk.green.bold('D') +
-      'efinitions';
+    title = `${chalk.green.bold('S')}upabase ${chalk.green.bold('R')}epeatable ${chalk.green.bold('T')}emplate ${chalk.green.bold('D')}efinitions`;
   }
 
   // Version
