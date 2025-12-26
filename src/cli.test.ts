@@ -68,7 +68,7 @@ describe('cli', () => {
     process.argv = ['node', 'srtd', '--version'];
 
     // In test mode with version flag
-    const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
 
     try {
       await import('./cli.js');

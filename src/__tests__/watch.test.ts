@@ -66,7 +66,7 @@ describe('Watch Command', () => {
     vi.clearAllMocks();
     vi.resetModules();
     exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never);
-    consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
     originalIsTTY = process.stdin.isTTY;
     // Mock stdin as non-TTY to avoid setting up raw mode in tests
     Object.defineProperty(process.stdin, 'isTTY', { value: false, writable: true });
@@ -155,8 +155,8 @@ describe('renderScreen', () => {
   let consoleLogSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
-    consoleClearSpy = vi.spyOn(console, 'clear').mockImplementation(() => {});
-    consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    consoleClearSpy = vi.spyOn(console, 'clear').mockImplementation(() => undefined);
+    consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
   });
 
   afterEach(() => {

@@ -7,7 +7,7 @@ describe('renderBranding', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.resetModules();
-    consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
   });
 
   afterEach(() => {

@@ -8,7 +8,7 @@ describe('logger', () => {
   const originalDebug = process.env.DEBUG;
 
   beforeEach(async () => {
-    consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
     vi.clearAllMocks();
   });
 
@@ -58,7 +58,7 @@ describe('logger', () => {
   });
 
   it('should not log debug messages when DEBUG is not set', async () => {
-    delete process.env.DEBUG;
+    process.env.DEBUG = undefined;
     const { logger } = await vi.importActual<typeof import('./logger.js')>('./logger.js');
     logger.debug('Test debug message');
     expect(consoleLogSpy).not.toHaveBeenCalled();
