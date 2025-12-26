@@ -39,12 +39,16 @@ node_modules/
 # tasks.json
 # tasks/ 
 
-# Local tooling configs
+# Local tooling configs (LLM/AI assistants)
 .claude/
+.cursor/
 .toolbox/
 .llm/
 .codex/
 .serena/
+.taskmaster/
 .mcp.json
 BACKLOG.md
 TODO.md
+.buildlog.json
+.buildlog.local.json
