@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { setupCommandTestSpies } from '../__tests__/helpers/testUtils.js';
 
 // Mock all dependencies before importing
 vi.mock('../ui/index.js', () => ({
@@ -39,18 +40,15 @@ vi.mock('./clear.js', () => ({
 }));
 
 describe('menu', () => {
-  let exitSpy: ReturnType<typeof vi.spyOn>;
-  let consoleLogSpy: ReturnType<typeof vi.spyOn>;
+  let spies: ReturnType<typeof setupCommandTestSpies>;
 
   beforeEach(() => {
     vi.clearAllMocks();
-    exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never);
-    consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    spies = setupCommandTestSpies();
   });
 
   afterEach(() => {
-    exitSpy.mockRestore();
-    consoleLogSpy.mockRestore();
+    spies.cleanup();
   });
 
   it('should export showMenu function', async () => {
@@ -164,7 +162,7 @@ describe('menu', () => {
 
     await showMenu();
 
-    expect(exitSpy).toHaveBeenCalledWith(0);
+    expect(spies.exitSpy).toHaveBeenCalledWith(0);
   });
 
   it('should show error and exit on other errors', async () => {
@@ -175,8 +173,8 @@ describe('menu', () => {
 
     await showMenu();
 
-    expect(exitSpy).toHaveBeenCalledWith(1);
-    const output = consoleLogSpy.mock.calls.flat().join('\n');
+    expect(spies.exitSpy).toHaveBeenCalledWith(1);
+    const output = spies.consoleLogSpy.mock.calls.flat().join('\n');
     expect(output).toContain('Error');
   });
 });

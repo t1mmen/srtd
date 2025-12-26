@@ -1,20 +1,14 @@
 import { Command } from 'commander';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  createMockFindProjectRoot,
+  createMockUiModule,
+  setupCommandTestSpies,
+} from './helpers/testUtils.js';
 
 // Mock all dependencies before importing the command
-vi.mock('../ui/index.js', () => ({
-  renderBranding: vi.fn().mockResolvedValue(undefined),
-  createSpinner: vi.fn(() => ({
-    start: vi.fn().mockReturnThis(),
-    stop: vi.fn(),
-    succeed: vi.fn(),
-    fail: vi.fn(),
-  })),
-}));
-
-vi.mock('../utils/findProjectRoot.js', () => ({
-  findProjectRoot: vi.fn().mockResolvedValue('/test/project'),
-}));
+vi.mock('../ui/index.js', () => createMockUiModule());
+vi.mock('../utils/findProjectRoot.js', () => createMockFindProjectRoot());
 
 vi.mock('../utils/config.js', () => ({
   getConfig: vi.fn().mockResolvedValue({
@@ -29,6 +23,7 @@ vi.mock('../utils/config.js', () => ({
 
 const mockOrchestrator = {
   clearBuildLogs: vi.fn().mockResolvedValue(undefined),
+  [Symbol.asyncDispose]: vi.fn().mockResolvedValue(undefined),
   [Symbol.dispose]: vi.fn(),
 };
 
@@ -43,19 +38,16 @@ vi.mock('@inquirer/prompts', () => ({
 }));
 
 describe('Clear Command', () => {
-  let exitSpy: ReturnType<typeof vi.spyOn>;
-  let consoleLogSpy: ReturnType<typeof vi.spyOn>;
+  let spies: ReturnType<typeof setupCommandTestSpies>;
 
   beforeEach(() => {
     vi.clearAllMocks();
     vi.resetModules();
-    exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never);
-    consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    spies = setupCommandTestSpies();
   });
 
   afterEach(() => {
-    exitSpy.mockRestore();
-    consoleLogSpy.mockRestore();
+    spies.cleanup();
   });
 
   it('exports clearCommand as a Commander command', async () => {
@@ -95,7 +87,7 @@ describe('Clear Command', () => {
     await clearCommand.parseAsync(['node', 'test', 'clear', '--local']);
 
     expect(mockOrchestrator.clearBuildLogs).toHaveBeenCalledWith('local');
-    expect(exitSpy).toHaveBeenCalledWith(0);
+    expect(spies.exitSpy).toHaveBeenCalledWith(0);
   });
 
   it('clears shared build logs with --shared flag', async () => {
@@ -106,7 +98,7 @@ describe('Clear Command', () => {
     await clearCommand.parseAsync(['node', 'test', 'clear', '--shared']);
 
     expect(mockOrchestrator.clearBuildLogs).toHaveBeenCalledWith('shared');
-    expect(exitSpy).toHaveBeenCalledWith(0);
+    expect(spies.exitSpy).toHaveBeenCalledWith(0);
   });
 
   it('resets config with --reset flag', async () => {
@@ -119,7 +111,7 @@ describe('Clear Command', () => {
 
     expect(resetConfig).toHaveBeenCalledWith('/test/project');
     expect(mockOrchestrator.clearBuildLogs).toHaveBeenCalledWith('both');
-    expect(exitSpy).toHaveBeenCalledWith(0);
+    expect(spies.exitSpy).toHaveBeenCalledWith(0);
   });
 
   it('handles errors gracefully', async () => {
@@ -129,7 +121,7 @@ describe('Clear Command', () => {
 
     await clearCommand.parseAsync(['node', 'test', 'clear', '--local']);
 
-    expect(exitSpy).toHaveBeenCalledWith(1);
+    expect(spies.exitSpy).toHaveBeenCalledWith(1);
   });
 
   it('exits with error in non-TTY mode without flags', async () => {
@@ -140,8 +132,8 @@ describe('Clear Command', () => {
 
     await clearCommand.parseAsync(['node', 'test', 'clear']);
 
-    expect(exitSpy).toHaveBeenCalledWith(1);
-    const output = consoleLogSpy.mock.calls.flat().join('\n');
+    expect(spies.exitSpy).toHaveBeenCalledWith(1);
+    const output = spies.consoleLogSpy.mock.calls.flat().join('\n');
     expect(output).toContain('Interactive mode requires a TTY');
 
     Object.defineProperty(process.stdin, 'isTTY', { value: originalIsTTY, writable: true });
@@ -162,7 +154,7 @@ describe('Clear Command', () => {
 
     expect(select).toHaveBeenCalled();
     expect(mockOrchestrator.clearBuildLogs).toHaveBeenCalledWith('local');
-    expect(exitSpy).toHaveBeenCalledWith(0);
+    expect(spies.exitSpy).toHaveBeenCalledWith(0);
 
     Object.defineProperty(process.stdin, 'isTTY', { value: originalIsTTY, writable: true });
   });
@@ -180,7 +172,7 @@ describe('Clear Command', () => {
 
     await clearCommand.parseAsync(['node', 'test', 'clear']);
 
-    expect(exitSpy).toHaveBeenCalledWith(0);
+    expect(spies.exitSpy).toHaveBeenCalledWith(0);
 
     Object.defineProperty(process.stdin, 'isTTY', { value: originalIsTTY, writable: true });
   });
@@ -193,8 +185,8 @@ describe('Clear Command', () => {
 
     await clearCommand.parseAsync(['node', 'test', 'clear', '--local']);
 
-    expect(exitSpy).toHaveBeenCalledWith(1);
-    const output = consoleLogSpy.mock.calls.flat().join('\n');
+    expect(spies.exitSpy).toHaveBeenCalledWith(1);
+    const output = spies.consoleLogSpy.mock.calls.flat().join('\n');
     expect(output).toContain('Error');
   });
 });

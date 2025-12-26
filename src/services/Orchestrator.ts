@@ -761,7 +761,15 @@ export class Orchestrator extends EventEmitter implements Disposable {
   }
 
   /**
-   * Synchronous dispose for using statement compatibility
+   * Async dispose for await using statement - ensures cleanup completes
+   */
+  async [Symbol.asyncDispose](): Promise<void> {
+    await this.dispose();
+  }
+
+  /**
+   * Synchronous dispose for using statement - schedules async cleanup
+   * Note: For proper cleanup, prefer await using with Symbol.asyncDispose
    */
   [Symbol.dispose](): void {
     void this.dispose();

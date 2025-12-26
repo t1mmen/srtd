@@ -13,6 +13,8 @@ export const applyCommand = new Command('apply')
   .description('Apply built migrations to the database')
   .option('-f, --force', 'Force apply of all templates, irrespective of changes')
   .action(async (options: { force?: boolean }) => {
+    let exitCode = 0;
+
     try {
       await renderBranding({ subtitle: 'Apply migrations' });
 
@@ -21,7 +23,7 @@ export const applyCommand = new Command('apply')
       // Initialize Orchestrator
       const projectRoot = await findProjectRoot();
       const config = await getConfig(projectRoot);
-      using orchestrator = await Orchestrator.create(projectRoot, config, { silent: true });
+      await using orchestrator = await Orchestrator.create(projectRoot, config, { silent: true });
 
       // Execute apply operation
       const result: ProcessedTemplateResult = await orchestrator.apply({
@@ -34,12 +36,14 @@ export const applyCommand = new Command('apply')
       // Show results
       renderResults(result, { showApply: true });
 
-      // Exit cleanly
-      process.exit(result.errors.length > 0 ? 1 : 0);
+      exitCode = result.errors.length > 0 ? 1 : 0;
     } catch (error) {
       console.log();
       console.log(chalk.red(`${figures.cross} Error applying templates:`));
       console.log(chalk.red(getErrorMessage(error)));
-      process.exit(1);
+      exitCode = 1;
     }
+
+    // Exit AFTER the await using block has completed, ensuring dispose() runs
+    process.exit(exitCode);
   });

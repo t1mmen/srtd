@@ -1,22 +1,14 @@
 import { Command } from 'commander';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  createMockFindProjectRoot,
+  createMockUiModule,
+  setupCommandTestSpies,
+} from './helpers/testUtils.js';
 
 // Mock all dependencies before importing the command
-vi.mock('../ui/index.js', () => ({
-  renderBranding: vi.fn().mockResolvedValue(undefined),
-  createSpinner: vi.fn(() => ({
-    start: vi.fn().mockReturnThis(),
-    stop: vi.fn(),
-    succeed: vi.fn(),
-    fail: vi.fn(),
-    warn: vi.fn(),
-    text: '',
-  })),
-}));
-
-vi.mock('../utils/findProjectRoot.js', () => ({
-  findProjectRoot: vi.fn().mockResolvedValue('/test/project'),
-}));
+vi.mock('../ui/index.js', () => createMockUiModule());
+vi.mock('../utils/findProjectRoot.js', () => createMockFindProjectRoot());
 
 vi.mock('../utils/config.js', () => ({
   getConfig: vi.fn().mockResolvedValue({
@@ -31,6 +23,7 @@ const mockOrchestrator = {
   findTemplates: vi.fn().mockResolvedValue([]),
   getTemplateStatusExternal: vi.fn(),
   registerTemplate: vi.fn().mockResolvedValue(undefined),
+  [Symbol.asyncDispose]: vi.fn().mockResolvedValue(undefined),
   [Symbol.dispose]: vi.fn(),
 };
 
@@ -45,19 +38,16 @@ vi.mock('@inquirer/prompts', () => ({
 }));
 
 describe('Register Command', () => {
-  let exitSpy: ReturnType<typeof vi.spyOn>;
-  let consoleLogSpy: ReturnType<typeof vi.spyOn>;
+  let spies: ReturnType<typeof setupCommandTestSpies>;
 
   beforeEach(() => {
     vi.clearAllMocks();
     vi.resetModules();
-    exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never);
-    consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    spies = setupCommandTestSpies();
   });
 
   afterEach(() => {
-    exitSpy.mockRestore();
-    consoleLogSpy.mockRestore();
+    spies.cleanup();
   });
 
   it('exports registerCommand as a Commander command', async () => {
@@ -89,7 +79,7 @@ describe('Register Command', () => {
     await registerCommand.parseAsync(['node', 'test', 'template1.sql', 'template2.sql']);
 
     expect(mockOrchestrator.registerTemplate).toHaveBeenCalledTimes(2);
-    expect(exitSpy).toHaveBeenCalledWith(0);
+    expect(spies.exitSpy).toHaveBeenCalledWith(0);
   });
 
   it('handles registration errors', async () => {
@@ -99,7 +89,7 @@ describe('Register Command', () => {
 
     await registerCommand.parseAsync(['node', 'test', 'bad.sql']);
 
-    expect(exitSpy).toHaveBeenCalledWith(1);
+    expect(spies.exitSpy).toHaveBeenCalledWith(1);
 
     // Reset for other tests
     mockOrchestrator.registerTemplate.mockResolvedValue(undefined);
@@ -115,9 +105,9 @@ describe('Register Command', () => {
     // No template arguments - triggers interactive mode path
     await registerCommand.parseAsync(['node', 'test']);
 
-    const output = consoleLogSpy.mock.calls.flat().join('\n');
+    const output = spies.consoleLogSpy.mock.calls.flat().join('\n');
     expect(output).toContain('No templates found');
-    expect(exitSpy).toHaveBeenCalledWith(0);
+    expect(spies.exitSpy).toHaveBeenCalledWith(0);
   });
 
   it('shows message when all templates are registered', async () => {
@@ -135,10 +125,10 @@ describe('Register Command', () => {
     await registerCommand.parseAsync(['node', 'test']);
 
     // The command exits with 0 when all templates are already registered
-    const output = consoleLogSpy.mock.calls.flat().join('\n');
+    const output = spies.consoleLogSpy.mock.calls.flat().join('\n');
     // The message says "All X template(s) are already registered."
     expect(output).toMatch(/already registered|No unregistered templates/);
-    expect(exitSpy).toHaveBeenCalledWith(0);
+    expect(spies.exitSpy).toHaveBeenCalledWith(0);
   });
 
   it('exits with error in non-TTY mode without arguments', async () => {
@@ -157,7 +147,7 @@ describe('Register Command', () => {
     // No template arguments - triggers interactive mode path (but non-TTY)
     await registerCommand.parseAsync(['node', 'test']);
 
-    expect(exitSpy).toHaveBeenCalledWith(1);
+    expect(spies.exitSpy).toHaveBeenCalledWith(1);
 
     Object.defineProperty(process.stdin, 'isTTY', { value: originalIsTTY, writable: true });
   });

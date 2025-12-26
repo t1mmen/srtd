@@ -1,20 +1,16 @@
 import { Command } from 'commander';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  createMockFindProjectRoot,
+  createMockUiModule,
+  mockConsoleClear,
+  mockConsoleLog,
+  setupCommandTestSpies,
+} from './helpers/testUtils.js';
 
 // Mock all dependencies before importing the command
-vi.mock('../ui/index.js', () => ({
-  renderBranding: vi.fn().mockResolvedValue(undefined),
-  createSpinner: vi.fn(() => ({
-    start: vi.fn().mockReturnThis(),
-    stop: vi.fn(),
-    succeed: vi.fn(),
-    fail: vi.fn(),
-  })),
-}));
-
-vi.mock('../utils/findProjectRoot.js', () => ({
-  findProjectRoot: vi.fn().mockResolvedValue('/test/project'),
-}));
+vi.mock('../ui/index.js', () => createMockUiModule());
+vi.mock('../utils/findProjectRoot.js', () => createMockFindProjectRoot());
 
 vi.mock('../utils/config.js', () => ({
   getConfig: vi.fn().mockResolvedValue({
@@ -42,6 +38,8 @@ const mockOrchestrator = {
   }),
   watch: vi.fn().mockResolvedValue(mockWatcher),
   on: vi.fn(),
+  dispose: vi.fn().mockResolvedValue(undefined),
+  [Symbol.asyncDispose]: vi.fn().mockResolvedValue(undefined),
   [Symbol.dispose]: vi.fn(),
 };
 
@@ -58,23 +56,20 @@ vi.mock('node:readline', () => ({
 }));
 
 describe('Watch Command', () => {
-  let exitSpy: ReturnType<typeof vi.spyOn>;
-  let consoleLogSpy: ReturnType<typeof vi.spyOn>;
+  let spies: ReturnType<typeof setupCommandTestSpies>;
   let originalIsTTY: boolean | undefined;
 
   beforeEach(() => {
     vi.clearAllMocks();
     vi.resetModules();
-    exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never);
-    consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    spies = setupCommandTestSpies();
     originalIsTTY = process.stdin.isTTY;
     // Mock stdin as non-TTY to avoid setting up raw mode in tests
     Object.defineProperty(process.stdin, 'isTTY', { value: false, writable: true });
   });
 
   afterEach(() => {
-    exitSpy.mockRestore();
-    consoleLogSpy.mockRestore();
+    spies.cleanup();
     Object.defineProperty(process.stdin, 'isTTY', { value: originalIsTTY, writable: true });
   });
 
@@ -97,7 +92,7 @@ describe('Watch Command', () => {
 
     await watchCommand.parseAsync(['node', 'test', 'watch']);
 
-    expect(exitSpy).toHaveBeenCalledWith(1);
+    expect(spies.exitSpy).toHaveBeenCalledWith(1);
   });
 
   it('handles template loading errors', async () => {
@@ -155,8 +150,8 @@ describe('renderScreen', () => {
   let consoleLogSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
-    consoleClearSpy = vi.spyOn(console, 'clear').mockImplementation(() => undefined);
-    consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    consoleClearSpy = mockConsoleClear();
+    consoleLogSpy = mockConsoleLog();
   });
 
   afterEach(() => {

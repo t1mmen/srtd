@@ -114,6 +114,9 @@ function formatTemplateDisplay(templatePath: string, templateDir: string): strin
 export const watchCommand = new Command('watch')
   .description('Watch templates for changes and auto-apply')
   .action(async () => {
+    const exitCode = 0;
+    let orchestrator: Orchestrator | null = null;
+
     try {
       await renderBranding({ subtitle: 'Watch Mode' });
 
@@ -122,7 +125,7 @@ export const watchCommand = new Command('watch')
       // Initialize Orchestrator
       const projectRoot = await findProjectRoot();
       const config = await getConfig(projectRoot);
-      using orchestrator = await Orchestrator.create(projectRoot, config, { silent: true });
+      orchestrator = await Orchestrator.create(projectRoot, config, { silent: true });
 
       // Load initial templates
       const templatePaths = await orchestrator.findTemplates();
@@ -181,6 +184,17 @@ export const watchCommand = new Command('watch')
         initialProcess: true,
       });
 
+      // Cleanup function to properly dispose
+      const cleanup = async () => {
+        console.log();
+        console.log(chalk.dim('Stopping watch mode...'));
+        await watcher.close();
+        if (orchestrator) {
+          await orchestrator.dispose();
+        }
+        process.exit(exitCode);
+      };
+
       // Set up keyboard input handling for quit and toggle
       if (process.stdin.isTTY) {
         // Reset stdin state in case it was modified by previous prompts
@@ -195,12 +209,8 @@ export const watchCommand = new Command('watch')
 
         process.stdin.on('keypress', (_str, key) => {
           if (key && (key.name === 'q' || (key.ctrl && key.name === 'c'))) {
-            console.log();
-            console.log(chalk.dim('Stopping watch mode...'));
             process.stdin.setRawMode(false);
-            void watcher.close().then(() => {
-              process.exit(0);
-            });
+            void cleanup();
           }
           if (key && key.name === 'u') {
             showHistory = !showHistory;
@@ -211,11 +221,7 @@ export const watchCommand = new Command('watch')
 
       // Handle SIGINT
       process.on('SIGINT', () => {
-        console.log();
-        console.log(chalk.dim('Stopping watch mode...'));
-        void watcher.close().then(() => {
-          process.exit(0);
-        });
+        void cleanup();
       });
 
       // Keep the process alive
@@ -227,6 +233,9 @@ export const watchCommand = new Command('watch')
       console.log();
       console.log(chalk.red(`${figures.cross} Error starting watch mode:`));
       console.log(chalk.red(getErrorMessage(error)));
+      if (orchestrator) {
+        await orchestrator.dispose();
+      }
       process.exit(1);
     }
   });

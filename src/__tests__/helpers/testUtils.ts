@@ -1,0 +1,84 @@
+/**
+ * Shared test utilities for reducing boilerplate across test files
+ */
+
+import { vi } from 'vitest';
+
+/**
+ * Create a mock for console.log that returns undefined (lint-compliant)
+ * @returns Spy that can be restored in afterEach
+ */
+export function mockConsoleLog() {
+  return vi.spyOn(console, 'log').mockImplementation(() => undefined);
+}
+
+/**
+ * Create a mock for console.clear that returns undefined (lint-compliant)
+ * @returns Spy that can be restored in afterEach
+ */
+export function mockConsoleClear() {
+  return vi.spyOn(console, 'clear').mockImplementation(() => undefined);
+}
+
+/**
+ * Create a mock for process.exit that doesn't actually exit
+ * @returns Spy that can be restored in afterEach
+ */
+export function mockProcessExit() {
+  return vi.spyOn(process, 'exit').mockImplementation(() => undefined as never);
+}
+
+/**
+ * Create an Error with a code property (like pg errors)
+ * Avoids `as any` casts in tests
+ */
+export function createErrorWithCode(message: string, code: string): Error & { code: string } {
+  return Object.assign(new Error(message), { code });
+}
+
+/**
+ * Standard mock factory for the UI module
+ * Used by most command tests
+ */
+export function createMockUiModule() {
+  return {
+    renderBranding: vi.fn().mockResolvedValue(undefined),
+    createSpinner: vi.fn(() => ({
+      start: vi.fn().mockReturnThis(),
+      stop: vi.fn(),
+      succeed: vi.fn(),
+      fail: vi.fn(),
+      warn: vi.fn(),
+      text: '',
+    })),
+    renderResults: vi.fn(),
+  };
+}
+
+/**
+ * Standard mock factory for findProjectRoot
+ * @param projectRoot - The path to return (default: '/test/project')
+ */
+export function createMockFindProjectRoot(projectRoot = '/test/project') {
+  return {
+    findProjectRoot: vi.fn().mockResolvedValue(projectRoot),
+  };
+}
+
+/**
+ * Setup common command test spies (console.log + process.exit)
+ * Call in beforeEach, returns cleanup function for afterEach
+ */
+export function setupCommandTestSpies() {
+  const consoleLogSpy = mockConsoleLog();
+  const exitSpy = mockProcessExit();
+
+  return {
+    consoleLogSpy,
+    exitSpy,
+    cleanup: () => {
+      consoleLogSpy.mockRestore();
+      exitSpy.mockRestore();
+    },
+  };
+}

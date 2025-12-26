@@ -7,16 +7,12 @@
 import { EventEmitter } from 'node:events';
 import type { PoolClient } from 'pg';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { createErrorWithCode } from '../../__tests__/helpers/testUtils.js';
 import {
   DatabaseErrorType,
   DatabaseService,
   type DatabaseServiceConfig,
 } from '../DatabaseService.js';
-
-/** Create an Error with a code property (like pg errors) */
-function createErrorWithCode(message: string, code: string): Error & { code: string } {
-  return Object.assign(new Error(message), { code });
-}
 
 // Mock pg module
 const mockQuery = vi.fn();

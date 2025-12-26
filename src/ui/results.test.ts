@@ -1,11 +1,12 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { mockConsoleLog } from '../__tests__/helpers/testUtils.js';
 import { renderResults } from './results.js';
 
 describe('renderResults', () => {
-  let consoleLogSpy: ReturnType<typeof vi.spyOn>;
+  let consoleLogSpy: ReturnType<typeof mockConsoleLog>;
 
   beforeEach(() => {
-    consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    consoleLogSpy = mockConsoleLog();
   });
 
   afterEach(() => {

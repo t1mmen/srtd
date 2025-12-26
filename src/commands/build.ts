@@ -21,6 +21,8 @@ export const buildCommand = new Command('build')
   .option('-a, --apply', 'Apply the built templates')
   .option('-b, --bundle', 'Bundle all templates into a single migration')
   .action(async (options: BuildOptions) => {
+    let exitCode = 0;
+
     try {
       // Build subtitle with options
       const parts: string[] = ['Build migrations'];
@@ -35,7 +37,7 @@ export const buildCommand = new Command('build')
       // Initialize Orchestrator
       const projectRoot = await findProjectRoot();
       const config = await getConfig(projectRoot);
-      using orchestrator = await Orchestrator.create(projectRoot, config, { silent: true });
+      await using orchestrator = await Orchestrator.create(projectRoot, config, { silent: true });
 
       // Execute build operation
       const buildResult: ProcessedTemplateResult = await orchestrator.build({
@@ -72,12 +74,15 @@ export const buildCommand = new Command('build')
         showApply: !!options.apply,
       });
 
-      // Exit cleanly
-      process.exit(result.errors.length > 0 ? 1 : 0);
+      exitCode = result.errors.length > 0 ? 1 : 0;
+      // Exit happens after using block completes (dispose runs)
     } catch (error) {
       console.log();
       console.log(chalk.red(`${figures.cross} Error building templates:`));
       console.log(chalk.red(getErrorMessage(error)));
-      process.exit(1);
+      exitCode = 1;
     }
+
+    // Exit AFTER the using block has completed, ensuring dispose() runs
+    process.exit(exitCode);
   });

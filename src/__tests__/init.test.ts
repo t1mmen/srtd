@@ -1,20 +1,14 @@
 import { Command } from 'commander';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  createMockFindProjectRoot,
+  createMockUiModule,
+  setupCommandTestSpies,
+} from './helpers/testUtils.js';
 
 // Mock all dependencies before importing the command
-vi.mock('../ui/index.js', () => ({
-  renderBranding: vi.fn().mockResolvedValue(undefined),
-  createSpinner: vi.fn(() => ({
-    start: vi.fn().mockReturnThis(),
-    stop: vi.fn(),
-    succeed: vi.fn(),
-    fail: vi.fn(),
-  })),
-}));
-
-vi.mock('../utils/findProjectRoot.js', () => ({
-  findProjectRoot: vi.fn().mockResolvedValue('/test/project'),
-}));
+vi.mock('../ui/index.js', () => createMockUiModule());
+vi.mock('../utils/findProjectRoot.js', () => createMockFindProjectRoot());
 
 vi.mock('../utils/config.js', () => ({
   getConfig: vi.fn().mockResolvedValue({
@@ -49,19 +43,16 @@ vi.mock('node:fs/promises', () => ({
 }));
 
 describe('Init Command', () => {
-  let exitSpy: ReturnType<typeof vi.spyOn>;
-  let consoleLogSpy: ReturnType<typeof vi.spyOn>;
+  let spies: ReturnType<typeof setupCommandTestSpies>;
 
   beforeEach(() => {
     vi.clearAllMocks();
     vi.resetModules();
-    exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never);
-    consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    spies = setupCommandTestSpies();
   });
 
   afterEach(() => {
-    exitSpy.mockRestore();
-    consoleLogSpy.mockRestore();
+    spies.cleanup();
   });
 
   it('exports initCommand as a Commander command', async () => {
@@ -86,7 +77,7 @@ describe('Init Command', () => {
     expect(saveConfig).toHaveBeenCalled();
     expect(ensureDirectories).toHaveBeenCalled();
     expect(createEmptyBuildLog).toHaveBeenCalled();
-    expect(exitSpy).toHaveBeenCalledWith(0);
+    expect(spies.exitSpy).toHaveBeenCalledWith(0);
   });
 
   it('handles existing config gracefully', async () => {
@@ -100,7 +91,7 @@ describe('Init Command', () => {
 
     // Should not call saveConfig if config already exists
     expect(saveConfig).not.toHaveBeenCalled();
-    expect(exitSpy).toHaveBeenCalledWith(0);
+    expect(spies.exitSpy).toHaveBeenCalledWith(0);
   });
 
   it('handles errors gracefully', async () => {
@@ -111,6 +102,6 @@ describe('Init Command', () => {
 
     await initCommand.parseAsync(['node', 'test', 'init']);
 
-    expect(exitSpy).toHaveBeenCalledWith(1);
+    expect(spies.exitSpy).toHaveBeenCalledWith(1);
   });
 });

@@ -1,5 +1,6 @@
 import { Command } from 'commander';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { mockConsoleLog, mockProcessExit } from './__tests__/helpers/testUtils.js';
 
 // Mock dependencies before any imports
 vi.mock('update-notifier', () => ({
@@ -47,7 +48,7 @@ describe('cli', () => {
     vi.clearAllMocks();
     vi.resetModules();
     process.env.SRTD_TEST_MODE = 'true';
-    exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never);
+    exitSpy = mockProcessExit();
   });
 
   afterEach(() => {
@@ -68,7 +69,7 @@ describe('cli', () => {
     process.argv = ['node', 'srtd', '--version'];
 
     // In test mode with version flag
-    const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    const consoleLogSpy = mockConsoleLog();
 
     try {
       await import('./cli.js');

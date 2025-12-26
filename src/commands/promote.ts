@@ -22,7 +22,7 @@ async function findWipTemplates(config: CLIConfig, projectRoot: string): Promise
 async function promoteTemplateAction(
   templatePath: string,
   orchestrator: Orchestrator
-): Promise<void> {
+): Promise<number> {
   const spinner = createSpinner('Promoting template...').start();
 
   try {
@@ -33,11 +33,11 @@ async function promoteTemplateAction(
     spinner.succeed(`Successfully promoted ${templateName}`);
     console.log(chalk.dim('Run `build` command to generate migrations'));
 
-    process.exit(0);
+    return 0;
   } catch (err) {
     spinner.fail('Failed to promote template');
     console.log(chalk.red(`${figures.cross} ${getErrorMessage(err)}`));
-    process.exit(1);
+    return 1;
   }
 }
 
@@ -46,7 +46,7 @@ async function handleTemplatePromotion(
   config: CLIConfig,
   projectRoot: string,
   orchestrator: Orchestrator
-): Promise<void> {
+): Promise<number> {
   const templateDir = path.join(projectRoot, config.templateDir);
   const pattern = `**/*${templateName}*`;
   const matches = await glob(pattern, { cwd: templateDir });
@@ -59,13 +59,13 @@ async function handleTemplatePromotion(
         `${figures.cross} No WIP template found matching: ${templateName} in ${config.templateDir}`
       )
     );
-    process.exit(1);
+    return 1;
   }
 
   if (!isWip) {
     console.log();
     console.log(chalk.red(`${figures.cross} Template is not a WIP template: ${templateName}`));
-    process.exit(1);
+    return 1;
   }
 
   const match = matches[0] ? path.join(templateDir, matches[0]) : '';
@@ -76,72 +76,74 @@ async function handleTemplatePromotion(
         `${figures.cross} No valid match found for template: ${templateName} in ${config.templateDir}`
       )
     );
-    process.exit(1);
+    return 1;
   }
 
-  await promoteTemplateAction(match, orchestrator);
+  return promoteTemplateAction(match, orchestrator);
 }
 
 export const promoteCommand = new Command('promote')
   .description('Promote a WIP template by removing the WIP indicator from its filename')
   .argument('[template]', 'Template file to promote (optional)')
   .action(async (templateArg?: string) => {
+    let exitCode = 0;
+
     try {
       await renderBranding({ subtitle: 'Promote WIP template' });
 
       // Get configuration and initialize Orchestrator
       const projectRoot = await findProjectRoot();
       const config = await getConfig(projectRoot);
-      using orchestrator = await Orchestrator.create(projectRoot, config, { silent: true });
+      await using orchestrator = await Orchestrator.create(projectRoot, config, { silent: true });
 
       // If template was provided as argument, promote it directly
       if (templateArg) {
-        await handleTemplatePromotion(templateArg, config, projectRoot, orchestrator);
-        return;
+        exitCode = await handleTemplatePromotion(templateArg, config, projectRoot, orchestrator);
+      } else {
+        // Find WIP templates for interactive selection
+        const spinner = createSpinner('Finding WIP templates...').start();
+        const wipTemplates = await findWipTemplates(config, projectRoot);
+        spinner.stop();
+
+        if (wipTemplates.length === 0) {
+          console.log(
+            chalk.yellow(
+              `${figures.warning} No WIP templates found in ${config.templateDir} (${config.wipIndicator})`
+            )
+          );
+          exitCode = 0;
+        } else if (!process.stdin.isTTY) {
+          // Interactive mode requires TTY
+          console.log(chalk.red(`${figures.cross} Interactive mode requires a TTY.`));
+          console.log(chalk.dim('Provide a template name as argument: srtd promote <template>'));
+          exitCode = 1;
+        } else {
+          // Show interactive selection
+          const choices = wipTemplates.map(templatePath => ({
+            name: path.basename(templatePath),
+            value: templatePath,
+          }));
+
+          const selectedTemplate = await select({
+            message: `Select a template to promote (removes ${config.wipIndicator} in filename):`,
+            choices,
+          });
+
+          exitCode = await promoteTemplateAction(selectedTemplate, orchestrator);
+        }
       }
-
-      // Find WIP templates for interactive selection
-      const spinner = createSpinner('Finding WIP templates...').start();
-      const wipTemplates = await findWipTemplates(config, projectRoot);
-      spinner.stop();
-
-      if (wipTemplates.length === 0) {
-        console.log(
-          chalk.yellow(
-            `${figures.warning} No WIP templates found in ${config.templateDir} (${config.wipIndicator})`
-          )
-        );
-        process.exit(0);
-      }
-
-      // Interactive mode requires TTY
-      if (!process.stdin.isTTY) {
-        console.log(chalk.red(`${figures.cross} Interactive mode requires a TTY.`));
-        console.log(chalk.dim('Provide a template name as argument: srtd promote <template>'));
-        process.exit(1);
-      }
-
-      // Show interactive selection
-      const choices = wipTemplates.map(templatePath => ({
-        name: path.basename(templatePath),
-        value: templatePath,
-      }));
-
-      const selectedTemplate = await select({
-        message: `Select a template to promote (removes ${config.wipIndicator} in filename):`,
-        choices,
-      });
-
-      await promoteTemplateAction(selectedTemplate, orchestrator);
     } catch (error) {
       // Handle Ctrl+C gracefully
       if (isPromptExit(error)) {
-        process.exit(0);
+        exitCode = 0;
+      } else {
+        console.log();
+        console.log(chalk.red(`${figures.cross} Error promoting template:`));
+        console.log(chalk.red(getErrorMessage(error)));
+        exitCode = 1;
       }
-
-      console.log();
-      console.log(chalk.red(`${figures.cross} Error promoting template:`));
-      console.log(chalk.red(getErrorMessage(error)));
-      process.exit(1);
     }
+
+    // Exit AFTER the await using block has completed, ensuring dispose() runs
+    process.exit(exitCode);
   });

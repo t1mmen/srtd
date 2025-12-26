@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { mockConsoleLog } from '../__tests__/helpers/testUtils.js';
 
 // Unmock logger for these tests so we can test the real implementation
 vi.unmock('./logger.js');
@@ -8,7 +9,7 @@ describe('logger', () => {
   const originalDebug = process.env.DEBUG;
 
   beforeEach(async () => {
-    consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    consoleLogSpy = mockConsoleLog();
     vi.clearAllMocks();
   });
 

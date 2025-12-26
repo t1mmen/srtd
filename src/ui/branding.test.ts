@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { mockConsoleLog } from '../__tests__/helpers/testUtils.js';
 import type { DatabaseService } from '../services/DatabaseService.js';
 
 describe('renderBranding', () => {
@@ -7,7 +8,7 @@ describe('renderBranding', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.resetModules();
-    consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    consoleLogSpy = mockConsoleLog();
   });
 
   afterEach(() => {

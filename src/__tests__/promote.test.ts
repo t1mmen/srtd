@@ -1,21 +1,14 @@
 import { Command } from 'commander';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  createMockFindProjectRoot,
+  createMockUiModule,
+  setupCommandTestSpies,
+} from './helpers/testUtils.js';
 
 // Mock all dependencies before importing the command
-vi.mock('../ui/index.js', () => ({
-  renderBranding: vi.fn().mockResolvedValue(undefined),
-  createSpinner: vi.fn(() => ({
-    start: vi.fn().mockReturnThis(),
-    stop: vi.fn(),
-    succeed: vi.fn(),
-    fail: vi.fn(),
-    warn: vi.fn(),
-  })),
-}));
-
-vi.mock('../utils/findProjectRoot.js', () => ({
-  findProjectRoot: vi.fn().mockResolvedValue('/test/project'),
-}));
+vi.mock('../ui/index.js', () => createMockUiModule());
+vi.mock('../utils/findProjectRoot.js', () => createMockFindProjectRoot());
 
 vi.mock('../utils/config.js', () => ({
   getConfig: vi.fn().mockResolvedValue({
@@ -35,6 +28,7 @@ const mockOrchestrator = {
   promoteTemplate: vi
     .fn()
     .mockImplementation((path: string) => Promise.resolve(path.replace('.wip', ''))),
+  [Symbol.asyncDispose]: vi.fn().mockResolvedValue(undefined),
   [Symbol.dispose]: vi.fn(),
 };
 
@@ -49,19 +43,16 @@ vi.mock('@inquirer/prompts', () => ({
 }));
 
 describe('Promote Command', () => {
-  let exitSpy: ReturnType<typeof vi.spyOn>;
-  let consoleLogSpy: ReturnType<typeof vi.spyOn>;
+  let spies: ReturnType<typeof setupCommandTestSpies>;
 
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.resetModules();
-    exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never);
-    consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    // NOTE: Don't use vi.resetModules() here - it breaks glob mock sharing
+    spies = setupCommandTestSpies();
   });
 
   afterEach(() => {
-    exitSpy.mockRestore();
-    consoleLogSpy.mockRestore();
+    spies.cleanup();
   });
 
   it('exports promoteCommand as a Commander command', async () => {
@@ -94,10 +85,11 @@ describe('Promote Command', () => {
 
     const { promoteCommand } = await import('../commands/promote.js');
 
-    await promoteCommand.parseAsync(['node', 'test', 'promote', 'test.wip.sql']);
+    // Note: Don't include 'promote' in args - it's already the subcommand being tested
+    await promoteCommand.parseAsync(['node', 'test', 'test.wip.sql']);
 
     expect(mockOrchestrator.promoteTemplate).toHaveBeenCalled();
-    expect(exitSpy).toHaveBeenCalledWith(0);
+    expect(spies.exitSpy).toHaveBeenCalledWith(0);
   });
 
   it('exits with error when template not found', async () => {
@@ -106,9 +98,9 @@ describe('Promote Command', () => {
 
     const { promoteCommand } = await import('../commands/promote.js');
 
-    await promoteCommand.parseAsync(['node', 'test', 'promote', 'nonexistent.wip.sql']);
+    await promoteCommand.parseAsync(['node', 'test', 'nonexistent.wip.sql']);
 
-    expect(exitSpy).toHaveBeenCalledWith(1);
+    expect(spies.exitSpy).toHaveBeenCalledWith(1);
   });
 
   it('exits with error for non-WIP template', async () => {
@@ -117,9 +109,9 @@ describe('Promote Command', () => {
 
     const { promoteCommand } = await import('../commands/promote.js');
 
-    await promoteCommand.parseAsync(['node', 'test', 'promote', 'test.sql']);
+    await promoteCommand.parseAsync(['node', 'test', 'test.sql']);
 
-    expect(exitSpy).toHaveBeenCalledWith(1);
+    expect(spies.exitSpy).toHaveBeenCalledWith(1);
   });
 
   it('exits with error in non-TTY mode without arguments', async () => {
@@ -131,9 +123,9 @@ describe('Promote Command', () => {
 
     const { promoteCommand } = await import('../commands/promote.js');
 
-    await promoteCommand.parseAsync(['node', 'test', 'promote']);
+    await promoteCommand.parseAsync(['node', 'test']);
 
-    expect(exitSpy).toHaveBeenCalledWith(1);
+    expect(spies.exitSpy).toHaveBeenCalledWith(1);
 
     Object.defineProperty(process.stdin, 'isTTY', { value: originalIsTTY, writable: true });
   });
@@ -147,9 +139,9 @@ describe('Promote Command', () => {
 
     const { promoteCommand } = await import('../commands/promote.js');
 
-    await promoteCommand.parseAsync(['node', 'test', 'promote', 'test.wip.sql']);
+    await promoteCommand.parseAsync(['node', 'test', 'test.wip.sql']);
 
-    expect(exitSpy).toHaveBeenCalledWith(1);
+    expect(spies.exitSpy).toHaveBeenCalledWith(1);
 
     // Reset for other tests
     mockOrchestrator.promoteTemplate.mockImplementation((path: string) =>
@@ -165,9 +157,9 @@ describe('Promote Command', () => {
 
     await promoteCommand.parseAsync(['node', 'test']);
 
-    const output = consoleLogSpy.mock.calls.flat().join('\n');
+    const output = spies.consoleLogSpy.mock.calls.flat().join('\n');
     expect(output).toContain('No WIP templates found');
-    expect(exitSpy).toHaveBeenCalledWith(0);
+    expect(spies.exitSpy).toHaveBeenCalledWith(0);
   });
 
   it('updates build log when promoting tracked template', async () => {
@@ -183,7 +175,7 @@ describe('Promote Command', () => {
 
     // Orchestrator now handles build log updates internally
     expect(mockOrchestrator.promoteTemplate).toHaveBeenCalled();
-    expect(exitSpy).toHaveBeenCalledWith(0);
+    expect(spies.exitSpy).toHaveBeenCalledWith(0);
   });
 
   it('handles interactive selection with Ctrl+C', async () => {
@@ -202,7 +194,7 @@ describe('Promote Command', () => {
 
     await promoteCommand.parseAsync(['node', 'test']);
 
-    expect(exitSpy).toHaveBeenCalledWith(0);
+    expect(spies.exitSpy).toHaveBeenCalledWith(0);
 
     Object.defineProperty(process.stdin, 'isTTY', { value: originalIsTTY, writable: true });
   });
@@ -226,7 +218,7 @@ describe('Promote Command', () => {
 
     expect(select).toHaveBeenCalled();
     expect(mockOrchestrator.promoteTemplate).toHaveBeenCalled();
-    expect(exitSpy).toHaveBeenCalledWith(0);
+    expect(spies.exitSpy).toHaveBeenCalledWith(0);
 
     Object.defineProperty(process.stdin, 'isTTY', { value: originalIsTTY, writable: true });
   });

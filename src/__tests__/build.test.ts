@@ -1,22 +1,14 @@
 import { Command } from 'commander';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  createMockFindProjectRoot,
+  createMockUiModule,
+  setupCommandTestSpies,
+} from './helpers/testUtils.js';
 
 // Mock all dependencies before importing the command
-vi.mock('../ui/index.js', () => ({
-  renderBranding: vi.fn().mockResolvedValue(undefined),
-  createSpinner: vi.fn(() => ({
-    start: vi.fn().mockReturnThis(),
-    stop: vi.fn(),
-    succeed: vi.fn(),
-    fail: vi.fn(),
-    text: '',
-  })),
-  renderResults: vi.fn(),
-}));
-
-vi.mock('../utils/findProjectRoot.js', () => ({
-  findProjectRoot: vi.fn().mockResolvedValue('/test/project'),
-}));
+vi.mock('../ui/index.js', () => createMockUiModule());
+vi.mock('../utils/findProjectRoot.js', () => createMockFindProjectRoot());
 
 vi.mock('../utils/config.js', () => ({
   getConfig: vi.fn().mockResolvedValue({
@@ -30,6 +22,7 @@ vi.mock('../utils/config.js', () => ({
 const mockOrchestrator = {
   build: vi.fn(),
   apply: vi.fn(),
+  [Symbol.asyncDispose]: vi.fn().mockResolvedValue(undefined),
   [Symbol.dispose]: vi.fn(),
 };
 
@@ -40,19 +33,16 @@ vi.mock('../services/Orchestrator.js', () => ({
 }));
 
 describe('Build Command', () => {
-  let exitSpy: ReturnType<typeof vi.spyOn>;
-  let consoleLogSpy: ReturnType<typeof vi.spyOn>;
+  let spies: ReturnType<typeof setupCommandTestSpies>;
 
   beforeEach(() => {
     vi.clearAllMocks();
     vi.resetModules();
-    exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never);
-    consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    spies = setupCommandTestSpies();
   });
 
   afterEach(() => {
-    exitSpy.mockRestore();
-    consoleLogSpy.mockRestore();
+    spies.cleanup();
   });
 
   it('exports buildCommand as a Commander command', async () => {
@@ -104,7 +94,7 @@ describe('Build Command', () => {
       bundle: undefined,
       silent: true,
     });
-    expect(exitSpy).toHaveBeenCalledWith(0);
+    expect(spies.exitSpy).toHaveBeenCalledWith(0);
   });
 
   it('executes build with --force flag', async () => {
@@ -166,7 +156,7 @@ describe('Build Command', () => {
 
     expect(mockOrchestrator.build).toHaveBeenCalled();
     expect(mockOrchestrator.apply).toHaveBeenCalled();
-    expect(exitSpy).toHaveBeenCalledWith(0);
+    expect(spies.exitSpy).toHaveBeenCalledWith(0);
   });
 
   it('exits with code 1 when build has errors', async () => {
@@ -181,7 +171,7 @@ describe('Build Command', () => {
 
     await buildCommand.parseAsync(['node', 'test', 'build']);
 
-    expect(exitSpy).toHaveBeenCalledWith(1);
+    expect(spies.exitSpy).toHaveBeenCalledWith(1);
   });
 
   it('handles thrown errors gracefully', async () => {
@@ -191,6 +181,22 @@ describe('Build Command', () => {
 
     await buildCommand.parseAsync(['node', 'test', 'build']);
 
-    expect(exitSpy).toHaveBeenCalledWith(1);
+    expect(spies.exitSpy).toHaveBeenCalledWith(1);
+  });
+
+  it('disposes orchestrator before exiting', async () => {
+    const { buildCommand } = await import('../commands/build.js');
+
+    mockOrchestrator.build.mockResolvedValue({
+      applied: [],
+      built: ['migration1.sql'],
+      skipped: [],
+      errors: [],
+    });
+
+    await buildCommand.parseAsync(['node', 'test', 'build']);
+
+    // Verify async dispose was called (await using triggers Symbol.asyncDispose)
+    expect(mockOrchestrator[Symbol.asyncDispose]).toHaveBeenCalled();
   });
 });
