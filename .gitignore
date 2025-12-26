@@ -52,3 +52,8 @@ BACKLOG.md
 TODO.md
 .buildlog.json
 .buildlog.local.json
+CLAUDE.md
+AGENTS.md
+.rules
+opencode.json
+demo.tape

@@ -47,14 +47,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-          # Deliberately NOT caching npm due to rollup platform dependency issues
+          cache: 'npm'
 
       - name: Install dependencies
-        run: |
-          rm -f package-lock.json
-          npm install
-        env:
-          NODE_ENV: development
+        run: npm ci
 
       - name: Setup Biome
         uses: biomejs/setup-biome@v2
