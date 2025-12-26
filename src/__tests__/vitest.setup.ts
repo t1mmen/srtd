@@ -2,11 +2,31 @@ import fs from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, beforeAll, vi } from 'vitest';
-import { disconnect } from '../utils/databaseConnection.js';
 
 export const TEST_FN_PREFIX = 'srtd_scoped_test_func_';
 export const TEST_ROOT_BASE = join(tmpdir(), 'srtd-test');
 export const TEST_ROOT = join(TEST_ROOT_BASE, `srtd-tests-${Date.now()}`);
+
+// Shared test database service instance (lazy loaded to avoid polluting module cache)
+let testDatabaseService:
+  | InstanceType<typeof import('../services/DatabaseService.js').DatabaseService>
+  | undefined;
+
+/**
+ * Get or create the shared test DatabaseService instance
+ * Uses dynamic import to avoid polluting module cache before test mocks are applied
+ */
+export async function getTestDatabaseService(): Promise<
+  InstanceType<typeof import('../services/DatabaseService.js').DatabaseService>
+> {
+  if (!testDatabaseService) {
+    const { DatabaseService } = await import('../services/DatabaseService.js');
+    const connectionString =
+      process.env.POSTGRES_URL || 'postgresql://postgres:postgres@localhost:54322/postgres';
+    testDatabaseService = new DatabaseService({ connectionString });
+  }
+  return testDatabaseService;
+}
 
 vi.mock('../utils/logger', () => ({
   logger: {
@@ -45,9 +65,11 @@ afterAll(async () => {
   // Just clean up the test root directory
   await fs.rm(TEST_ROOT, { recursive: true, force: true });
 
-  // No need for global database cleanup as each test now cleans up after itself
-  // using the TestResource dispose pattern
-  void disconnect();
+  // Dispose the shared test database service
+  if (testDatabaseService) {
+    await testDatabaseService.dispose();
+    testDatabaseService = undefined;
+  }
 });
 
 vi.mock('../utils/config', async importOriginal => {

@@ -34,9 +34,9 @@ import { randomUUID } from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import type { PoolClient } from 'pg';
-import { connect } from '../../utils/databaseConnection.js';
+import { DatabaseService } from '../../services/DatabaseService.js';
 import { ensureDirectories } from '../../utils/ensureDirectories.js';
-import { TEST_FN_PREFIX, TEST_ROOT_BASE } from '../vitest.setup.js';
+import { TEST_FN_PREFIX, TEST_ROOT_BASE, getTestDatabaseService } from '../vitest.setup.js';
 
 /**
  * Helper class to manage test resources consistently across all tests.
@@ -88,7 +88,8 @@ export class TestResource {
     await ensureDirectories(this.testDir);
 
     // Setup database (create transaction to ensure atomicity)
-    const client = await connect();
+    const dbService = await getTestDatabaseService();
+    const client = await dbService.connect();
     this.dbClients.push(client);
 
     try {
@@ -126,11 +127,12 @@ export class TestResource {
 
     // Clean up database objects with retry logic
     let dbCleanupSuccess = false;
+    const dbService = await getTestDatabaseService();
 
     for (let attempt = 1; attempt <= 3; attempt++) {
       let client: PoolClient | undefined;
       try {
-        client = await connect({ silent: true });
+        client = await dbService.connect({ silent: true });
         await client.query('BEGIN');
 
         // Drop any functions created by this test
@@ -280,7 +282,8 @@ export class TestResource {
    * Acquire a database client that will be automatically released on cleanup
    */
   async getClient(): Promise<PoolClient> {
-    const client = await connect();
+    const dbService = await getTestDatabaseService();
+    const client = await dbService.connect();
     this.dbClients.push(client);
     return client;
   }

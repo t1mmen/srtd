@@ -16,16 +16,16 @@ describe('CLI Commands Test', () => {
     const files = await fs.readdir(commandsDir);
 
     // Verify core command files exist
-    expect(files).toContain('apply.tsx');
-    expect(files).toContain('build.tsx');
-    expect(files).toContain('clear.tsx');
-    expect(files).toContain('init.tsx');
-    expect(files).toContain('watch.tsx');
+    expect(files).toContain('apply.ts');
+    expect(files).toContain('build.ts');
+    expect(files).toContain('clear.ts');
+    expect(files).toContain('init.ts');
+    expect(files).toContain('watch.ts');
   });
 
   // Verify CLI entry point exists
   it('should have a main CLI entry point', async () => {
-    const cliPath = path.resolve(process.cwd(), 'src/cli.tsx');
+    const cliPath = path.resolve(process.cwd(), 'src/cli.ts');
     const exists = await fs
       .stat(cliPath)
       .then(() => true)

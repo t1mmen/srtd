@@ -68,30 +68,35 @@ const VALID_TRANSITIONS: Record<TemplateState, TemplateState[]> = {
     TemplateState.ERROR,
   ],
   [TemplateState.SYNCED]: [
+    TemplateState.SYNCED, // Allow self-transition for updates
     TemplateState.CHANGED,
     TemplateState.APPLIED,
     TemplateState.BUILT,
     TemplateState.ERROR,
   ],
   [TemplateState.CHANGED]: [
+    TemplateState.CHANGED, // Allow self-transition for updates
     TemplateState.SYNCED,
     TemplateState.APPLIED,
     TemplateState.BUILT,
     TemplateState.ERROR,
   ],
   [TemplateState.APPLIED]: [
+    TemplateState.APPLIED, // Allow self-transition for force apply
     TemplateState.SYNCED,
     TemplateState.CHANGED,
     TemplateState.BUILT,
     TemplateState.ERROR,
   ],
   [TemplateState.BUILT]: [
+    TemplateState.BUILT, // Allow self-transition for force rebuild
     TemplateState.SYNCED,
     TemplateState.CHANGED,
     TemplateState.APPLIED,
     TemplateState.ERROR,
   ],
   [TemplateState.ERROR]: [
+    TemplateState.ERROR, // Allow self-transition for updating error details
     TemplateState.UNSEEN,
     TemplateState.SYNCED,
     TemplateState.CHANGED,
@@ -451,12 +456,101 @@ export class StateService extends EventEmitter {
   }
 
   /**
+   * Clear build logs selectively
+   * @param type - 'local' clears local only, 'shared' clears shared only, 'both' clears all
+   */
+  async clearBuildLogs(type: 'local' | 'shared' | 'both'): Promise<void> {
+    if (type === 'local' || type === 'both') {
+      this.localBuildLog = this.createEmptyBuildLog();
+    }
+    if (type === 'shared' || type === 'both') {
+      this.buildLog = this.createEmptyBuildLog();
+    }
+    // Clear in-memory state when clearing both
+    if (type === 'both') {
+      this.templateStates.clear();
+    }
+    await this.saveBuildLogs();
+    this.emit('state:cleared');
+  }
+
+  /**
    * Update template timestamp
    */
   updateTimestamp(timestamp: string): void {
     this.buildLog.lastTimestamp = timestamp;
     this.localBuildLog.lastTimestamp = timestamp;
     this.scheduleAutoSave();
+  }
+
+  /**
+   * Get the last timestamp for generating migration filenames
+   */
+  getLastTimestamp(): string {
+    return this.buildLog.lastTimestamp;
+  }
+
+  /**
+   * Get combined build state for a template (merges common and local logs)
+   * @see Orchestrator.getTemplateStatus - primary consumer
+   */
+  getTemplateBuildState(templatePath: string): TemplateBuildState | undefined {
+    const relPath = this.toRelativePath(templatePath);
+    const common = this.buildLog.templates[relPath];
+    const local = this.localBuildLog.templates[relPath];
+
+    if (!common && !local) return undefined;
+
+    return { ...common, ...local };
+  }
+
+  /**
+   * Get build log reference for MigrationBuilder (read-only access)
+   * @see MigrationBuilder.generateAndWriteBundledMigration
+   */
+  getBuildLogForMigration(): Readonly<BuildLog> {
+    return this.buildLog;
+  }
+
+  /**
+   * Rename template entry in build logs (used when promoting WIP templates)
+   * Moves the build state from old path to new path in both common and local logs
+   */
+  async renameTemplate(oldPath: string, newPath: string): Promise<void> {
+    const oldRelPath = this.toRelativePath(oldPath);
+    const newRelPath = this.toRelativePath(newPath);
+
+    // Move entry in common build log
+    if (this.buildLog.templates[oldRelPath]) {
+      this.buildLog.templates[newRelPath] = this.buildLog.templates[oldRelPath];
+      delete this.buildLog.templates[oldRelPath];
+    }
+
+    // Move entry in local build log
+    if (this.localBuildLog.templates[oldRelPath]) {
+      this.localBuildLog.templates[newRelPath] = this.localBuildLog.templates[oldRelPath];
+      delete this.localBuildLog.templates[oldRelPath];
+    }
+
+    // Update in-memory state map
+    const oldAbsPath = path.resolve(this.config.baseDir, oldRelPath);
+    const newAbsPath = path.resolve(this.config.baseDir, newRelPath);
+    const state = this.templateStates.get(oldAbsPath);
+    if (state) {
+      this.templateStates.delete(oldAbsPath);
+      this.templateStates.set(newAbsPath, { ...state, templatePath: newAbsPath });
+    }
+
+    this.scheduleAutoSave();
+  }
+
+  /**
+   * Convert template path to relative path for build log keys
+   */
+  private toRelativePath(templatePath: string): string {
+    return path.isAbsolute(templatePath)
+      ? path.relative(this.config.baseDir, templatePath)
+      : templatePath;
   }
 
   /**

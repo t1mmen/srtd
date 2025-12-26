@@ -38,3 +38,13 @@ node_modules/
 # Task files
 # tasks.json
 # tasks/ 
+
+# Local tooling configs
+.claude/
+.toolbox/
+.llm/
+.codex/
+.serena/
+.mcp.json
+BACKLOG.md
+TODO.md

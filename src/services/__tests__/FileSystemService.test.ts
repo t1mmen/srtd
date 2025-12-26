@@ -397,7 +397,7 @@ describe('FileSystemService', () => {
   });
 
   describe('event emission', () => {
-    it('should emit specific event types', (done: any) => {
+    it('should emit specific event types', async () => {
       const events: string[] = [];
 
       service.on('template:added', () => events.push('added'));
@@ -410,10 +410,10 @@ describe('FileSystemService', () => {
       (service as any).emitWatchEvent('changed', '/test/file.sql');
       (service as any).emitWatchEvent('removed', '/test/file.sql');
 
-      setTimeout(() => {
-        expect(events).toEqual(['added', 'generic', 'changed', 'generic', 'removed', 'generic']);
-        done();
-      }, 10);
+      // Wait a tick for events to propagate
+      await new Promise(resolve => setTimeout(resolve, 10));
+
+      expect(events).toEqual(['added', 'generic', 'changed', 'generic', 'removed', 'generic']);
     });
   });
 });

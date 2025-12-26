@@ -13,13 +13,22 @@ describe('CLI Help Test', () => {
     try {
       const cmd = command ? `npm run start -- ${command} --help` : `npm run start -- --help`;
 
-      return execSync(cmd, {
+      const output = execSync(cmd, {
         encoding: 'utf-8',
         stdio: ['ignore', 'pipe', 'pipe'],
       });
+
+      // Extract the actual CLI output by removing npm script output
+      // The CLI output starts after the second line (after "npm run" output)
+      const lines = output.split('\n');
+      const cliStartIndex = lines.findIndex(line => line.includes('Usage:'));
+      return cliStartIndex >= 0 ? lines.slice(cliStartIndex).join('\n') : output;
     } catch (error) {
       if (error && typeof error === 'object' && 'stdout' in error) {
-        return String(error.stdout || '');
+        const output = String(error.stdout || '');
+        const lines = output.split('\n');
+        const cliStartIndex = lines.findIndex(line => line.includes('Usage:'));
+        return cliStartIndex >= 0 ? lines.slice(cliStartIndex).join('\n') : output;
       }
       return '';
     }

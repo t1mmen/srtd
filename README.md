@@ -54,11 +54,6 @@ Built specifically for projects using the standard [Supabase](https://supabase.c
 ### Installation
 
 
-> [!WARNING]
-> Projects using React 19 may not work with per-project installation of `srtd` (ref [Ink CLI issue](https://github.com/vadimdemedes/ink/issues/688)). Until resolved, **global installation is recommended.**
-
-
-
 ```bash
 # Global installation
 npm install -g @t1mmen/srtd
@@ -226,7 +221,7 @@ Running `npx @t1mmen/srtd` without arguments opens an interactive menu. All comm
 - ▶️  `srtd apply [--force]` - Apply templates directly to local database
 - ✍️  `srtd register [file.sql...]` - Mark templates as already built
 - 🚀  `srtd promote - [file.sql ...]` - Promote WIP template to buildable templates
-- 🧹 `srtd clean` - Remove all logs and reset config
+- 🧹 `srtd clear` - Clear build logs or reset configuration
 
 > [!IMPORTANT]
 > `watch` and `apply` commands modify your local database directly and don't clean up after themselves. Use with caution!
@@ -344,15 +339,17 @@ Note: New features are evaluated based on alignment with project scope.
 
 ## Built With 🛠️
 
-### Terminal UI
-- [Ink](https://github.com/vadimdemedes/ink) - React for CLI interfaces
-- [Pastel](https://github.com/vadimdemedes/pastel) - Next-like framework for Ink
+### CLI
+- [Commander.js](https://github.com/tj/commander.js) - CLI framework
+- [Inquirer](https://github.com/SBoudrias/Inquirer.js) - Interactive prompts
+- [Ora](https://github.com/sindresorhus/ora) - Terminal spinners
+- [Chalk](https://github.com/chalk/chalk) - Terminal styling
 - [Figures](https://github.com/sindresorhus/figures) - Unicode symbols
+
+### Core
 - [Chokidar](https://github.com/paulmillr/chokidar) - File watcher
-- [update-notifier](https://github.com/sindresorhus/update-notifier) - Version checks
 - [Zod](https://zod.dev/) - Schema validation
-- [Conf](https://github.com/sindresorhus/conf) - Config management
-- [vhs](https://github.com/charmbracelet/vhs) - Video recording
+- [update-notifier](https://github.com/sindresorhus/update-notifier) - Version checks
 
 
 ## License

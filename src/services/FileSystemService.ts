@@ -123,6 +123,13 @@ export class FileSystemService extends EventEmitter {
   }
 
   /**
+   * Rename a file
+   */
+  async renameFile(oldPath: string, newPath: string): Promise<void> {
+    await fs.rename(oldPath, newPath);
+  }
+
+  /**
    * Get file stats
    */
   async getFileStats(filePath: string): Promise<Stats> {

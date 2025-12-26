@@ -1,213 +1,279 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<testsuites name="vitest tests" tests="222" failures="15" errors="0" time="7.604562416">
-    <testsuite name="src/__tests__/apply.test.tsx" timestamp="2025-08-18T17:27:22.099Z" hostname="MacBook-Pro-2.local" tests="1" failures="1" errors="0" skipped="0" time="0">
-        <testcase classname="src/__tests__/apply.test.tsx" name="src/__tests__/apply.test.tsx" time="0">
-            <failure message="[vitest] There was an error when mocking a module. If you are using &quot;vi.mock&quot; factory, make sure there are no top level variables inside, since this call is hoisted to top of the file. Read more: https://vitest.dev/api/vi.html#vi-mock" type="Error">
-Error: [vitest] There was an error when mocking a module. If you are using &quot;vi.mock&quot; factory, make sure there are no top level variables inside, since this call is hoisted to top of the file. Read more: https://vitest.dev/api/vi.html#vi-mock
- ❯ src/commands/apply.tsx:3:1
-
-Caused by: ReferenceError: Cannot access &apos;mockTerminal&apos; before initialization
- ❯ src/__tests__/apply.test.tsx:30:13
- ❯ src/commands/apply.tsx:3:1
-            </failure>
+<testsuites name="vitest tests" tests="276" failures="0" errors="0" time="7.964883289">
+    <testsuite name="src/__tests__/apply.test.ts" timestamp="2025-12-25T21:03:30.758Z" hostname="MacBook-Pro-2.local" tests="7" failures="0" errors="0" skipped="0" time="0.043743042">
+        <testcase classname="src/__tests__/apply.test.ts" name="Apply Command &gt; exports applyCommand as a Commander command" time="0.017579041">
+        </testcase>
+        <testcase classname="src/__tests__/apply.test.ts" name="Apply Command &gt; has correct description" time="0.002402708">
+        </testcase>
+        <testcase classname="src/__tests__/apply.test.ts" name="Apply Command &gt; supports --force option" time="0.004736875">
+        </testcase>
+        <testcase classname="src/__tests__/apply.test.ts" name="Apply Command &gt; executes apply with successful result" time="0.006677917">
+        </testcase>
+        <testcase classname="src/__tests__/apply.test.ts" name="Apply Command &gt; executes apply with --force flag" time="0.003353375">
+        </testcase>
+        <testcase classname="src/__tests__/apply.test.ts" name="Apply Command &gt; exits with code 1 when there are errors" time="0.003224791">
+        </testcase>
+        <testcase classname="src/__tests__/apply.test.ts" name="Apply Command &gt; handles thrown errors gracefully" time="0.0034615">
         </testcase>
     </testsuite>
-    <testsuite name="src/__tests__/build.test.tsx" timestamp="2025-08-18T17:27:22.100Z" hostname="MacBook-Pro-2.local" tests="1" failures="1" errors="0" skipped="0" time="0">
-        <testcase classname="src/__tests__/build.test.tsx" name="src/__tests__/build.test.tsx" time="0">
-            <failure message="[vitest] There was an error when mocking a module. If you are using &quot;vi.mock&quot; factory, make sure there are no top level variables inside, since this call is hoisted to top of the file. Read more: https://vitest.dev/api/vi.html#vi-mock" type="Error">
-Error: [vitest] There was an error when mocking a module. If you are using &quot;vi.mock&quot; factory, make sure there are no top level variables inside, since this call is hoisted to top of the file. Read more: https://vitest.dev/api/vi.html#vi-mock
- ❯ src/commands/build.tsx:2:1
-
-Caused by: ReferenceError: Cannot access &apos;mockTerminal&apos; before initialization
- ❯ src/__tests__/build.test.tsx:30:13
- ❯ src/commands/build.tsx:2:1
-            </failure>
+    <testsuite name="src/__tests__/build.test.ts" timestamp="2025-12-25T21:03:30.759Z" hostname="MacBook-Pro-2.local" tests="11" failures="0" errors="0" skipped="0" time="0.066424834">
+        <testcase classname="src/__tests__/build.test.ts" name="Build Command &gt; exports buildCommand as a Commander command" time="0.028514334">
+        </testcase>
+        <testcase classname="src/__tests__/build.test.ts" name="Build Command &gt; has correct description" time="0.001823375">
+        </testcase>
+        <testcase classname="src/__tests__/build.test.ts" name="Build Command &gt; supports --force option" time="0.002096917">
+        </testcase>
+        <testcase classname="src/__tests__/build.test.ts" name="Build Command &gt; supports --apply option" time="0.004119917">
+        </testcase>
+        <testcase classname="src/__tests__/build.test.ts" name="Build Command &gt; supports --bundle option" time="0.004586041">
+        </testcase>
+        <testcase classname="src/__tests__/build.test.ts" name="Build Command &gt; executes build with successful result" time="0.005440958">
+        </testcase>
+        <testcase classname="src/__tests__/build.test.ts" name="Build Command &gt; executes build with --force flag" time="0.003160708">
+        </testcase>
+        <testcase classname="src/__tests__/build.test.ts" name="Build Command &gt; executes build with --bundle flag" time="0.003556708">
+        </testcase>
+        <testcase classname="src/__tests__/build.test.ts" name="Build Command &gt; executes build with --apply flag (build + apply)" time="0.004112917">
+        </testcase>
+        <testcase classname="src/__tests__/build.test.ts" name="Build Command &gt; exits with code 1 when build has errors" time="0.003875959">
+        </testcase>
+        <testcase classname="src/__tests__/build.test.ts" name="Build Command &gt; handles thrown errors gracefully" time="0.002300792">
         </testcase>
     </testsuite>
-    <testsuite name="src/__tests__/clear.test.tsx" timestamp="2025-08-18T17:27:22.101Z" hostname="MacBook-Pro-2.local" tests="1" failures="1" errors="0" skipped="0" time="0">
-        <testcase classname="src/__tests__/clear.test.tsx" name="src/__tests__/clear.test.tsx" time="0">
-            <failure message="[vitest] There was an error when mocking a module. If you are using &quot;vi.mock&quot; factory, make sure there are no top level variables inside, since this call is hoisted to top of the file. Read more: https://vitest.dev/api/vi.html#vi-mock" type="Error">
-Error: [vitest] There was an error when mocking a module. If you are using &quot;vi.mock&quot; factory, make sure there are no top level variables inside, since this call is hoisted to top of the file. Read more: https://vitest.dev/api/vi.html#vi-mock
- ❯ src/commands/clear.tsx:3:1
-
-Caused by: ReferenceError: Cannot access &apos;mockTerminal&apos; before initialization
- ❯ src/__tests__/clear.test.tsx:25:13
- ❯ src/commands/clear.tsx:3:1
-            </failure>
+    <testsuite name="src/__tests__/clear.test.ts" timestamp="2025-12-25T21:03:30.760Z" hostname="MacBook-Pro-2.local" tests="9" failures="0" errors="0" skipped="0" time="0.07127575">
+        <testcase classname="src/__tests__/clear.test.ts" name="Clear Command &gt; exports clearCommand as a Commander command" time="0.036526375">
+        </testcase>
+        <testcase classname="src/__tests__/clear.test.ts" name="Clear Command &gt; has correct description" time="0.00232225">
+        </testcase>
+        <testcase classname="src/__tests__/clear.test.ts" name="Clear Command &gt; supports --local option" time="0.002932041">
+        </testcase>
+        <testcase classname="src/__tests__/clear.test.ts" name="Clear Command &gt; supports --shared option" time="0.003743375">
+        </testcase>
+        <testcase classname="src/__tests__/clear.test.ts" name="Clear Command &gt; supports --reset option" time="0.00456725">
+        </testcase>
+        <testcase classname="src/__tests__/clear.test.ts" name="Clear Command &gt; clears local build logs with --local flag" time="0.006314042">
+        </testcase>
+        <testcase classname="src/__tests__/clear.test.ts" name="Clear Command &gt; clears shared build logs with --shared flag" time="0.004124666">
+        </testcase>
+        <testcase classname="src/__tests__/clear.test.ts" name="Clear Command &gt; resets config with --reset flag" time="0.00399675">
+        </testcase>
+        <testcase classname="src/__tests__/clear.test.ts" name="Clear Command &gt; handles errors gracefully" time="0.005071208">
         </testcase>
     </testsuite>
-    <testsuite name="src/__tests__/init.test.tsx" timestamp="2025-08-18T17:27:22.102Z" hostname="MacBook-Pro-2.local" tests="1" failures="1" errors="0" skipped="0" time="0">
-        <testcase classname="src/__tests__/init.test.tsx" name="src/__tests__/init.test.tsx" time="0">
-            <failure message="[vitest] There was an error when mocking a module. If you are using &quot;vi.mock&quot; factory, make sure there are no top level variables inside, since this call is hoisted to top of the file. Read more: https://vitest.dev/api/vi.html#vi-mock" type="Error">
-Error: [vitest] There was an error when mocking a module. If you are using &quot;vi.mock&quot; factory, make sure there are no top level variables inside, since this call is hoisted to top of the file. Read more: https://vitest.dev/api/vi.html#vi-mock
- ❯ src/commands/init.tsx:5:1
-
-Caused by: ReferenceError: Cannot access &apos;mockTerminal&apos; before initialization
- ❯ src/__tests__/init.test.tsx:25:13
- ❯ src/commands/init.tsx:5:1
-            </failure>
+    <testsuite name="src/__tests__/init.test.ts" timestamp="2025-12-25T21:03:30.760Z" hostname="MacBook-Pro-2.local" tests="5" failures="0" errors="0" skipped="0" time="0.040527334">
+        <testcase classname="src/__tests__/init.test.ts" name="Init Command &gt; exports initCommand as a Commander command" time="0.019043417">
+        </testcase>
+        <testcase classname="src/__tests__/init.test.ts" name="Init Command &gt; has correct description" time="0.003048333">
+        </testcase>
+        <testcase classname="src/__tests__/init.test.ts" name="Init Command &gt; creates config and directories on success" time="0.00693075">
+        </testcase>
+        <testcase classname="src/__tests__/init.test.ts" name="Init Command &gt; handles existing config gracefully" time="0.004935458">
+        </testcase>
+        <testcase classname="src/__tests__/init.test.ts" name="Init Command &gt; handles errors gracefully" time="0.004468792">
         </testcase>
     </testsuite>
-    <testsuite name="src/__tests__/promote.test.tsx" timestamp="2025-08-18T17:27:22.102Z" hostname="MacBook-Pro-2.local" tests="1" failures="1" errors="0" skipped="0" time="0">
-        <testcase classname="src/__tests__/promote.test.tsx" name="src/__tests__/promote.test.tsx" time="0">
-            <failure message="[vitest] There was an error when mocking a module. If you are using &quot;vi.mock&quot; factory, make sure there are no top level variables inside, since this call is hoisted to top of the file. Read more: https://vitest.dev/api/vi.html#vi-mock" type="Error">
-Error: [vitest] There was an error when mocking a module. If you are using &quot;vi.mock&quot; factory, make sure there are no top level variables inside, since this call is hoisted to top of the file. Read more: https://vitest.dev/api/vi.html#vi-mock
- ❯ src/commands/promote.tsx:7:1
-
-Caused by: ReferenceError: Cannot access &apos;mockTerminal&apos; before initialization
- ❯ src/__tests__/promote.test.tsx:31:13
- ❯ src/commands/promote.tsx:7:1
-            </failure>
+    <testsuite name="src/__tests__/promote.test.ts" timestamp="2025-12-25T21:03:30.760Z" hostname="MacBook-Pro-2.local" tests="1" failures="0" errors="0" skipped="0" time="0.05106475">
+        <testcase classname="src/__tests__/promote.test.ts" name="Promote Command &gt; command module exports promoteCommand" time="0.048703542">
         </testcase>
     </testsuite>
-    <testsuite name="src/__tests__/register.test.tsx" timestamp="2025-08-18T17:27:22.102Z" hostname="MacBook-Pro-2.local" tests="1" failures="1" errors="0" skipped="0" time="0">
-        <testcase classname="src/__tests__/register.test.tsx" name="src/__tests__/register.test.tsx" time="0">
-            <failure message="[vitest] There was an error when mocking a module. If you are using &quot;vi.mock&quot; factory, make sure there are no top level variables inside, since this call is hoisted to top of the file. Read more: https://vitest.dev/api/vi.html#vi-mock" type="Error">
-Error: [vitest] There was an error when mocking a module. If you are using &quot;vi.mock&quot; factory, make sure there are no top level variables inside, since this call is hoisted to top of the file. Read more: https://vitest.dev/api/vi.html#vi-mock
- ❯ src/commands/register.tsx:4:1
-
-Caused by: ReferenceError: Cannot access &apos;mockTerminal&apos; before initialization
- ❯ src/__tests__/register.test.tsx:31:13
- ❯ src/commands/register.tsx:4:1
-            </failure>
+    <testsuite name="src/__tests__/register.test.ts" timestamp="2025-12-25T21:03:30.761Z" hostname="MacBook-Pro-2.local" tests="1" failures="0" errors="0" skipped="0" time="0.056460541">
+        <testcase classname="src/__tests__/register.test.ts" name="Register Command &gt; command module exports registerCommand" time="0.054616541">
         </testcase>
     </testsuite>
-    <testsuite name="src/__tests__/watch.test.tsx" timestamp="2025-08-18T17:27:22.103Z" hostname="MacBook-Pro-2.local" tests="1" failures="0" errors="0" skipped="0" time="0.122765083">
-        <testcase classname="src/__tests__/watch.test.tsx" name="Watch Command &gt; starts watch mode without errors" time="0.12069525">
+    <testsuite name="src/__tests__/watch.test.ts" timestamp="2025-12-25T21:03:30.761Z" hostname="MacBook-Pro-2.local" tests="5" failures="0" errors="0" skipped="0" time="0.038134541">
+        <testcase classname="src/__tests__/watch.test.ts" name="Watch Command &gt; exports watchCommand as a Commander command" time="0.020424542">
+        </testcase>
+        <testcase classname="src/__tests__/watch.test.ts" name="Watch Command &gt; has correct description" time="0.002696667">
+        </testcase>
+        <testcase classname="src/__tests__/watch.test.ts" name="Watch Command &gt; handles errors gracefully" time="0.006418417">
+        </testcase>
+        <testcase classname="src/__tests__/watch.test.ts" name="Watch Command &gt; handles template loading errors" time="0.006035416">
+        </testcase>
+        <testcase classname="src/__tests__/watch.test.ts" name="Watch Command Utilities &gt; formatTemplateDisplay handles paths correctly" time="0.000144625">
         </testcase>
     </testsuite>
-    <testsuite name="src/utils/applyMigrations.test.ts" timestamp="2025-08-18T17:27:22.103Z" hostname="MacBook-Pro-2.local" tests="6" failures="0" errors="0" skipped="0" time="0.3242055">
-        <testcase classname="src/utils/applyMigrations.test.ts" name="applyMigration &gt; should successfully apply valid SQL" time="0.032048125">
+    <testsuite name="src/ui/branding.test.ts" timestamp="2025-12-25T21:03:30.761Z" hostname="MacBook-Pro-2.local" tests="4" failures="0" errors="0" skipped="0" time="0.019404">
+        <testcase classname="src/ui/branding.test.ts" name="renderBranding &gt; renders branding with connected status" time="0.010903125">
         </testcase>
-        <testcase classname="src/utils/applyMigrations.test.ts" name="applyMigration &gt; should fail and rollback on invalid SQL" time="0.007928208">
+        <testcase classname="src/ui/branding.test.ts" name="renderBranding &gt; renders branding with disconnected status" time="0.001197417">
         </testcase>
-        <testcase classname="src/utils/applyMigrations.test.ts" name="applyMigration &gt; should handle concurrent migrations with advisory locks" time="0.221998875">
+        <testcase classname="src/ui/branding.test.ts" name="renderBranding &gt; renders branding with subtitle" time="0.003177917">
         </testcase>
-        <testcase classname="src/utils/applyMigrations.test.ts" name="applyMigration &gt; should handle transactions properly" time="0.012791458">
-        </testcase>
-        <testcase classname="src/utils/applyMigrations.test.ts" name="applyMigration &gt; should handle large SQL statements" time="0.013723416">
-        </testcase>
-        <testcase classname="src/utils/applyMigrations.test.ts" name="applyMigration &gt; should handle errors in stored procedures" time="0.009049208">
+        <testcase classname="src/ui/branding.test.ts" name="renderBranding &gt; renders default branding without subtitle" time="0.002597667">
         </testcase>
     </testsuite>
-    <testsuite name="src/utils/calculateMD5.test.ts" timestamp="2025-08-18T17:27:22.103Z" hostname="MacBook-Pro-2.local" tests="3" failures="0" errors="0" skipped="0" time="0.003169917">
-        <testcase classname="src/utils/calculateMD5.test.ts" name="calculateMD5 &gt; should calculate MD5 hash correctly" time="0.000734291">
+    <testsuite name="src/ui/results.test.ts" timestamp="2025-12-25T21:03:30.761Z" hostname="MacBook-Pro-2.local" tests="7" failures="0" errors="0" skipped="0" time="0.004756417">
+        <testcase classname="src/ui/results.test.ts" name="renderResults &gt; renders results with built items" time="0.001147459">
         </testcase>
-        <testcase classname="src/utils/calculateMD5.test.ts" name="calculateMD5 &gt; should return same hash for same input" time="0.000063125">
+        <testcase classname="src/ui/results.test.ts" name="renderResults &gt; renders results with applied items" time="0.00013025">
         </testcase>
-        <testcase classname="src/utils/calculateMD5.test.ts" name="calculateMD5 &gt; should return different hash for different input" time="0.000307875">
+        <testcase classname="src/ui/results.test.ts" name="renderResults &gt; renders results with skipped items" time="0.000111125">
         </testcase>
-    </testsuite>
-    <testsuite name="src/utils/config.test.ts" timestamp="2025-08-18T17:27:22.103Z" hostname="MacBook-Pro-2.local" tests="7" failures="0" errors="0" skipped="0" time="0.0163635">
-        <testcase classname="src/utils/config.test.ts" name="config &gt; should call getConfig with the correct path" time="0.00116475">
+        <testcase classname="src/ui/results.test.ts" name="renderResults &gt; renders results with errors" time="0.000114334">
         </testcase>
-        <testcase classname="src/utils/config.test.ts" name="config &gt; should return mocked test config values" time="0.000159625">
+        <testcase classname="src/ui/results.test.ts" name="renderResults &gt; renders stat badges" time="0.00008575">
         </testcase>
-        <testcase classname="src/utils/config.test.ts" name="config &gt; should save and merge with default config" time="0.001924542">
+        <testcase classname="src/ui/results.test.ts" name="renderResults &gt; limits items to 30 with overflow message" time="0.000111833">
         </testcase>
-        <testcase classname="src/utils/config.test.ts" name="config &gt; should handle empty config object" time="0.000614459">
-        </testcase>
-        <testcase classname="src/utils/config.test.ts" name="config &gt; should preserve unknown fields" time="0.00085025">
-        </testcase>
-        <testcase classname="src/utils/config.test.ts" name="config &gt; should add a newline at the end of the config file" time="0.001852459">
-        </testcase>
-        <testcase classname="src/utils/config.test.ts" name="config &gt; should handle nested paths correctly" time="0.000216708">
+        <testcase classname="src/ui/results.test.ts" name="renderResults &gt; handles empty results" time="0.000063666">
         </testcase>
     </testsuite>
-    <testsuite name="src/utils/createEmptyBuildLog.test.ts" timestamp="2025-08-18T17:27:22.104Z" hostname="MacBook-Pro-2.local" tests="2" failures="0" errors="0" skipped="0" time="0.006008667">
-        <testcase classname="src/utils/createEmptyBuildLog.test.ts" name="createEmptyBuildLog &gt; should create an empty build log object with correct structure" time="0.003188916">
+    <testsuite name="src/utils/applyMigrations.test.ts" timestamp="2025-12-25T21:03:30.762Z" hostname="MacBook-Pro-2.local" tests="6" failures="0" errors="0" skipped="0" time="0.312758041">
+        <testcase classname="src/utils/applyMigrations.test.ts" name="applyMigration &gt; should successfully apply valid SQL" time="0.021164625">
         </testcase>
-        <testcase classname="src/utils/createEmptyBuildLog.test.ts" name="createEmptyBuildLog &gt; should be immutable - generate a new object for each call" time="0.00024375">
+        <testcase classname="src/utils/applyMigrations.test.ts" name="applyMigration &gt; should fail and rollback on invalid SQL" time="0.005900833">
         </testcase>
-    </testsuite>
-    <testsuite name="src/utils/databaseConnection.test.ts" timestamp="2025-08-18T17:27:22.104Z" hostname="MacBook-Pro-2.local" tests="5" failures="0" errors="0" skipped="0" time="0.038883958">
-        <testcase classname="src/utils/databaseConnection.test.ts" name="db.connection &gt; should connect and execute queries" time="0.01746125">
+        <testcase classname="src/utils/applyMigrations.test.ts" name="applyMigration &gt; should handle concurrent migrations with advisory locks" time="0.222596042">
         </testcase>
-        <testcase classname="src/utils/databaseConnection.test.ts" name="db.connection &gt; should reuse the same pool for multiple connections" time="0.009162625">
+        <testcase classname="src/utils/applyMigrations.test.ts" name="applyMigration &gt; should handle transactions properly" time="0.012772125">
         </testcase>
-        <testcase classname="src/utils/databaseConnection.test.ts" name="db.connection &gt; should handle connection release properly" time="0.000864459">
+        <testcase classname="src/utils/applyMigrations.test.ts" name="applyMigration &gt; should handle large SQL statements" time="0.020181875">
         </testcase>
-        <testcase classname="src/utils/databaseConnection.test.ts" name="db.connection &gt; should handle disconnection properly" time="0.008684416">
-        </testcase>
-        <testcase classname="src/utils/databaseConnection.test.ts" name="db.connection &gt; should handle multiple disconnects gracefully" time="0.000123834">
+        <testcase classname="src/utils/applyMigrations.test.ts" name="applyMigration &gt; should handle errors in stored procedures" time="0.010171542">
         </testcase>
     </testsuite>
-    <testsuite name="src/utils/ensureDirectories.test.ts" timestamp="2025-08-18T17:27:22.104Z" hostname="MacBook-Pro-2.local" tests="1" failures="0" errors="0" skipped="0" time="0.002119041">
-        <testcase classname="src/utils/ensureDirectories.test.ts" name="ensureDirectories &gt; should be a function" time="0.000628125">
+    <testsuite name="src/utils/calculateMD5.test.ts" timestamp="2025-12-25T21:03:30.762Z" hostname="MacBook-Pro-2.local" tests="3" failures="0" errors="0" skipped="0" time="0.004141958">
+        <testcase classname="src/utils/calculateMD5.test.ts" name="calculateMD5 &gt; should calculate MD5 hash correctly" time="0.000797042">
+        </testcase>
+        <testcase classname="src/utils/calculateMD5.test.ts" name="calculateMD5 &gt; should return same hash for same input" time="0.000071208">
+        </testcase>
+        <testcase classname="src/utils/calculateMD5.test.ts" name="calculateMD5 &gt; should return different hash for different input" time="0.000358">
         </testcase>
     </testsuite>
-    <testsuite name="src/utils/findProjectRoot.test.ts" timestamp="2025-08-18T17:27:22.104Z" hostname="MacBook-Pro-2.local" tests="5" failures="0" errors="0" skipped="0" time="0.018739166">
-        <testcase classname="src/utils/findProjectRoot.test.ts" name="findProjectRoot &gt; should find project root with srtd.config.json" time="0.0061445">
+    <testsuite name="src/utils/config.test.ts" timestamp="2025-12-25T21:03:30.762Z" hostname="MacBook-Pro-2.local" tests="7" failures="0" errors="0" skipped="0" time="0.007505084">
+        <testcase classname="src/utils/config.test.ts" name="config &gt; should call getConfig with the correct path" time="0.001334916">
         </testcase>
-        <testcase classname="src/utils/findProjectRoot.test.ts" name="findProjectRoot &gt; should find project root with package.json" time="0.001834625">
+        <testcase classname="src/utils/config.test.ts" name="config &gt; should return mocked test config values" time="0.000470833">
         </testcase>
-        <testcase classname="src/utils/findProjectRoot.test.ts" name="findProjectRoot &gt; should find project root with supabase directory" time="0.001142416">
+        <testcase classname="src/utils/config.test.ts" name="config &gt; should save and merge with default config" time="0.000957625">
         </testcase>
-        <testcase classname="src/utils/findProjectRoot.test.ts" name="findProjectRoot &gt; should throw error if project root not found" time="0.00314575">
+        <testcase classname="src/utils/config.test.ts" name="config &gt; should handle empty config object" time="0.000303166">
         </testcase>
-        <testcase classname="src/utils/findProjectRoot.test.ts" name="findProjectRoot &gt; should accept custom starting directory" time="0.00478625">
+        <testcase classname="src/utils/config.test.ts" name="config &gt; should preserve unknown fields" time="0.000785666">
         </testcase>
-    </testsuite>
-    <testsuite name="src/utils/getNextTimestamp.test.ts" timestamp="2025-08-18T17:27:22.104Z" hostname="MacBook-Pro-2.local" tests="2" failures="0" errors="0" skipped="0" time="0.002516542">
-        <testcase classname="src/utils/getNextTimestamp.test.ts" name="getNextTimestamp &gt; should generate a timestamp in the correct format" time="0.000838833">
+        <testcase classname="src/utils/config.test.ts" name="config &gt; should add a newline at the end of the config file" time="0.000516583">
         </testcase>
-        <testcase classname="src/utils/getNextTimestamp.test.ts" name="getNextTimestamp &gt; should generate timestamps that increment correctly" time="0.000389834">
+        <testcase classname="src/utils/config.test.ts" name="config &gt; should handle nested paths correctly" time="0.000295833">
         </testcase>
     </testsuite>
-    <testsuite name="src/utils/isWipTemplate.test.ts" timestamp="2025-08-18T17:27:22.105Z" hostname="MacBook-Pro-2.local" tests="3" failures="0" errors="0" skipped="0" time="0.002899666">
-        <testcase classname="src/utils/isWipTemplate.test.ts" name="isWipTemplate &gt; should identify WIP templates correctly" time="0.000987959">
+    <testsuite name="src/utils/createEmptyBuildLog.test.ts" timestamp="2025-12-25T21:03:30.763Z" hostname="MacBook-Pro-2.local" tests="2" failures="0" errors="0" skipped="0" time="0.003812208">
+        <testcase classname="src/utils/createEmptyBuildLog.test.ts" name="createEmptyBuildLog &gt; should create an empty build log object with correct structure" time="0.001819208">
         </testcase>
-        <testcase classname="src/utils/isWipTemplate.test.ts" name="isWipTemplate &gt; should identify non-WIP templates correctly" time="0.000147958">
-        </testcase>
-        <testcase classname="src/utils/isWipTemplate.test.ts" name="isWipTemplate &gt; should handle edge cases" time="0.000093708">
+        <testcase classname="src/utils/createEmptyBuildLog.test.ts" name="createEmptyBuildLog &gt; should be immutable - generate a new object for each call" time="0.000257167">
         </testcase>
     </testsuite>
-    <testsuite name="src/utils/loadBuildLog.test.ts" timestamp="2025-08-18T17:27:22.105Z" hostname="MacBook-Pro-2.local" tests="5" failures="0" errors="0" skipped="0" time="0.024792459">
-        <testcase classname="src/utils/loadBuildLog.test.ts" name="loadBuildLog &gt; should load existing build log" time="0.010782834">
+    <testsuite name="src/utils/databaseConnection.test.ts" timestamp="2025-12-25T21:03:30.763Z" hostname="MacBook-Pro-2.local" tests="5" failures="0" errors="0" skipped="0" time="0.03234725">
+        <testcase classname="src/utils/databaseConnection.test.ts" name="db.connection &gt; should connect and execute queries" time="0.014983709">
         </testcase>
-        <testcase classname="src/utils/loadBuildLog.test.ts" name="loadBuildLog &gt; should return empty build log when file does not exist" time="0.001198875">
+        <testcase classname="src/utils/databaseConnection.test.ts" name="db.connection &gt; should reuse the same pool for multiple connections" time="0.009579333">
         </testcase>
-        <testcase classname="src/utils/loadBuildLog.test.ts" name="loadBuildLog &gt; should handle invalid JSON" time="0.003759375">
+        <testcase classname="src/utils/databaseConnection.test.ts" name="db.connection &gt; should handle connection release properly" time="0.000415541">
         </testcase>
-        <testcase classname="src/utils/loadBuildLog.test.ts" name="loadBuildLog &gt; should handle missing fields" time="0.002167917">
+        <testcase classname="src/utils/databaseConnection.test.ts" name="db.connection &gt; should handle disconnection properly" time="0.005478125">
         </testcase>
-        <testcase classname="src/utils/loadBuildLog.test.ts" name="loadBuildLog &gt; should load correct file based on type parameter" time="0.00245825">
-        </testcase>
-    </testsuite>
-    <testsuite name="src/utils/logger.test.ts" timestamp="2025-08-18T17:27:22.105Z" hostname="MacBook-Pro-2.local" tests="8" failures="0" errors="0" skipped="0" time="0.004331875">
-        <testcase classname="src/utils/logger.test.ts" name="logger &gt; should log info messages" time="0.001211792">
-        </testcase>
-        <testcase classname="src/utils/logger.test.ts" name="logger &gt; should log success messages with green color" time="0.000137042">
-        </testcase>
-        <testcase classname="src/utils/logger.test.ts" name="logger &gt; should log warning messages with yellow color" time="0.000077667">
-        </testcase>
-        <testcase classname="src/utils/logger.test.ts" name="logger &gt; should log error messages with red color" time="0.000067375">
-        </testcase>
-        <testcase classname="src/utils/logger.test.ts" name="logger &gt; should log skip messages with dimmed color" time="0.000070667">
-        </testcase>
-        <testcase classname="src/utils/logger.test.ts" name="logger &gt; should not log debug messages when DEBUG is not set" time="0.000071042">
-        </testcase>
-        <testcase classname="src/utils/logger.test.ts" name="logger &gt; should log debug messages when DEBUG is set to true" time="0.000068167">
-        </testcase>
-        <testcase classname="src/utils/logger.test.ts" name="logger &gt; should not log debug messages when DEBUG is set to false" time="0.000066292">
+        <testcase classname="src/utils/databaseConnection.test.ts" name="db.connection &gt; should handle multiple disconnects gracefully" time="0.000119583">
         </testcase>
     </testsuite>
-    <testsuite name="src/utils/registerTemplate.test.ts" timestamp="2025-08-18T17:27:22.105Z" hostname="MacBook-Pro-2.local" tests="8" failures="0" errors="0" skipped="0" time="0.07964225">
-        <testcase classname="src/utils/registerTemplate.test.ts" name="registerTemplate &gt; successfully registers a valid template 🎯" time="0.026506333">
+    <testsuite name="src/utils/ensureDirectories.test.ts" timestamp="2025-12-25T21:03:30.763Z" hostname="MacBook-Pro-2.local" tests="1" failures="0" errors="0" skipped="0" time="0.001934791">
+        <testcase classname="src/utils/ensureDirectories.test.ts" name="ensureDirectories &gt; should be a function" time="0.000499334">
+        </testcase>
+    </testsuite>
+    <testsuite name="src/utils/findProjectRoot.test.ts" timestamp="2025-12-25T21:03:30.763Z" hostname="MacBook-Pro-2.local" tests="5" failures="0" errors="0" skipped="0" time="0.016256666">
+        <testcase classname="src/utils/findProjectRoot.test.ts" name="findProjectRoot &gt; should find project root with srtd.config.json" time="0.003064125">
+        </testcase>
+        <testcase classname="src/utils/findProjectRoot.test.ts" name="findProjectRoot &gt; should find project root with package.json" time="0.00270575">
+        </testcase>
+        <testcase classname="src/utils/findProjectRoot.test.ts" name="findProjectRoot &gt; should find project root with supabase directory" time="0.002154584">
+        </testcase>
+        <testcase classname="src/utils/findProjectRoot.test.ts" name="findProjectRoot &gt; should throw error if project root not found" time="0.003773041">
+        </testcase>
+        <testcase classname="src/utils/findProjectRoot.test.ts" name="findProjectRoot &gt; should accept custom starting directory" time="0.00282025">
+        </testcase>
+    </testsuite>
+    <testsuite name="src/utils/getErrorMessage.test.ts" timestamp="2025-12-25T21:03:30.763Z" hostname="MacBook-Pro-2.local" tests="11" failures="0" errors="0" skipped="0" time="0.003225958">
+        <testcase classname="src/utils/getErrorMessage.test.ts" name="getErrorMessage &gt; returns message from Error instance" time="0.000571333">
+        </testcase>
+        <testcase classname="src/utils/getErrorMessage.test.ts" name="getErrorMessage &gt; returns string representation of non-Error values" time="0.000060333">
+        </testcase>
+        <testcase classname="src/utils/getErrorMessage.test.ts" name="getErrorMessage &gt; handles number values" time="0.000041833">
+        </testcase>
+        <testcase classname="src/utils/getErrorMessage.test.ts" name="getErrorMessage &gt; handles null" time="0.000033667">
+        </testcase>
+        <testcase classname="src/utils/getErrorMessage.test.ts" name="getErrorMessage &gt; handles undefined" time="0.000032">
+        </testcase>
+        <testcase classname="src/utils/getErrorMessage.test.ts" name="getErrorMessage &gt; handles object values" time="0.000032458">
+        </testcase>
+        <testcase classname="src/utils/getErrorMessage.test.ts" name="getErrorMessage &gt; handles Error subclasses" time="0.000036792">
+        </testcase>
+        <testcase classname="src/utils/getErrorMessage.test.ts" name="isPromptExit &gt; returns true for ExitPromptError" time="0.000054167">
+        </testcase>
+        <testcase classname="src/utils/getErrorMessage.test.ts" name="isPromptExit &gt; returns false for regular Error" time="0.000035667">
+        </testcase>
+        <testcase classname="src/utils/getErrorMessage.test.ts" name="isPromptExit &gt; returns false for non-Error values" time="0.000058875">
+        </testcase>
+        <testcase classname="src/utils/getErrorMessage.test.ts" name="isPromptExit &gt; returns false for Error with different name" time="0.00003325">
+        </testcase>
+    </testsuite>
+    <testsuite name="src/utils/getNextTimestamp.test.ts" timestamp="2025-12-25T21:03:30.764Z" hostname="MacBook-Pro-2.local" tests="2" failures="0" errors="0" skipped="0" time="0.003370542">
+        <testcase classname="src/utils/getNextTimestamp.test.ts" name="getNextTimestamp &gt; should generate a timestamp in the correct format" time="0.001022458">
+        </testcase>
+        <testcase classname="src/utils/getNextTimestamp.test.ts" name="getNextTimestamp &gt; should generate timestamps that increment correctly" time="0.000462292">
+        </testcase>
+    </testsuite>
+    <testsuite name="src/utils/isWipTemplate.test.ts" timestamp="2025-12-25T21:03:30.764Z" hostname="MacBook-Pro-2.local" tests="3" failures="0" errors="0" skipped="0" time="0.003538292">
+        <testcase classname="src/utils/isWipTemplate.test.ts" name="isWipTemplate &gt; should identify WIP templates correctly" time="0.000764958">
+        </testcase>
+        <testcase classname="src/utils/isWipTemplate.test.ts" name="isWipTemplate &gt; should identify non-WIP templates correctly" time="0.000129583">
+        </testcase>
+        <testcase classname="src/utils/isWipTemplate.test.ts" name="isWipTemplate &gt; should handle edge cases" time="0.00008925">
+        </testcase>
+    </testsuite>
+    <testsuite name="src/utils/loadBuildLog.test.ts" timestamp="2025-12-25T21:03:30.764Z" hostname="MacBook-Pro-2.local" tests="5" failures="0" errors="0" skipped="0" time="0.015739084">
+        <testcase classname="src/utils/loadBuildLog.test.ts" name="loadBuildLog &gt; should load existing build log" time="0.003690167">
+        </testcase>
+        <testcase classname="src/utils/loadBuildLog.test.ts" name="loadBuildLog &gt; should return empty build log when file does not exist" time="0.001759834">
+        </testcase>
+        <testcase classname="src/utils/loadBuildLog.test.ts" name="loadBuildLog &gt; should handle invalid JSON" time="0.003005333">
+        </testcase>
+        <testcase classname="src/utils/loadBuildLog.test.ts" name="loadBuildLog &gt; should handle missing fields" time="0.00165625">
+        </testcase>
+        <testcase classname="src/utils/loadBuildLog.test.ts" name="loadBuildLog &gt; should load correct file based on type parameter" time="0.001614875">
+        </testcase>
+    </testsuite>
+    <testsuite name="src/utils/logger.test.ts" timestamp="2025-12-25T21:03:30.764Z" hostname="MacBook-Pro-2.local" tests="8" failures="0" errors="0" skipped="0" time="0.004953833">
+        <testcase classname="src/utils/logger.test.ts" name="logger &gt; should log info messages" time="0.00121575">
+        </testcase>
+        <testcase classname="src/utils/logger.test.ts" name="logger &gt; should log success messages with green color" time="0.000137917">
+        </testcase>
+        <testcase classname="src/utils/logger.test.ts" name="logger &gt; should log warning messages with yellow color" time="0.000076167">
+        </testcase>
+        <testcase classname="src/utils/logger.test.ts" name="logger &gt; should log error messages with red color" time="0.000063958">
+        </testcase>
+        <testcase classname="src/utils/logger.test.ts" name="logger &gt; should log skip messages with dimmed color" time="0.000063834">
+        </testcase>
+        <testcase classname="src/utils/logger.test.ts" name="logger &gt; should not log debug messages when DEBUG is not set" time="0.000068292">
+        </testcase>
+        <testcase classname="src/utils/logger.test.ts" name="logger &gt; should log debug messages when DEBUG is set to true" time="0.000064375">
+        </testcase>
+        <testcase classname="src/utils/logger.test.ts" name="logger &gt; should not log debug messages when DEBUG is set to false" time="0.000059291">
+        </testcase>
+    </testsuite>
+    <testsuite name="src/utils/registerTemplate.test.ts" timestamp="2025-12-25T21:03:30.765Z" hostname="MacBook-Pro-2.local" tests="8" failures="0" errors="0" skipped="0" time="0.049110583">
+        <testcase classname="src/utils/registerTemplate.test.ts" name="registerTemplate &gt; successfully registers a valid template 🎯" time="0.020311583">
             <system-out>
 ✓ Registered template: test-templates/success.sql
 
             </system-out>
         </testcase>
-        <testcase classname="src/utils/registerTemplate.test.ts" name="registerTemplate &gt; prevents registering templates outside templateDir 🔒" time="0.015779541">
+        <testcase classname="src/utils/registerTemplate.test.ts" name="registerTemplate &gt; prevents registering templates outside templateDir 🔒" time="0.009799417">
         </testcase>
-        <testcase classname="src/utils/registerTemplate.test.ts" name="registerTemplate &gt; handles templates in nested directories 📂" time="0.004990708">
+        <testcase classname="src/utils/registerTemplate.test.ts" name="registerTemplate &gt; handles templates in nested directories 📂" time="0.003217417">
             <system-out>
 ✓ Registered template: test-templates/deep/nested/dir/nested.sql
 
             </system-out>
         </testcase>
-        <testcase classname="src/utils/registerTemplate.test.ts" name="registerTemplate &gt; updates existing template registration 🔄" time="0.0109175">
+        <testcase classname="src/utils/registerTemplate.test.ts" name="registerTemplate &gt; updates existing template registration 🔄" time="0.002717292">
             <system-out>
 ✓ Registered template: test-templates/update.sql
 
@@ -215,489 +281,377 @@ Caused by: ReferenceError: Cannot access &apos;mockTerminal&apos; before initial
 
             </system-out>
         </testcase>
-        <testcase classname="src/utils/registerTemplate.test.ts" name="registerTemplate &gt; handles empty template files 📄" time="0.005654667">
+        <testcase classname="src/utils/registerTemplate.test.ts" name="registerTemplate &gt; handles empty template files 📄" time="0.001725042">
             <system-out>
 ✓ Registered template: test-templates/empty.sql
 
             </system-out>
         </testcase>
-        <testcase classname="src/utils/registerTemplate.test.ts" name="registerTemplate &gt; handles large template files efficiently 📚" time="0.00684225">
+        <testcase classname="src/utils/registerTemplate.test.ts" name="registerTemplate &gt; handles large template files efficiently 📚" time="0.004105125">
             <system-out>
 ✓ Registered template: test-templates/large.sql
 
             </system-out>
         </testcase>
-        <testcase classname="src/utils/registerTemplate.test.ts" name="registerTemplate &gt; gracefully handles non-existent templates 🚫" time="0.002317334">
+        <testcase classname="src/utils/registerTemplate.test.ts" name="registerTemplate &gt; gracefully handles non-existent templates 🚫" time="0.00187075">
             <system-out>
 Error: Template file not found. Tried:
   - test-templates/nope.sql
   - test-templates/nope.sql
-  - var/folders/qd/7jwj_77j4r10sltj6v0_88ww0000gn/T/srtd-test/srtd-register-template-b59b8c03/test-templates/nope.sql
+  - var/folders/qd/7jwj_77j4r10sltj6v0_88ww0000gn/T/srtd-test/srtd-register-template-3081a325/test-templates/nope.sql
 
             </system-out>
         </testcase>
-        <testcase classname="src/utils/registerTemplate.test.ts" name="registerTemplate &gt; fails gracefully with filesystem errors 💥" time="0.004390708">
+        <testcase classname="src/utils/registerTemplate.test.ts" name="registerTemplate &gt; fails gracefully with filesystem errors 💥" time="0.002853375">
             <system-out>
 Error: Template file not found. Tried:
   - test-templates/locked/permission.sql
   - test-templates/locked/permission.sql
-  - var/folders/qd/7jwj_77j4r10sltj6v0_88ww0000gn/T/srtd-test/srtd-register-template-8dd4b00e/test-templates/locked/permission.sql
+  - var/folders/qd/7jwj_77j4r10sltj6v0_88ww0000gn/T/srtd-test/srtd-register-template-97cd712f/test-templates/locked/permission.sql
 
             </system-out>
         </testcase>
     </testsuite>
-    <testsuite name="src/utils/safeCreate.test.ts" timestamp="2025-08-18T17:27:22.106Z" hostname="MacBook-Pro-2.local" tests="4" failures="0" errors="0" skipped="0" time="0.030249833">
-        <testcase classname="src/utils/safeCreate.test.ts" name="safeCreate &gt; should create file with content" time="0.005618667">
+    <testsuite name="src/utils/safeCreate.test.ts" timestamp="2025-12-25T21:03:30.766Z" hostname="MacBook-Pro-2.local" tests="4" failures="0" errors="0" skipped="0" time="0.012637334">
+        <testcase classname="src/utils/safeCreate.test.ts" name="safeCreate &gt; should create file with content" time="0.003753083">
         </testcase>
-        <testcase classname="src/utils/safeCreate.test.ts" name="safeCreate &gt; should create file in nested directory structure" time="0.005387583">
+        <testcase classname="src/utils/safeCreate.test.ts" name="safeCreate &gt; should create file in nested directory structure" time="0.003717208">
         </testcase>
-        <testcase classname="src/utils/safeCreate.test.ts" name="safeCreate &gt; should handle file already existing" time="0.009133459">
+        <testcase classname="src/utils/safeCreate.test.ts" name="safeCreate &gt; should handle file already existing" time="0.00178925">
         </testcase>
-        <testcase classname="src/utils/safeCreate.test.ts" name="safeCreate &gt; should handle errors gracefully" time="0.005216334">
-        </testcase>
-    </testsuite>
-    <testsuite name="src/utils/saveBuildLog.test.ts" timestamp="2025-08-18T17:27:22.106Z" hostname="MacBook-Pro-2.local" tests="1" failures="0" errors="0" skipped="0" time="0.001805792">
-        <testcase classname="src/utils/saveBuildLog.test.ts" name="saveBuildLog &gt; should be a function" time="0.000559834">
+        <testcase classname="src/utils/safeCreate.test.ts" name="safeCreate &gt; should handle errors gracefully" time="0.001121791">
         </testcase>
     </testsuite>
-    <testsuite name="src/__tests__/e2e/cli.test.ts" timestamp="2025-08-18T17:27:22.107Z" hostname="MacBook-Pro-2.local" tests="2" failures="0" errors="0" skipped="0" time="0.005413458">
-        <testcase classname="src/__tests__/e2e/cli.test.ts" name="CLI Commands Test &gt; should have all required command files" time="0.00192225">
-        </testcase>
-        <testcase classname="src/__tests__/e2e/cli.test.ts" name="CLI Commands Test &gt; should have a main CLI entry point" time="0.000500875">
+    <testsuite name="src/utils/saveBuildLog.test.ts" timestamp="2025-12-25T21:03:30.766Z" hostname="MacBook-Pro-2.local" tests="1" failures="0" errors="0" skipped="0" time="0.001731833">
+        <testcase classname="src/utils/saveBuildLog.test.ts" name="saveBuildLog &gt; should be a function" time="0.000495458">
         </testcase>
     </testsuite>
-    <testsuite name="src/__tests__/e2e/integration.test.ts" timestamp="2025-08-18T17:27:22.107Z" hostname="MacBook-Pro-2.local" tests="1" failures="0" errors="0" skipped="0" time="0.44661525">
-        <testcase classname="src/__tests__/e2e/integration.test.ts" name="CLI Version Test &gt; should display version information" time="0.442266791">
+    <testsuite name="src/__tests__/e2e/cli.test.ts" timestamp="2025-12-25T21:03:30.766Z" hostname="MacBook-Pro-2.local" tests="2" failures="0" errors="0" skipped="0" time="0.003124791">
+        <testcase classname="src/__tests__/e2e/cli.test.ts" name="CLI Commands Test &gt; should have all required command files" time="0.001179333">
+        </testcase>
+        <testcase classname="src/__tests__/e2e/cli.test.ts" name="CLI Commands Test &gt; should have a main CLI entry point" time="0.000336541">
         </testcase>
     </testsuite>
-    <testsuite name="src/__tests__/e2e/interactive.test.ts" timestamp="2025-08-18T17:27:22.107Z" hostname="MacBook-Pro-2.local" tests="4" failures="4" errors="0" skipped="0" time="1.668509833">
-        <testcase classname="src/__tests__/e2e/interactive.test.ts" name="CLI Help Test &gt; should show main help menu with all commands" time="0.499471917">
-            <failure message="expected &apos;\n&gt; @t1mmen/srtd@0.4.7 start\n&gt; tsx s…&apos; to contain &apos;Usage:&apos;" type="AssertionError">
-AssertionError: expected &apos;\n&gt; @t1mmen/srtd@0.4.7 start\n&gt; tsx s…&apos; to contain &apos;Usage:&apos;
-
-- Expected
-+ Received
-
-- Usage:
-+
-+ &gt; @t1mmen/srtd@0.4.7 start
-+ &gt; tsx src/cli.tsx --help
-+
-+
-
- ❯ src/__tests__/e2e/interactive.test.ts:32:18
-            </failure>
-        </testcase>
-        <testcase classname="src/__tests__/e2e/interactive.test.ts" name="CLI Help Test &gt; should show help for build command" time="0.391697583">
-            <failure message="expected &apos;\n&gt; @t1mmen/srtd@0.4.7 start\n&gt; tsx s…&apos; to contain &apos;Usage:&apos;" type="AssertionError">
-AssertionError: expected &apos;\n&gt; @t1mmen/srtd@0.4.7 start\n&gt; tsx s…&apos; to contain &apos;Usage:&apos;
-
-- Expected
-+ Received
-
-- Usage:
-+
-+ &gt; @t1mmen/srtd@0.4.7 start
-+ &gt; tsx src/cli.tsx build --help
-+
-+
-
- ❯ src/__tests__/e2e/interactive.test.ts:47:18
-            </failure>
-        </testcase>
-        <testcase classname="src/__tests__/e2e/interactive.test.ts" name="CLI Help Test &gt; should show help for apply command" time="0.397948375">
-            <failure message="expected &apos;\n&gt; @t1mmen/srtd@0.4.7 start\n&gt; tsx s…&apos; to contain &apos;Usage:&apos;" type="AssertionError">
-AssertionError: expected &apos;\n&gt; @t1mmen/srtd@0.4.7 start\n&gt; tsx s…&apos; to contain &apos;Usage:&apos;
-
-- Expected
-+ Received
-
-- Usage:
-+
-+ &gt; @t1mmen/srtd@0.4.7 start
-+ &gt; tsx src/cli.tsx apply --help
-+
-+
-
- ❯ src/__tests__/e2e/interactive.test.ts:55:18
-            </failure>
-        </testcase>
-        <testcase classname="src/__tests__/e2e/interactive.test.ts" name="CLI Help Test &gt; should show help for watch command" time="0.376720167">
-            <failure message="expected &apos;\n&gt; @t1mmen/srtd@0.4.7 start\n&gt; tsx s…&apos; to contain &apos;Usage:&apos;" type="AssertionError">
-AssertionError: expected &apos;\n&gt; @t1mmen/srtd@0.4.7 start\n&gt; tsx s…&apos; to contain &apos;Usage:&apos;
-
-- Expected
-+ Received
-
-- Usage:
-+
-+ &gt; @t1mmen/srtd@0.4.7 start
-+ &gt; tsx src/cli.tsx watch --help
-+
-+
-
- ❯ src/__tests__/e2e/interactive.test.ts:63:18
-            </failure>
+    <testsuite name="src/__tests__/e2e/integration.test.ts" timestamp="2025-12-25T21:03:30.766Z" hostname="MacBook-Pro-2.local" tests="1" failures="0" errors="0" skipped="0" time="0.522598417">
+        <testcase classname="src/__tests__/e2e/integration.test.ts" name="CLI Version Test &gt; should display version information" time="0.521191792">
         </testcase>
     </testsuite>
-    <testsuite name="src/services/__tests__/DatabaseService.test.ts" timestamp="2025-08-18T17:27:22.108Z" hostname="MacBook-Pro-2.local" tests="37" failures="0" errors="0" skipped="0" time="1.416793542">
-        <testcase classname="src/services/__tests__/DatabaseService.test.ts" name="DatabaseService &gt; initialization and configuration &gt; should create service with default configuration" time="0.000734584">
+    <testsuite name="src/__tests__/e2e/interactive.test.ts" timestamp="2025-12-25T21:03:30.766Z" hostname="MacBook-Pro-2.local" tests="4" failures="0" errors="0" skipped="0" time="1.775377708">
+        <testcase classname="src/__tests__/e2e/interactive.test.ts" name="CLI Help Test &gt; should show main help menu with all commands" time="0.511025916">
         </testcase>
-        <testcase classname="src/services/__tests__/DatabaseService.test.ts" name="DatabaseService &gt; initialization and configuration &gt; should merge configuration with defaults" time="0.000108375">
+        <testcase classname="src/__tests__/e2e/interactive.test.ts" name="CLI Help Test &gt; should show help for build command" time="0.397056709">
         </testcase>
-        <testcase classname="src/services/__tests__/DatabaseService.test.ts" name="DatabaseService &gt; initialization and configuration &gt; should create service from CLI config" time="0.000090333">
+        <testcase classname="src/__tests__/e2e/interactive.test.ts" name="CLI Help Test &gt; should show help for apply command" time="0.451724625">
         </testcase>
-        <testcase classname="src/services/__tests__/DatabaseService.test.ts" name="DatabaseService &gt; connection management &gt; should establish database connection" time="0.000414917">
-        </testcase>
-        <testcase classname="src/services/__tests__/DatabaseService.test.ts" name="DatabaseService &gt; connection management &gt; should retry connection on failure" time="0.102684459">
-        </testcase>
-        <testcase classname="src/services/__tests__/DatabaseService.test.ts" name="DatabaseService &gt; connection management &gt; should fail after max retries" time="0.100970292">
-        </testcase>
-        <testcase classname="src/services/__tests__/DatabaseService.test.ts" name="DatabaseService &gt; connection management &gt; should emit connection events" time="0.10119825">
-        </testcase>
-        <testcase classname="src/services/__tests__/DatabaseService.test.ts" name="DatabaseService &gt; connection management &gt; should test connection successfully" time="0.000755334">
-        </testcase>
-        <testcase classname="src/services/__tests__/DatabaseService.test.ts" name="DatabaseService &gt; connection management &gt; should handle test connection failure" time="0.101187666">
-        </testcase>
-        <testcase classname="src/services/__tests__/DatabaseService.test.ts" name="DatabaseService &gt; connection management &gt; should return connection statistics" time="0.0002645">
-        </testcase>
-        <testcase classname="src/services/__tests__/DatabaseService.test.ts" name="DatabaseService &gt; connection management &gt; should return null stats when no pool" time="0.000085667">
-        </testcase>
-        <testcase classname="src/services/__tests__/DatabaseService.test.ts" name="DatabaseService &gt; SQL execution &gt; should execute SQL without transaction" time="0.00032675">
-        </testcase>
-        <testcase classname="src/services/__tests__/DatabaseService.test.ts" name="DatabaseService &gt; SQL execution &gt; should execute SQL with transaction" time="0.0002235">
-        </testcase>
-        <testcase classname="src/services/__tests__/DatabaseService.test.ts" name="DatabaseService &gt; SQL execution &gt; should handle SQL execution with advisory lock" time="0.000694042">
-        </testcase>
-        <testcase classname="src/services/__tests__/DatabaseService.test.ts" name="DatabaseService &gt; SQL execution &gt; should set isolation level when specified" time="0.000123666">
-        </testcase>
-        <testcase classname="src/services/__tests__/DatabaseService.test.ts" name="DatabaseService &gt; SQL execution &gt; should rollback on SQL error" time="0.000167875">
-        </testcase>
-        <testcase classname="src/services/__tests__/DatabaseService.test.ts" name="DatabaseService &gt; SQL execution &gt; should emit SQL events" time="0.000154959">
-        </testcase>
-        <testcase classname="src/services/__tests__/DatabaseService.test.ts" name="DatabaseService &gt; migration execution &gt; should execute migration successfully" time="0.000149042">
-        </testcase>
-        <testcase classname="src/services/__tests__/DatabaseService.test.ts" name="DatabaseService &gt; migration execution &gt; should return migration error on failure" time="0.000142375">
-        </testcase>
-        <testcase classname="src/services/__tests__/DatabaseService.test.ts" name="DatabaseService &gt; error categorization &gt; should categorize connection errors" time="0.000092208">
-        </testcase>
-        <testcase classname="src/services/__tests__/DatabaseService.test.ts" name="DatabaseService &gt; error categorization &gt; should categorize syntax errors" time="0.000131292">
-        </testcase>
-        <testcase classname="src/services/__tests__/DatabaseService.test.ts" name="DatabaseService &gt; error categorization &gt; should categorize constraint violations" time="0.000084209">
-        </testcase>
-        <testcase classname="src/services/__tests__/DatabaseService.test.ts" name="DatabaseService &gt; error categorization &gt; should categorize transaction errors" time="0.000085292">
-        </testcase>
-        <testcase classname="src/services/__tests__/DatabaseService.test.ts" name="DatabaseService &gt; error categorization &gt; should categorize timeout errors" time="0.000080375">
-        </testcase>
-        <testcase classname="src/services/__tests__/DatabaseService.test.ts" name="DatabaseService &gt; error categorization &gt; should categorize pool exhaustion errors" time="0.000080083">
-        </testcase>
-        <testcase classname="src/services/__tests__/DatabaseService.test.ts" name="DatabaseService &gt; error categorization &gt; should categorize unknown errors" time="0.000079833">
-        </testcase>
-        <testcase classname="src/services/__tests__/DatabaseService.test.ts" name="DatabaseService &gt; concurrent operations &gt; should handle concurrent SQL executions" time="0.000297584">
-        </testcase>
-        <testcase classname="src/services/__tests__/DatabaseService.test.ts" name="DatabaseService &gt; concurrent operations &gt; should handle mixed success and failure scenarios" time="0.000115375">
-        </testcase>
-        <testcase classname="src/services/__tests__/DatabaseService.test.ts" name="DatabaseService &gt; resource cleanup &gt; should dispose cleanly" time="0.00017225">
-        </testcase>
-        <testcase classname="src/services/__tests__/DatabaseService.test.ts" name="DatabaseService &gt; resource cleanup &gt; should handle disposal timeout" time="1.000789959">
-        </testcase>
-        <testcase classname="src/services/__tests__/DatabaseService.test.ts" name="DatabaseService &gt; resource cleanup &gt; should handle disposal errors" time="0.000305375">
-        </testcase>
-        <testcase classname="src/services/__tests__/DatabaseService.test.ts" name="DatabaseService &gt; resource cleanup &gt; should emit pool events" time="0.000138792">
-        </testcase>
-        <testcase classname="src/services/__tests__/DatabaseService.test.ts" name="DatabaseService &gt; resource cleanup &gt; should remove all listeners on disposal" time="0.000094291">
-        </testcase>
-        <testcase classname="src/services/__tests__/DatabaseService.test.ts" name="DatabaseService &gt; edge cases and error scenarios &gt; should handle rollback failure during transaction error" time="0.000144834">
-        </testcase>
-        <testcase classname="src/services/__tests__/DatabaseService.test.ts" name="DatabaseService &gt; edge cases and error scenarios &gt; should handle empty and undefined parameters" time="0.000125041">
-        </testcase>
-        <testcase classname="src/services/__tests__/DatabaseService.test.ts" name="DatabaseService &gt; edge cases and error scenarios &gt; should handle large result sets" time="0.000552333">
-        </testcase>
-        <testcase classname="src/services/__tests__/DatabaseService.test.ts" name="DatabaseService &gt; edge cases and error scenarios &gt; should handle very long SQL statements" time="0.000128333">
+        <testcase classname="src/__tests__/e2e/interactive.test.ts" name="CLI Help Test &gt; should show help for watch command" time="0.412902291">
         </testcase>
     </testsuite>
-    <testsuite name="src/services/__tests__/FileSystemService.test.ts" timestamp="2025-08-18T17:27:22.109Z" hostname="MacBook-Pro-2.local" tests="25" failures="0" errors="0" skipped="0" time="0.174658875">
-        <testcase classname="src/services/__tests__/FileSystemService.test.ts" name="FileSystemService &gt; findTemplates &gt; should find all template files matching the pattern" time="0.001577542">
+    <testsuite name="src/services/__tests__/DatabaseService.test.ts" timestamp="2025-12-25T21:03:30.766Z" hostname="MacBook-Pro-2.local" tests="37" failures="0" errors="0" skipped="0" time="1.419664458">
+        <testcase classname="src/services/__tests__/DatabaseService.test.ts" name="DatabaseService &gt; initialization and configuration &gt; should create service with default configuration" time="0.000726834">
         </testcase>
-        <testcase classname="src/services/__tests__/FileSystemService.test.ts" name="FileSystemService &gt; findTemplates &gt; should return sorted results" time="0.000133833">
+        <testcase classname="src/services/__tests__/DatabaseService.test.ts" name="DatabaseService &gt; initialization and configuration &gt; should merge configuration with defaults" time="0.000098208">
         </testcase>
-        <testcase classname="src/services/__tests__/FileSystemService.test.ts" name="FileSystemService &gt; findTemplates &gt; should handle empty results" time="0.000085334">
+        <testcase classname="src/services/__tests__/DatabaseService.test.ts" name="DatabaseService &gt; initialization and configuration &gt; should create service from CLI config" time="0.000084333">
         </testcase>
-        <testcase classname="src/services/__tests__/FileSystemService.test.ts" name="FileSystemService &gt; readTemplate &gt; should read template file and return content with metadata" time="0.000904">
+        <testcase classname="src/services/__tests__/DatabaseService.test.ts" name="DatabaseService &gt; connection management &gt; should establish database connection" time="0.000889792">
         </testcase>
-        <testcase classname="src/services/__tests__/FileSystemService.test.ts" name="FileSystemService &gt; readTemplate &gt; should calculate correct MD5 hash" time="0.000175583">
+        <testcase classname="src/services/__tests__/DatabaseService.test.ts" name="DatabaseService &gt; connection management &gt; should retry connection on failure" time="0.100750916">
         </testcase>
-        <testcase classname="src/services/__tests__/FileSystemService.test.ts" name="FileSystemService &gt; readTemplate &gt; should throw error for non-existent file" time="0.000965208">
+        <testcase classname="src/services/__tests__/DatabaseService.test.ts" name="DatabaseService &gt; connection management &gt; should fail after max retries" time="0.1024285">
         </testcase>
-        <testcase classname="src/services/__tests__/FileSystemService.test.ts" name="FileSystemService &gt; readTemplate &gt; should propagate other errors" time="0.000183958">
+        <testcase classname="src/services/__tests__/DatabaseService.test.ts" name="DatabaseService &gt; connection management &gt; should emit connection events" time="0.103728625">
         </testcase>
-        <testcase classname="src/services/__tests__/FileSystemService.test.ts" name="FileSystemService &gt; fileExists &gt; should return true for existing file" time="0.000139">
+        <testcase classname="src/services/__tests__/DatabaseService.test.ts" name="DatabaseService &gt; connection management &gt; should test connection successfully" time="0.001113084">
         </testcase>
-        <testcase classname="src/services/__tests__/FileSystemService.test.ts" name="FileSystemService &gt; fileExists &gt; should return false for non-existent file" time="0.000083458">
+        <testcase classname="src/services/__tests__/DatabaseService.test.ts" name="DatabaseService &gt; connection management &gt; should handle test connection failure" time="0.101909792">
         </testcase>
-        <testcase classname="src/services/__tests__/FileSystemService.test.ts" name="FileSystemService &gt; writeFile &gt; should create directory and write file" time="0.00035725">
+        <testcase classname="src/services/__tests__/DatabaseService.test.ts" name="DatabaseService &gt; connection management &gt; should return connection statistics" time="0.000276875">
         </testcase>
-        <testcase classname="src/services/__tests__/FileSystemService.test.ts" name="FileSystemService &gt; deleteFile &gt; should delete existing file" time="0.00010175">
+        <testcase classname="src/services/__tests__/DatabaseService.test.ts" name="DatabaseService &gt; connection management &gt; should return null stats when no pool" time="0.000087458">
         </testcase>
-        <testcase classname="src/services/__tests__/FileSystemService.test.ts" name="FileSystemService &gt; deleteFile &gt; should ignore ENOENT errors" time="0.000186584">
+        <testcase classname="src/services/__tests__/DatabaseService.test.ts" name="DatabaseService &gt; SQL execution &gt; should execute SQL without transaction" time="0.000324292">
         </testcase>
-        <testcase classname="src/services/__tests__/FileSystemService.test.ts" name="FileSystemService &gt; deleteFile &gt; should propagate other errors" time="0.000110625">
+        <testcase classname="src/services/__tests__/DatabaseService.test.ts" name="DatabaseService &gt; SQL execution &gt; should execute SQL with transaction" time="0.000222917">
         </testcase>
-        <testcase classname="src/services/__tests__/FileSystemService.test.ts" name="FileSystemService &gt; getFileStats &gt; should return file stats" time="0.000112084">
+        <testcase classname="src/services/__tests__/DatabaseService.test.ts" name="DatabaseService &gt; SQL execution &gt; should handle SQL execution with advisory lock" time="0.000707208">
         </testcase>
-        <testcase classname="src/services/__tests__/FileSystemService.test.ts" name="FileSystemService &gt; watchTemplates &gt; should start watching templates directory" time="0.002216542">
+        <testcase classname="src/services/__tests__/DatabaseService.test.ts" name="DatabaseService &gt; SQL execution &gt; should set isolation level when specified" time="0.000131">
         </testcase>
-        <testcase classname="src/services/__tests__/FileSystemService.test.ts" name="FileSystemService &gt; watchTemplates &gt; should emit events for initial files" time="0.153083584">
+        <testcase classname="src/services/__tests__/DatabaseService.test.ts" name="DatabaseService &gt; SQL execution &gt; should rollback on SQL error" time="0.000176208">
         </testcase>
-        <testcase classname="src/services/__tests__/FileSystemService.test.ts" name="FileSystemService &gt; watchTemplates &gt; should throw error if already watching" time="0.002838791">
+        <testcase classname="src/services/__tests__/DatabaseService.test.ts" name="DatabaseService &gt; SQL execution &gt; should emit SQL events" time="0.000159958">
         </testcase>
-        <testcase classname="src/services/__tests__/FileSystemService.test.ts" name="FileSystemService &gt; watchTemplates &gt; should handle watch errors" time="0.001394">
+        <testcase classname="src/services/__tests__/DatabaseService.test.ts" name="DatabaseService &gt; migration execution &gt; should execute migration successfully" time="0.00015725">
         </testcase>
-        <testcase classname="src/services/__tests__/FileSystemService.test.ts" name="FileSystemService &gt; stopWatching &gt; should stop watching and clear timers" time="0.000967125">
+        <testcase classname="src/services/__tests__/DatabaseService.test.ts" name="DatabaseService &gt; migration execution &gt; should return migration error on failure" time="0.000151167">
         </testcase>
-        <testcase classname="src/services/__tests__/FileSystemService.test.ts" name="FileSystemService &gt; stopWatching &gt; should be safe to call without watching" time="0.000131333">
+        <testcase classname="src/services/__tests__/DatabaseService.test.ts" name="DatabaseService &gt; error categorization &gt; should categorize connection errors" time="0.0001">
         </testcase>
-        <testcase classname="src/services/__tests__/FileSystemService.test.ts" name="FileSystemService &gt; getMigrationPath &gt; should generate correct migration path" time="0.000096583">
+        <testcase classname="src/services/__tests__/DatabaseService.test.ts" name="DatabaseService &gt; error categorization &gt; should categorize syntax errors" time="0.000147833">
         </testcase>
-        <testcase classname="src/services/__tests__/FileSystemService.test.ts" name="FileSystemService &gt; listMigrations &gt; should list all migration files sorted" time="0.000145583">
+        <testcase classname="src/services/__tests__/DatabaseService.test.ts" name="DatabaseService &gt; error categorization &gt; should categorize constraint violations" time="0.000089458">
         </testcase>
-        <testcase classname="src/services/__tests__/FileSystemService.test.ts" name="FileSystemService &gt; readMigration &gt; should read migration file content" time="0.000116167">
+        <testcase classname="src/services/__tests__/DatabaseService.test.ts" name="DatabaseService &gt; error categorization &gt; should categorize transaction errors" time="0.000084916">
         </testcase>
-        <testcase classname="src/services/__tests__/FileSystemService.test.ts" name="FileSystemService &gt; dispose &gt; should clean up resources" time="0.000649875">
+        <testcase classname="src/services/__tests__/DatabaseService.test.ts" name="DatabaseService &gt; error categorization &gt; should categorize timeout errors" time="0.000082916">
         </testcase>
-        <testcase classname="src/services/__tests__/FileSystemService.test.ts" name="FileSystemService &gt; event emission &gt; should emit specific event types" time="0.000118291">
+        <testcase classname="src/services/__tests__/DatabaseService.test.ts" name="DatabaseService &gt; error categorization &gt; should categorize pool exhaustion errors" time="0.000085292">
         </testcase>
-    </testsuite>
-    <testsuite name="src/services/__tests__/MigrationBuilder.test.ts" timestamp="2025-08-18T17:27:22.110Z" hostname="MacBook-Pro-2.local" tests="31" failures="0" errors="0" skipped="0" time="0.009077625">
-        <testcase classname="src/services/__tests__/MigrationBuilder.test.ts" name="MigrationBuilder &gt; initialization and configuration &gt; should create builder with required configuration" time="0.000728416">
+        <testcase classname="src/services/__tests__/DatabaseService.test.ts" name="DatabaseService &gt; error categorization &gt; should categorize unknown errors" time="0.000084917">
         </testcase>
-        <testcase classname="src/services/__tests__/MigrationBuilder.test.ts" name="MigrationBuilder &gt; initialization and configuration &gt; should merge configuration with defaults" time="0.000192625">
+        <testcase classname="src/services/__tests__/DatabaseService.test.ts" name="DatabaseService &gt; concurrent operations &gt; should handle concurrent SQL executions" time="0.000315792">
         </testcase>
-        <testcase classname="src/services/__tests__/MigrationBuilder.test.ts" name="MigrationBuilder &gt; initialization and configuration &gt; should create builder from CLI config" time="0.000130083">
+        <testcase classname="src/services/__tests__/DatabaseService.test.ts" name="DatabaseService &gt; concurrent operations &gt; should handle mixed success and failure scenarios" time="0.000118625">
         </testcase>
-        <testcase classname="src/services/__tests__/MigrationBuilder.test.ts" name="MigrationBuilder &gt; initialization and configuration &gt; should validate configuration" time="0.000630375">
+        <testcase classname="src/services/__tests__/DatabaseService.test.ts" name="DatabaseService &gt; resource cleanup &gt; should dispose cleanly" time="0.000069291">
         </testcase>
-        <testcase classname="src/services/__tests__/MigrationBuilder.test.ts" name="MigrationBuilder &gt; migration content generation &gt; should generate migration with all components" time="0.000380583">
+        <testcase classname="src/services/__tests__/DatabaseService.test.ts" name="DatabaseService &gt; resource cleanup &gt; should handle disposal timeout" time="1.000593375">
         </testcase>
-        <testcase classname="src/services/__tests__/MigrationBuilder.test.ts" name="MigrationBuilder &gt; migration content generation &gt; should generate migration without transaction wrapping" time="0.000403458">
+        <testcase classname="src/services/__tests__/DatabaseService.test.ts" name="DatabaseService &gt; resource cleanup &gt; should handle disposal errors" time="0.000363875">
         </testcase>
-        <testcase classname="src/services/__tests__/MigrationBuilder.test.ts" name="MigrationBuilder &gt; migration content generation &gt; should generate migration without prefix" time="0.000130916">
+        <testcase classname="src/services/__tests__/DatabaseService.test.ts" name="DatabaseService &gt; resource cleanup &gt; should emit pool events" time="0.000163084">
         </testcase>
-        <testcase classname="src/services/__tests__/MigrationBuilder.test.ts" name="MigrationBuilder &gt; migration content generation &gt; should generate migration without banner and footer" time="0.000132625">
+        <testcase classname="src/services/__tests__/DatabaseService.test.ts" name="DatabaseService &gt; resource cleanup &gt; should remove all listeners on disposal" time="0.00009975">
         </testcase>
-        <testcase classname="src/services/__tests__/MigrationBuilder.test.ts" name="MigrationBuilder &gt; migration content generation &gt; should handle template without lastBuildAt" time="0.000099792">
+        <testcase classname="src/services/__tests__/DatabaseService.test.ts" name="DatabaseService &gt; edge cases and error scenarios &gt; should handle rollback failure during transaction error" time="0.000156208">
         </testcase>
-        <testcase classname="src/services/__tests__/MigrationBuilder.test.ts" name="MigrationBuilder &gt; migration content generation &gt; should generate unique timestamps" time="0.00040025">
+        <testcase classname="src/services/__tests__/DatabaseService.test.ts" name="DatabaseService &gt; edge cases and error scenarios &gt; should handle empty and undefined parameters" time="0.000134375">
         </testcase>
-        <testcase classname="src/services/__tests__/MigrationBuilder.test.ts" name="MigrationBuilder &gt; bundled migration generation &gt; should generate bundled migration with multiple templates" time="0.00028325">
+        <testcase classname="src/services/__tests__/DatabaseService.test.ts" name="DatabaseService &gt; edge cases and error scenarios &gt; should handle large result sets" time="0.000965375">
         </testcase>
-        <testcase classname="src/services/__tests__/MigrationBuilder.test.ts" name="MigrationBuilder &gt; bundled migration generation &gt; should generate bundled migration without transaction wrapping" time="0.000110916">
-        </testcase>
-        <testcase classname="src/services/__tests__/MigrationBuilder.test.ts" name="MigrationBuilder &gt; bundled migration generation &gt; should handle empty template list for bundle" time="0.000129875">
-        </testcase>
-        <testcase classname="src/services/__tests__/MigrationBuilder.test.ts" name="MigrationBuilder &gt; file writing operations &gt; should write migration file to disk" time="0.000549583">
-        </testcase>
-        <testcase classname="src/services/__tests__/MigrationBuilder.test.ts" name="MigrationBuilder &gt; file writing operations &gt; should write bundled migration file to disk" time="0.000190083">
-        </testcase>
-        <testcase classname="src/services/__tests__/MigrationBuilder.test.ts" name="MigrationBuilder &gt; file writing operations &gt; should generate and write migration in one operation" time="0.000145041">
-        </testcase>
-        <testcase classname="src/services/__tests__/MigrationBuilder.test.ts" name="MigrationBuilder &gt; file writing operations &gt; should generate and write bundled migration in one operation" time="0.000117333">
-        </testcase>
-        <testcase classname="src/services/__tests__/MigrationBuilder.test.ts" name="MigrationBuilder &gt; file writing operations &gt; should handle file writing errors" time="0.0005765">
-        </testcase>
-        <testcase classname="src/services/__tests__/MigrationBuilder.test.ts" name="MigrationBuilder &gt; file writing operations &gt; should handle directory creation errors" time="0.000130459">
-        </testcase>
-        <testcase classname="src/services/__tests__/MigrationBuilder.test.ts" name="MigrationBuilder &gt; migration existence checking &gt; should return false when migration does not exist" time="0.000125875">
-        </testcase>
-        <testcase classname="src/services/__tests__/MigrationBuilder.test.ts" name="MigrationBuilder &gt; migration existence checking &gt; should return true when migration exists" time="0.000077958">
-        </testcase>
-        <testcase classname="src/services/__tests__/MigrationBuilder.test.ts" name="MigrationBuilder &gt; path generation utilities &gt; should generate correct migration path" time="0.000082542">
-        </testcase>
-        <testcase classname="src/services/__tests__/MigrationBuilder.test.ts" name="MigrationBuilder &gt; path generation utilities &gt; should generate correct absolute migration path" time="0.000077625">
-        </testcase>
-        <testcase classname="src/services/__tests__/MigrationBuilder.test.ts" name="MigrationBuilder &gt; path generation utilities &gt; should handle migration paths without prefix" time="0.000074209">
-        </testcase>
-        <testcase classname="src/services/__tests__/MigrationBuilder.test.ts" name="MigrationBuilder &gt; edge cases and error scenarios &gt; should handle empty template content" time="0.000103292">
-        </testcase>
-        <testcase classname="src/services/__tests__/MigrationBuilder.test.ts" name="MigrationBuilder &gt; edge cases and error scenarios &gt; should handle template with special characters in name" time="0.000077042">
-        </testcase>
-        <testcase classname="src/services/__tests__/MigrationBuilder.test.ts" name="MigrationBuilder &gt; edge cases and error scenarios &gt; should handle very long template content" time="0.000112">
-        </testcase>
-        <testcase classname="src/services/__tests__/MigrationBuilder.test.ts" name="MigrationBuilder &gt; edge cases and error scenarios &gt; should handle template with multiline SQL" time="0.000089541">
-        </testcase>
-        <testcase classname="src/services/__tests__/MigrationBuilder.test.ts" name="MigrationBuilder &gt; edge cases and error scenarios &gt; should handle BuildLog updates correctly" time="0.000103875">
-        </testcase>
-        <testcase classname="src/services/__tests__/MigrationBuilder.test.ts" name="MigrationBuilder &gt; edge cases and error scenarios &gt; should maintain configuration immutability" time="0.000074084">
-        </testcase>
-        <testcase classname="src/services/__tests__/MigrationBuilder.test.ts" name="MigrationBuilder &gt; concurrent operations &gt; should handle concurrent migration generation" time="0.000177416">
+        <testcase classname="src/services/__tests__/DatabaseService.test.ts" name="DatabaseService &gt; edge cases and error scenarios &gt; should handle very long SQL statements" time="0.000134083">
         </testcase>
     </testsuite>
-    <testsuite name="src/services/__tests__/Orchestrator.test.ts" timestamp="2025-08-18T17:27:22.112Z" hostname="MacBook-Pro-2.local" tests="10" failures="0" errors="0" skipped="0" time="0.016711792">
-        <testcase classname="src/services/__tests__/Orchestrator.test.ts" name="Orchestrator &gt; initialization &gt; should create orchestrator instance" time="0.000957208">
+    <testsuite name="src/services/__tests__/FileSystemService.test.ts" timestamp="2025-12-25T21:03:30.768Z" hostname="MacBook-Pro-2.local" tests="25" failures="0" errors="0" skipped="0" time="0.172826625">
+        <testcase classname="src/services/__tests__/FileSystemService.test.ts" name="FileSystemService &gt; findTemplates &gt; should find all template files matching the pattern" time="0.001582">
         </testcase>
-        <testcase classname="src/services/__tests__/Orchestrator.test.ts" name="Orchestrator &gt; initialization &gt; should initialize all services" time="0.001152709">
+        <testcase classname="src/services/__tests__/FileSystemService.test.ts" name="FileSystemService &gt; findTemplates &gt; should return sorted results" time="0.000136584">
         </testcase>
-        <testcase classname="src/services/__tests__/Orchestrator.test.ts" name="Orchestrator &gt; static factory &gt; should create orchestrator using static create method" time="0.000789125">
+        <testcase classname="src/services/__tests__/FileSystemService.test.ts" name="FileSystemService &gt; findTemplates &gt; should handle empty results" time="0.000084833">
         </testcase>
-        <testcase classname="src/services/__tests__/Orchestrator.test.ts" name="Orchestrator &gt; service coordination &gt; should coordinate between services for unidirectional flow" time="0.000705167">
+        <testcase classname="src/services/__tests__/FileSystemService.test.ts" name="FileSystemService &gt; readTemplate &gt; should read template file and return content with metadata" time="0.000698917">
         </testcase>
-        <testcase classname="src/services/__tests__/Orchestrator.test.ts" name="Orchestrator &gt; command handlers &gt; should have apply command handler" time="0.003612375">
+        <testcase classname="src/services/__tests__/FileSystemService.test.ts" name="FileSystemService &gt; readTemplate &gt; should calculate correct MD5 hash" time="0.000128417">
         </testcase>
-        <testcase classname="src/services/__tests__/Orchestrator.test.ts" name="Orchestrator &gt; command handlers &gt; should have build command handler" time="0.001152958">
+        <testcase classname="src/services/__tests__/FileSystemService.test.ts" name="FileSystemService &gt; readTemplate &gt; should throw error for non-existent file" time="0.000584292">
         </testcase>
-        <testcase classname="src/services/__tests__/Orchestrator.test.ts" name="Orchestrator &gt; command handlers &gt; should have watch command handler" time="0.000855291">
+        <testcase classname="src/services/__tests__/FileSystemService.test.ts" name="FileSystemService &gt; readTemplate &gt; should propagate other errors" time="0.000125959">
         </testcase>
-        <testcase classname="src/services/__tests__/Orchestrator.test.ts" name="Orchestrator &gt; command handlers &gt; should have findTemplates method" time="0.000898625">
+        <testcase classname="src/services/__tests__/FileSystemService.test.ts" name="FileSystemService &gt; fileExists &gt; should return true for existing file" time="0.000114334">
         </testcase>
-        <testcase classname="src/services/__tests__/Orchestrator.test.ts" name="Orchestrator &gt; command handlers &gt; should have getTemplateStatusExternal method" time="0.00085875">
+        <testcase classname="src/services/__tests__/FileSystemService.test.ts" name="FileSystemService &gt; fileExists &gt; should return false for non-existent file" time="0.000079375">
         </testcase>
-        <testcase classname="src/services/__tests__/Orchestrator.test.ts" name="Orchestrator &gt; disposal &gt; should dispose of all services" time="0.001291292">
+        <testcase classname="src/services/__tests__/FileSystemService.test.ts" name="FileSystemService &gt; writeFile &gt; should create directory and write file" time="0.000328792">
         </testcase>
-    </testsuite>
-    <testsuite name="src/services/__tests__/StateService.test.ts" timestamp="2025-08-18T17:27:22.112Z" hostname="MacBook-Pro-2.local" tests="37" failures="0" errors="0" skipped="0" time="1.112489208">
-        <testcase classname="src/services/__tests__/StateService.test.ts" name="StateService &gt; initialization &gt; should initialize with empty buildlogs when files do not exist" time="0.001047875">
+        <testcase classname="src/services/__tests__/FileSystemService.test.ts" name="FileSystemService &gt; deleteFile &gt; should delete existing file" time="0.000093291">
         </testcase>
-        <testcase classname="src/services/__tests__/StateService.test.ts" name="StateService &gt; initialization &gt; should load and merge buildlogs on initialization" time="0.000199791">
+        <testcase classname="src/services/__tests__/FileSystemService.test.ts" name="FileSystemService &gt; deleteFile &gt; should ignore ENOENT errors" time="0.000168334">
         </testcase>
-        <testcase classname="src/services/__tests__/StateService.test.ts" name="StateService &gt; initialization &gt; should handle corrupted JSON files gracefully" time="0.001123333">
+        <testcase classname="src/services/__tests__/FileSystemService.test.ts" name="FileSystemService &gt; deleteFile &gt; should propagate other errors" time="0.000104459">
         </testcase>
-        <testcase classname="src/services/__tests__/StateService.test.ts" name="StateService &gt; state transitions &gt; should mark template as unseen" time="0.000430833">
+        <testcase classname="src/services/__tests__/FileSystemService.test.ts" name="FileSystemService &gt; getFileStats &gt; should return file stats" time="0.000101375">
         </testcase>
-        <testcase classname="src/services/__tests__/StateService.test.ts" name="StateService &gt; state transitions &gt; should mark template as synced" time="0.000116667">
+        <testcase classname="src/services/__tests__/FileSystemService.test.ts" name="FileSystemService &gt; watchTemplates &gt; should start watching templates directory" time="0.003774666">
         </testcase>
-        <testcase classname="src/services/__tests__/StateService.test.ts" name="StateService &gt; state transitions &gt; should mark template as changed" time="0.000100541">
+        <testcase classname="src/services/__tests__/FileSystemService.test.ts" name="FileSystemService &gt; watchTemplates &gt; should emit events for initial files" time="0.154273709">
         </testcase>
-        <testcase classname="src/services/__tests__/StateService.test.ts" name="StateService &gt; state transitions &gt; should mark template as applied" time="0.000152459">
+        <testcase classname="src/services/__tests__/FileSystemService.test.ts" name="FileSystemService &gt; watchTemplates &gt; should throw error if already watching" time="0.003372958">
         </testcase>
-        <testcase classname="src/services/__tests__/StateService.test.ts" name="StateService &gt; state transitions &gt; should mark template as built" time="0.000224625">
+        <testcase classname="src/services/__tests__/FileSystemService.test.ts" name="FileSystemService &gt; watchTemplates &gt; should handle watch errors" time="0.002162208">
         </testcase>
-        <testcase classname="src/services/__tests__/StateService.test.ts" name="StateService &gt; state transitions &gt; should mark template as error during apply" time="0.000124333">
+        <testcase classname="src/services/__tests__/FileSystemService.test.ts" name="FileSystemService &gt; stopWatching &gt; should stop watching and clear timers" time="0.001450125">
         </testcase>
-        <testcase classname="src/services/__tests__/StateService.test.ts" name="StateService &gt; state transitions &gt; should mark template as error during build" time="0.000137375">
+        <testcase classname="src/services/__tests__/FileSystemService.test.ts" name="FileSystemService &gt; stopWatching &gt; should be safe to call without watching" time="0.000148">
         </testcase>
-        <testcase classname="src/services/__tests__/StateService.test.ts" name="StateService &gt; state transitions &gt; should emit state transition events" time="0.000305875">
+        <testcase classname="src/services/__tests__/FileSystemService.test.ts" name="FileSystemService &gt; getMigrationPath &gt; should generate correct migration path" time="0.000099583">
         </testcase>
-        <testcase classname="src/services/__tests__/StateService.test.ts" name="StateService &gt; state transitions &gt; should validate state transitions" time="0.00048225">
+        <testcase classname="src/services/__tests__/FileSystemService.test.ts" name="FileSystemService &gt; listMigrations &gt; should list all migration files sorted" time="0.000149833">
         </testcase>
-        <testcase classname="src/services/__tests__/StateService.test.ts" name="StateService &gt; state transitions &gt; should handle all valid transition paths" time="0.000418667">
+        <testcase classname="src/services/__tests__/FileSystemService.test.ts" name="FileSystemService &gt; readMigration &gt; should read migration file content" time="0.000116958">
         </testcase>
-        <testcase classname="src/services/__tests__/StateService.test.ts" name="StateService &gt; hash comparison &gt; should detect changed templates with no previous state" time="0.000156083">
+        <testcase classname="src/services/__tests__/FileSystemService.test.ts" name="FileSystemService &gt; dispose &gt; should clean up resources" time="0.001059042">
         </testcase>
-        <testcase classname="src/services/__tests__/StateService.test.ts" name="StateService &gt; hash comparison &gt; should detect changed templates with different hash" time="0.0001065">
-        </testcase>
-        <testcase classname="src/services/__tests__/StateService.test.ts" name="StateService &gt; hash comparison &gt; should detect unchanged templates with same applied hash" time="0.00008825">
-        </testcase>
-        <testcase classname="src/services/__tests__/StateService.test.ts" name="StateService &gt; hash comparison &gt; should detect unchanged templates with same built hash" time="0.000080917">
-        </testcase>
-        <testcase classname="src/services/__tests__/StateService.test.ts" name="StateService &gt; hash comparison &gt; should prioritize built hash over applied hash" time="0.000097083">
-        </testcase>
-        <testcase classname="src/services/__tests__/StateService.test.ts" name="StateService &gt; persistence &gt; should save buildlogs to correct files" time="0.00019725">
-        </testcase>
-        <testcase classname="src/services/__tests__/StateService.test.ts" name="StateService &gt; persistence &gt; should handle save failures" time="0.00057825">
-        </testcase>
-        <testcase classname="src/services/__tests__/StateService.test.ts" name="StateService &gt; persistence &gt; should auto-save when enabled" time="1.101793417">
-        </testcase>
-        <testcase classname="src/services/__tests__/StateService.test.ts" name="StateService &gt; persistence &gt; should update timestamps correctly" time="0.000206791">
-        </testcase>
-        <testcase classname="src/services/__tests__/StateService.test.ts" name="StateService &gt; state management &gt; should return undefined for non-existent template" time="0.000086541">
-        </testcase>
-        <testcase classname="src/services/__tests__/StateService.test.ts" name="StateService &gt; state management &gt; should return all template statuses" time="0.000130458">
-        </testcase>
-        <testcase classname="src/services/__tests__/StateService.test.ts" name="StateService &gt; state management &gt; should clear all states" time="0.000195875">
-        </testcase>
-        <testcase classname="src/services/__tests__/StateService.test.ts" name="StateService &gt; state management &gt; should emit cleared event when clearing all states" time="0.000101958">
-        </testcase>
-        <testcase classname="src/services/__tests__/StateService.test.ts" name="StateService &gt; state determination from metadata &gt; should determine ERROR state from error metadata" time="0.000135209">
-        </testcase>
-        <testcase classname="src/services/__tests__/StateService.test.ts" name="StateService &gt; state determination from metadata &gt; should determine BUILT state from build metadata" time="0.000108667">
-        </testcase>
-        <testcase classname="src/services/__tests__/StateService.test.ts" name="StateService &gt; state determination from metadata &gt; should determine APPLIED state from apply metadata" time="0.00010125">
-        </testcase>
-        <testcase classname="src/services/__tests__/StateService.test.ts" name="StateService &gt; state determination from metadata &gt; should determine UNSEEN state for templates with no metadata" time="0.000089791">
-        </testcase>
-        <testcase classname="src/services/__tests__/StateService.test.ts" name="StateService &gt; resource cleanup &gt; should dispose cleanly" time="0.000105959">
-        </testcase>
-        <testcase classname="src/services/__tests__/StateService.test.ts" name="StateService &gt; resource cleanup &gt; should save before disposing with auto-save enabled" time="0.000106041">
-        </testcase>
-        <testcase classname="src/services/__tests__/StateService.test.ts" name="StateService &gt; edge cases and error handling &gt; should handle concurrent state updates safely" time="0.000108625">
-        </testcase>
-        <testcase classname="src/services/__tests__/StateService.test.ts" name="StateService &gt; edge cases and error handling &gt; should handle paths with special characters" time="0.000094459">
-        </testcase>
-        <testcase classname="src/services/__tests__/StateService.test.ts" name="StateService &gt; edge cases and error handling &gt; should handle very long file paths" time="0.000095583">
-        </testcase>
-        <testcase classname="src/services/__tests__/StateService.test.ts" name="StateService &gt; edge cases and error handling &gt; should handle empty hashes gracefully" time="0.000096583">
-        </testcase>
-        <testcase classname="src/services/__tests__/StateService.test.ts" name="StateService &gt; edge cases and error handling &gt; should maintain state consistency after multiple operations" time="0.0004005">
+        <testcase classname="src/services/__tests__/FileSystemService.test.ts" name="FileSystemService &gt; event emission &gt; should emit specific event types" time="0.000157375">
         </testcase>
     </testsuite>
-    <testsuite name="src/services/__tests__/integration.test.ts" timestamp="2025-08-18T17:27:22.114Z" hostname="MacBook-Pro-2.local" tests="8" failures="5" errors="0" skipped="0" time="2.075799584">
-        <testcase classname="src/services/__tests__/integration.test.ts" name="Service Integration Tests &gt; FileSystemService + StateService Integration &gt; should discover templates and track their states" time="0.021536292">
-            <failure message="expected undefined to be &apos;unseen&apos; // Object.is equality" type="AssertionError">
-AssertionError: expected undefined to be &apos;unseen&apos; // Object.is equality
-
-- Expected: 
-&quot;unseen&quot;
-
-+ Received: 
-undefined
-
- ❯ src/services/__tests__/integration.test.ts:153:23
-            </failure>
+    <testsuite name="src/services/__tests__/MigrationBuilder.test.ts" timestamp="2025-12-25T21:03:30.769Z" hostname="MacBook-Pro-2.local" tests="31" failures="0" errors="0" skipped="0" time="0.008847291">
+        <testcase classname="src/services/__tests__/MigrationBuilder.test.ts" name="MigrationBuilder &gt; initialization and configuration &gt; should create builder with required configuration" time="0.000743958">
         </testcase>
-        <testcase classname="src/services/__tests__/integration.test.ts" name="Service Integration Tests &gt; FileSystemService + StateService Integration &gt; should detect file changes through watch events" time="2.01748">
+        <testcase classname="src/services/__tests__/MigrationBuilder.test.ts" name="MigrationBuilder &gt; initialization and configuration &gt; should merge configuration with defaults" time="0.000190791">
         </testcase>
-        <testcase classname="src/services/__tests__/integration.test.ts" name="Service Integration Tests &gt; StateService + MigrationBuilder Integration &gt; should build migrations for changed templates" time="0.003004084">
-            <failure message="expected [] to include &apos;20240101000000&apos;" type="AssertionError">
-AssertionError: expected [] to include &apos;20240101000000&apos;
- ❯ src/services/__tests__/integration.test.ts:214:29
-            </failure>
+        <testcase classname="src/services/__tests__/MigrationBuilder.test.ts" name="MigrationBuilder &gt; initialization and configuration &gt; should create builder from CLI config" time="0.000123958">
         </testcase>
-        <testcase classname="src/services/__tests__/integration.test.ts" name="Service Integration Tests &gt; Orchestrator Service Coordination &gt; should coordinate apply operation across services" time="0.002650834">
-            <failure message="expected [] to have a length of 1 but got +0" type="AssertionError">
-AssertionError: expected [] to have a length of 1 but got +0
-
-- Expected
-+ Received
-
-- 1
-+ 0
-
- ❯ src/services/__tests__/integration.test.ts:257:30
-            </failure>
+        <testcase classname="src/services/__tests__/MigrationBuilder.test.ts" name="MigrationBuilder &gt; initialization and configuration &gt; should validate configuration" time="0.000776458">
         </testcase>
-        <testcase classname="src/services/__tests__/integration.test.ts" name="Service Integration Tests &gt; Orchestrator Service Coordination &gt; should coordinate build operation across services" time="0.003001042">
-            <failure message="The &quot;path&quot; argument must be of type string. Received an instance of Object" type="TypeError">
-TypeError: The &quot;path&quot; argument must be of type string. Received an instance of Object
- ❯ Orchestrator.executeIndividualBuilds src/services/Orchestrator.ts:572:35
- ❯ Orchestrator.build src/services/Orchestrator.ts:451:14
- ❯ src/services/__tests__/integration.test.ts:303:22
-
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
-Serialized Error: { code: &apos;ERR_INVALID_ARG_TYPE&apos; }
-            </failure>
+        <testcase classname="src/services/__tests__/MigrationBuilder.test.ts" name="MigrationBuilder &gt; migration content generation &gt; should generate migration with all components" time="0.000417875">
         </testcase>
-        <testcase classname="src/services/__tests__/integration.test.ts" name="Service Integration Tests &gt; Event Flow Integration &gt; should properly emit and handle events across services" time="0.001981709">
+        <testcase classname="src/services/__tests__/MigrationBuilder.test.ts" name="MigrationBuilder &gt; migration content generation &gt; should generate migration without transaction wrapping" time="0.000135166">
         </testcase>
-        <testcase classname="src/services/__tests__/integration.test.ts" name="Service Integration Tests &gt; Error Handling Integration &gt; should handle errors gracefully across service boundaries" time="0.017185959">
-            <failure message="expected { file: &apos;invalid&apos;, …(2) } to match object { …(2) }
-(1 matching property omitted from actual)" type="AssertionError">
-AssertionError: expected { file: &apos;invalid&apos;, …(2) } to match object { …(2) }
-(1 matching property omitted from actual)
-
-- Expected
-+ Received
-
-  {
--   &quot;error&quot;: StringContaining &quot;Syntax error&quot;,
--   &quot;templateName&quot;: StringContaining &quot;invalid.sql&quot;,
-+   &quot;error&quot;: &quot;syntax error at or near \&quot;INVALID\&quot;&quot;,
-+   &quot;templateName&quot;: &quot;invalid&quot;,
-  }
-
- ❯ src/services/__tests__/integration.test.ts:372:32
-            </failure>
+        <testcase classname="src/services/__tests__/MigrationBuilder.test.ts" name="MigrationBuilder &gt; migration content generation &gt; should generate migration without prefix" time="0.00010325">
         </testcase>
-        <testcase classname="src/services/__tests__/integration.test.ts" name="Service Integration Tests &gt; Error Handling Integration &gt; should maintain consistency when operations fail" time="0.003955">
+        <testcase classname="src/services/__tests__/MigrationBuilder.test.ts" name="MigrationBuilder &gt; migration content generation &gt; should generate migration without banner and footer" time="0.000121375">
+        </testcase>
+        <testcase classname="src/services/__tests__/MigrationBuilder.test.ts" name="MigrationBuilder &gt; migration content generation &gt; should handle template without lastBuildAt" time="0.000085417">
+        </testcase>
+        <testcase classname="src/services/__tests__/MigrationBuilder.test.ts" name="MigrationBuilder &gt; migration content generation &gt; should generate unique timestamps" time="0.000381042">
+        </testcase>
+        <testcase classname="src/services/__tests__/MigrationBuilder.test.ts" name="MigrationBuilder &gt; bundled migration generation &gt; should generate bundled migration with multiple templates" time="0.000272667">
+        </testcase>
+        <testcase classname="src/services/__tests__/MigrationBuilder.test.ts" name="MigrationBuilder &gt; bundled migration generation &gt; should generate bundled migration without transaction wrapping" time="0.000112208">
+        </testcase>
+        <testcase classname="src/services/__tests__/MigrationBuilder.test.ts" name="MigrationBuilder &gt; bundled migration generation &gt; should handle empty template list for bundle" time="0.000127">
+        </testcase>
+        <testcase classname="src/services/__tests__/MigrationBuilder.test.ts" name="MigrationBuilder &gt; file writing operations &gt; should write migration file to disk" time="0.000533584">
+        </testcase>
+        <testcase classname="src/services/__tests__/MigrationBuilder.test.ts" name="MigrationBuilder &gt; file writing operations &gt; should write bundled migration file to disk" time="0.0001825">
+        </testcase>
+        <testcase classname="src/services/__tests__/MigrationBuilder.test.ts" name="MigrationBuilder &gt; file writing operations &gt; should generate and write migration in one operation" time="0.000143">
+        </testcase>
+        <testcase classname="src/services/__tests__/MigrationBuilder.test.ts" name="MigrationBuilder &gt; file writing operations &gt; should generate and write bundled migration in one operation" time="0.000115583">
+        </testcase>
+        <testcase classname="src/services/__tests__/MigrationBuilder.test.ts" name="MigrationBuilder &gt; file writing operations &gt; should handle file writing errors" time="0.000565583">
+        </testcase>
+        <testcase classname="src/services/__tests__/MigrationBuilder.test.ts" name="MigrationBuilder &gt; file writing operations &gt; should handle directory creation errors" time="0.000123958">
+        </testcase>
+        <testcase classname="src/services/__tests__/MigrationBuilder.test.ts" name="MigrationBuilder &gt; migration existence checking &gt; should return false when migration does not exist" time="0.000121625">
+        </testcase>
+        <testcase classname="src/services/__tests__/MigrationBuilder.test.ts" name="MigrationBuilder &gt; migration existence checking &gt; should return true when migration exists" time="0.000073208">
+        </testcase>
+        <testcase classname="src/services/__tests__/MigrationBuilder.test.ts" name="MigrationBuilder &gt; path generation utilities &gt; should generate correct migration path" time="0.000084666">
+        </testcase>
+        <testcase classname="src/services/__tests__/MigrationBuilder.test.ts" name="MigrationBuilder &gt; path generation utilities &gt; should generate correct absolute migration path" time="0.00007225">
+        </testcase>
+        <testcase classname="src/services/__tests__/MigrationBuilder.test.ts" name="MigrationBuilder &gt; path generation utilities &gt; should handle migration paths without prefix" time="0.0000695">
+        </testcase>
+        <testcase classname="src/services/__tests__/MigrationBuilder.test.ts" name="MigrationBuilder &gt; edge cases and error scenarios &gt; should handle empty template content" time="0.000100708">
+        </testcase>
+        <testcase classname="src/services/__tests__/MigrationBuilder.test.ts" name="MigrationBuilder &gt; edge cases and error scenarios &gt; should handle template with special characters in name" time="0.000073709">
+        </testcase>
+        <testcase classname="src/services/__tests__/MigrationBuilder.test.ts" name="MigrationBuilder &gt; edge cases and error scenarios &gt; should handle very long template content" time="0.000107167">
+        </testcase>
+        <testcase classname="src/services/__tests__/MigrationBuilder.test.ts" name="MigrationBuilder &gt; edge cases and error scenarios &gt; should handle template with multiline SQL" time="0.000090667">
+        </testcase>
+        <testcase classname="src/services/__tests__/MigrationBuilder.test.ts" name="MigrationBuilder &gt; edge cases and error scenarios &gt; should handle BuildLog updates correctly" time="0.000107417">
+        </testcase>
+        <testcase classname="src/services/__tests__/MigrationBuilder.test.ts" name="MigrationBuilder &gt; edge cases and error scenarios &gt; should maintain configuration immutability" time="0.00007275">
+        </testcase>
+        <testcase classname="src/services/__tests__/MigrationBuilder.test.ts" name="MigrationBuilder &gt; concurrent operations &gt; should handle concurrent migration generation" time="0.000160792">
+        </testcase>
+    </testsuite>
+    <testsuite name="src/services/__tests__/Orchestrator.test.ts" timestamp="2025-12-25T21:03:30.770Z" hostname="MacBook-Pro-2.local" tests="10" failures="0" errors="0" skipped="0" time="0.015062625">
+        <testcase classname="src/services/__tests__/Orchestrator.test.ts" name="Orchestrator &gt; initialization &gt; should create orchestrator instance" time="0.000869">
+        </testcase>
+        <testcase classname="src/services/__tests__/Orchestrator.test.ts" name="Orchestrator &gt; initialization &gt; should initialize all services" time="0.001382625">
+        </testcase>
+        <testcase classname="src/services/__tests__/Orchestrator.test.ts" name="Orchestrator &gt; static factory &gt; should create orchestrator using static create method" time="0.00180325">
+        </testcase>
+        <testcase classname="src/services/__tests__/Orchestrator.test.ts" name="Orchestrator &gt; service coordination &gt; should coordinate between services for unidirectional flow" time="0.000759208">
+        </testcase>
+        <testcase classname="src/services/__tests__/Orchestrator.test.ts" name="Orchestrator &gt; command handlers &gt; should have apply command handler" time="0.000971834">
+        </testcase>
+        <testcase classname="src/services/__tests__/Orchestrator.test.ts" name="Orchestrator &gt; command handlers &gt; should have build command handler" time="0.000745125">
+        </testcase>
+        <testcase classname="src/services/__tests__/Orchestrator.test.ts" name="Orchestrator &gt; command handlers &gt; should have watch command handler" time="0.000808083">
+        </testcase>
+        <testcase classname="src/services/__tests__/Orchestrator.test.ts" name="Orchestrator &gt; command handlers &gt; should have findTemplates method" time="0.001181625">
+        </testcase>
+        <testcase classname="src/services/__tests__/Orchestrator.test.ts" name="Orchestrator &gt; command handlers &gt; should have getTemplateStatusExternal method" time="0.00108075">
+        </testcase>
+        <testcase classname="src/services/__tests__/Orchestrator.test.ts" name="Orchestrator &gt; disposal &gt; should dispose of all services" time="0.001487625">
+        </testcase>
+    </testsuite>
+    <testsuite name="src/services/__tests__/StateService.test.ts" timestamp="2025-12-25T21:03:30.771Z" hostname="MacBook-Pro-2.local" tests="37" failures="0" errors="0" skipped="0" time="1.112485125">
+        <testcase classname="src/services/__tests__/StateService.test.ts" name="StateService &gt; initialization &gt; should initialize with empty buildlogs when files do not exist" time="0.000962542">
+        </testcase>
+        <testcase classname="src/services/__tests__/StateService.test.ts" name="StateService &gt; initialization &gt; should load and merge buildlogs on initialization" time="0.000196792">
+        </testcase>
+        <testcase classname="src/services/__tests__/StateService.test.ts" name="StateService &gt; initialization &gt; should handle corrupted JSON files gracefully" time="0.00113125">
+        </testcase>
+        <testcase classname="src/services/__tests__/StateService.test.ts" name="StateService &gt; state transitions &gt; should mark template as unseen" time="0.000430792">
+        </testcase>
+        <testcase classname="src/services/__tests__/StateService.test.ts" name="StateService &gt; state transitions &gt; should mark template as synced" time="0.000114209">
+        </testcase>
+        <testcase classname="src/services/__tests__/StateService.test.ts" name="StateService &gt; state transitions &gt; should mark template as changed" time="0.000103584">
+        </testcase>
+        <testcase classname="src/services/__tests__/StateService.test.ts" name="StateService &gt; state transitions &gt; should mark template as applied" time="0.000148875">
+        </testcase>
+        <testcase classname="src/services/__tests__/StateService.test.ts" name="StateService &gt; state transitions &gt; should mark template as built" time="0.000220209">
+        </testcase>
+        <testcase classname="src/services/__tests__/StateService.test.ts" name="StateService &gt; state transitions &gt; should mark template as error during apply" time="0.000124667">
+        </testcase>
+        <testcase classname="src/services/__tests__/StateService.test.ts" name="StateService &gt; state transitions &gt; should mark template as error during build" time="0.000133375">
+        </testcase>
+        <testcase classname="src/services/__tests__/StateService.test.ts" name="StateService &gt; state transitions &gt; should emit state transition events" time="0.000303916">
+        </testcase>
+        <testcase classname="src/services/__tests__/StateService.test.ts" name="StateService &gt; state transitions &gt; should validate state transitions" time="0.000482417">
+        </testcase>
+        <testcase classname="src/services/__tests__/StateService.test.ts" name="StateService &gt; state transitions &gt; should handle all valid transition paths" time="0.000246417">
+        </testcase>
+        <testcase classname="src/services/__tests__/StateService.test.ts" name="StateService &gt; hash comparison &gt; should detect changed templates with no previous state" time="0.00008575">
+        </testcase>
+        <testcase classname="src/services/__tests__/StateService.test.ts" name="StateService &gt; hash comparison &gt; should detect changed templates with different hash" time="0.000079125">
+        </testcase>
+        <testcase classname="src/services/__tests__/StateService.test.ts" name="StateService &gt; hash comparison &gt; should detect unchanged templates with same applied hash" time="0.000077541">
+        </testcase>
+        <testcase classname="src/services/__tests__/StateService.test.ts" name="StateService &gt; hash comparison &gt; should detect unchanged templates with same built hash" time="0.000076167">
+        </testcase>
+        <testcase classname="src/services/__tests__/StateService.test.ts" name="StateService &gt; hash comparison &gt; should prioritize built hash over applied hash" time="0.000092292">
+        </testcase>
+        <testcase classname="src/services/__tests__/StateService.test.ts" name="StateService &gt; persistence &gt; should save buildlogs to correct files" time="0.000172958">
+        </testcase>
+        <testcase classname="src/services/__tests__/StateService.test.ts" name="StateService &gt; persistence &gt; should handle save failures" time="0.000498">
+        </testcase>
+        <testcase classname="src/services/__tests__/StateService.test.ts" name="StateService &gt; persistence &gt; should auto-save when enabled" time="1.102288375">
+        </testcase>
+        <testcase classname="src/services/__tests__/StateService.test.ts" name="StateService &gt; persistence &gt; should update timestamps correctly" time="0.00026825">
+        </testcase>
+        <testcase classname="src/services/__tests__/StateService.test.ts" name="StateService &gt; state management &gt; should return undefined for non-existent template" time="0.000105209">
+        </testcase>
+        <testcase classname="src/services/__tests__/StateService.test.ts" name="StateService &gt; state management &gt; should return all template statuses" time="0.000149625">
+        </testcase>
+        <testcase classname="src/services/__tests__/StateService.test.ts" name="StateService &gt; state management &gt; should clear all states" time="0.000211833">
+        </testcase>
+        <testcase classname="src/services/__tests__/StateService.test.ts" name="StateService &gt; state management &gt; should emit cleared event when clearing all states" time="0.000107083">
+        </testcase>
+        <testcase classname="src/services/__tests__/StateService.test.ts" name="StateService &gt; state determination from metadata &gt; should determine ERROR state from error metadata" time="0.000125542">
+        </testcase>
+        <testcase classname="src/services/__tests__/StateService.test.ts" name="StateService &gt; state determination from metadata &gt; should determine BUILT state from build metadata" time="0.000109416">
+        </testcase>
+        <testcase classname="src/services/__tests__/StateService.test.ts" name="StateService &gt; state determination from metadata &gt; should determine APPLIED state from apply metadata" time="0.000101875">
+        </testcase>
+        <testcase classname="src/services/__tests__/StateService.test.ts" name="StateService &gt; state determination from metadata &gt; should determine UNSEEN state for templates with no metadata" time="0.000096791">
+        </testcase>
+        <testcase classname="src/services/__tests__/StateService.test.ts" name="StateService &gt; resource cleanup &gt; should dispose cleanly" time="0.000106125">
+        </testcase>
+        <testcase classname="src/services/__tests__/StateService.test.ts" name="StateService &gt; resource cleanup &gt; should save before disposing with auto-save enabled" time="0.000104">
+        </testcase>
+        <testcase classname="src/services/__tests__/StateService.test.ts" name="StateService &gt; edge cases and error handling &gt; should handle concurrent state updates safely" time="0.000102541">
+        </testcase>
+        <testcase classname="src/services/__tests__/StateService.test.ts" name="StateService &gt; edge cases and error handling &gt; should handle paths with special characters" time="0.000085625">
+        </testcase>
+        <testcase classname="src/services/__tests__/StateService.test.ts" name="StateService &gt; edge cases and error handling &gt; should handle very long file paths" time="0.000079333">
+        </testcase>
+        <testcase classname="src/services/__tests__/StateService.test.ts" name="StateService &gt; edge cases and error handling &gt; should handle empty hashes gracefully" time="0.000088208">
+        </testcase>
+        <testcase classname="src/services/__tests__/StateService.test.ts" name="StateService &gt; edge cases and error handling &gt; should maintain state consistency after multiple operations" time="0.000141417">
+        </testcase>
+    </testsuite>
+    <testsuite name="src/services/__tests__/integration.test.ts" timestamp="2025-12-25T21:03:30.772Z" hostname="MacBook-Pro-2.local" tests="8" failures="0" errors="0" skipped="0" time="2.070041583">
+        <testcase classname="src/services/__tests__/integration.test.ts" name="Service Integration Tests &gt; FileSystemService + StateService Integration &gt; should discover templates and track their states" time="0.012280792">
+        </testcase>
+        <testcase classname="src/services/__tests__/integration.test.ts" name="Service Integration Tests &gt; FileSystemService + StateService Integration &gt; should detect file changes through watch events" time="2.012625375">
+        </testcase>
+        <testcase classname="src/services/__tests__/integration.test.ts" name="Service Integration Tests &gt; StateService + MigrationBuilder Integration &gt; should build migrations for changed templates" time="0.00106825">
+        </testcase>
+        <testcase classname="src/services/__tests__/integration.test.ts" name="Service Integration Tests &gt; Orchestrator Service Coordination &gt; should coordinate apply operation across services" time="0.0016155">
+        </testcase>
+        <testcase classname="src/services/__tests__/integration.test.ts" name="Service Integration Tests &gt; Orchestrator Service Coordination &gt; should coordinate build operation across services" time="0.001442292">
+        </testcase>
+        <testcase classname="src/services/__tests__/integration.test.ts" name="Service Integration Tests &gt; Event Flow Integration &gt; should properly emit and handle events across services" time="0.001664875">
+        </testcase>
+        <testcase classname="src/services/__tests__/integration.test.ts" name="Service Integration Tests &gt; Error Handling Integration &gt; should handle errors gracefully across service boundaries" time="0.021323083">
+        </testcase>
+        <testcase classname="src/services/__tests__/integration.test.ts" name="Service Integration Tests &gt; Error Handling Integration &gt; should maintain consistency when operations fail" time="0.015766125">
         </testcase>
     </testsuite>
 </testsuites>

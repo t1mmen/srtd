@@ -16,8 +16,6 @@ vi.mock('../FileSystemService.js');
 vi.mock('../StateService.js');
 vi.mock('../DatabaseService.js');
 vi.mock('../MigrationBuilder.js');
-vi.mock('../../utils/loadBuildLog.js');
-vi.mock('../../utils/saveBuildLog.js');
 
 describe('Orchestrator', () => {
   let orchestrator: Orchestrator;

@@ -776,11 +776,125 @@
         "dependencies": [16],
         "priority": "medium",
         "subtasks": []
+      },
+      {
+        "id": 18,
+        "title": "Create GitHub Actions workflow for real database testing with Supabase integration",
+        "description": "Implement automated CI/CD pipeline with GitHub Actions that performs comprehensive testing against real Supabase databases, including migration testing, data integrity validation, and multi-environment deployment workflows.",
+        "details": "Create .github/workflows/database-testing.yml implementing: 1) Matrix strategy testing against multiple Supabase projects (test, staging, production-like environments) with different PostgreSQL versions and configurations. 2) Secrets management for Supabase connection strings, API keys, and database credentials using GitHub repository secrets. 3) Database setup and teardown jobs that create isolated test schemas, run migrations, seed test data, and clean up after tests. 4) Integration test execution running the full SRTD CLI workflow: init, register, apply templates, build migrations, and promote to Supabase. 5) Migration validation ensuring generated SQL is syntactically correct, executes successfully, and maintains referential integrity. 6) Performance testing with database connection pooling, query execution timing, and resource usage monitoring. 7) Parallel job execution for different test suites (unit, integration, e2e) with proper dependency management. 8) Artifact collection including test results, coverage reports, migration files, and database logs. 9) Notification integration for Slack/email on test failures with detailed error context. 10) Environment-specific configuration supporting development, staging, and production testing workflows. 11) Database state validation ensuring consistent state between test runs and proper rollback mechanisms.",
+        "testStrategy": "Validate workflow execution in fork repositories before merging to main branch. Test secret management by running workflows with dummy credentials and verifying proper error handling. Verify database isolation by running concurrent workflow executions and ensuring no cross-contamination. Test migration rollback scenarios by intentionally introducing breaking changes and verifying recovery mechanisms. Validate performance benchmarks by comparing execution times across workflow runs and alerting on significant regressions. Test notification systems by triggering intentional failures and verifying proper alert delivery. Verify artifact generation and retention policies work correctly. Test workflow behavior under different GitHub runner environments (ubuntu-latest, self-hosted). Validate that workflows properly handle Supabase API rate limits and connection timeouts.",
+        "status": "in-progress",
+        "dependencies": [9, 17],
+        "priority": "medium",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create GitHub Actions workflow infrastructure and Supabase environment matrix",
+            "description": "Set up the foundational GitHub Actions workflow file (.github/workflows/database-testing.yml) with multi-environment matrix strategy for testing against different Supabase configurations. This includes defining the workflow structure, environment variables, secrets management, and matrix configurations for testing against multiple Supabase projects (test, staging, production-like) with different PostgreSQL versions (13, 14, 15). Implement proper secrets handling for SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY, and database connection strings.",
+            "dependencies": [],
+            "details": "Create workflow file with matrix strategy including node versions (20.x, 22.x), PostgreSQL versions (13, 14, 15), and Supabase environment types (test, staging, prod-like). Configure secrets management using GitHub repository secrets. Set up environment-specific configuration handling. Include workflow triggers for push/PR events with appropriate path filters.",
+            "status": "done",
+            "testStrategy": "Validate workflow syntax using GitHub Actions validation. Test matrix expansion logic. Verify secrets are properly masked in logs. Ensure environment-specific configurations are correctly applied."
+          },
+          {
+            "id": 2,
+            "title": "Implement database setup, migration, and teardown jobs",
+            "description": "Create comprehensive database lifecycle management within the workflow including isolated test schema creation, Supabase CLI setup, migration execution, test data seeding, and proper cleanup mechanisms. This involves setting up Supabase CLI, creating isolated database schemas for each test run, running existing migrations, seeding test data, and implementing proper teardown with rollback mechanisms to ensure clean state between test runs.",
+            "dependencies": ["18.1"],
+            "details": "Install and configure Supabase CLI in the workflow. Create setup job that initializes isolated test schemas with unique naming (e.g., test_run_${GITHUB_RUN_ID}_${matrix.index}). Implement migration application using the existing MigrationBuilder service. Create seed data scripts for comprehensive testing. Add teardown job that cleans up test schemas and data. Implement proper error handling and rollback mechanisms.",
+            "status": "pending",
+            "testStrategy": "Test schema isolation between parallel jobs. Verify migration application succeeds. Validate seed data is properly created. Ensure cleanup happens even on test failures. Test rollback mechanisms work correctly."
+          },
+          {
+            "id": 3,
+            "title": "Integrate SRTD CLI workflow execution and validation",
+            "description": "Implement end-to-end CLI workflow testing that runs the complete SRTD pipeline: init, register templates, apply templates to database, build migrations, and promote to Supabase. This includes testing the full CLI command sequence against real Supabase databases, validating generated migrations, ensuring SQL syntax correctness, and verifying referential integrity maintenance throughout the process.",
+            "dependencies": ["18.1", "18.2"],
+            "details": "Create test job that executes full SRTD CLI workflow: 1) srtd init in test environment, 2) srtd register with test templates, 3) srtd apply templates to Supabase, 4) srtd build migrations, 5) srtd promote to verify end-to-end flow. Add SQL syntax validation using PostgreSQL parser. Implement referential integrity checks. Add database state comparison before/after operations. Include template validation and migration file verification.",
+            "status": "pending",
+            "testStrategy": "Test complete CLI workflow against live Supabase instances. Validate generated migration files are syntactically correct. Verify referential integrity is maintained. Test template registration and application. Ensure promote operation works correctly."
+          },
+          {
+            "id": 4,
+            "title": "Add performance testing, monitoring, and parallel execution management",
+            "description": "Implement comprehensive performance testing including database connection pooling validation, query execution timing, resource usage monitoring, and parallel job coordination. This includes setting up performance benchmarks, monitoring database connection efficiency, measuring query execution times, tracking resource usage, and implementing proper job dependencies to ensure parallel test suites (unit, integration, e2e) run efficiently without conflicts.",
+            "dependencies": ["18.1", "18.2", "18.3"],
+            "details": "Add performance testing job that measures query execution times, monitors connection pool efficiency, and tracks resource usage. Implement parallel job execution with proper dependency management between unit, integration, and e2e test suites. Add database connection monitoring and pool utilization metrics. Create performance regression detection by comparing against baseline metrics. Implement resource usage reporting including memory, CPU, and database connections.",
+            "status": "pending",
+            "testStrategy": "Validate performance metrics are collected accurately. Test parallel job execution doesn't cause conflicts. Verify connection pooling works efficiently. Ensure resource monitoring provides meaningful data. Test performance regression detection."
+          },
+          {
+            "id": 5,
+            "title": "Implement artifact collection, reporting, and notification system",
+            "description": "Create comprehensive artifact collection and reporting system that gathers test results, coverage reports, migration files, database logs, and performance metrics. Implement notification integration for Slack/email on test failures with detailed error context and proper artifact organization. This includes collecting all test outputs, organizing them for easy access, implementing notification webhooks, and providing detailed failure analysis with actionable error information.",
+            "dependencies": ["18.1", "18.2", "18.3", "18.4"],
+            "details": "Implement artifact collection for: test results (JUnit XML), coverage reports, generated migration files, database logs, performance metrics, and error reports. Create notification system using GitHub Actions for Slack/email integration. Organize artifacts by environment and test type. Add failure analysis with actionable error context including SQL errors, CLI command failures, and performance regressions. Implement artifact retention policies and download links in notifications.",
+            "status": "pending",
+            "testStrategy": "Verify all artifacts are collected properly. Test notification delivery to Slack/email. Validate artifact organization and accessibility. Ensure error context provides actionable information. Test artifact retention and cleanup."
+          }
+        ]
+      },
+      {
+        "id": 19,
+        "title": "Restore Interactive Terminal Menu for CLI Entry Point",
+        "description": "Implement the missing interactive command selection menu that displays when SRTD CLI is run without arguments, restoring the original user experience for command discovery and selection.",
+        "details": "Create an interactive terminal menu system that appears when the CLI is executed without arguments. Implement using Terminal-Kit's singleLineMenu or gridMenu components to provide: 1) Main menu options for core commands (Apply Templates, Build Migrations, Watch Mode, Register Templates, Promote Templates, Clear Cache, Initialize Project). 2) Command descriptions and keyboard shortcuts for each option. 3) Proper terminal handling with graceful exit on Ctrl+C or ESC. 4) Navigation using arrow keys and Enter for selection. 5) Integration with existing command handlers in src/commands/ directory. 6) Fallback to help text if terminal doesn't support interactive features. 7) Consistent branding and styling matching the Terminal-Kit UI components. 8) Proper cleanup of terminal state on exit. The implementation should detect when no arguments are provided in the main CLI entry point and launch the interactive menu instead of showing help text.",
+        "testStrategy": "Create automated tests using terminal emulation to verify menu rendering and navigation. Test keyboard interactions (arrow keys, Enter, ESC, Ctrl+C) and verify proper command execution when options are selected. Test in different terminal environments and verify graceful degradation for non-interactive terminals. Create integration tests that verify each menu option correctly invokes the corresponding command handler. Test edge cases like rapid key presses and ensure no race conditions in menu state management. Verify proper terminal cleanup and cursor restoration on exit.",
+        "status": "pending",
+        "dependencies": [8],
+        "priority": "medium",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create interactive menu component using Terminal-Kit",
+            "description": "Implement the core interactive menu component using Terminal-Kit's singleLineMenu or gridMenu to display command options with descriptions and keyboard shortcuts",
+            "dependencies": [],
+            "details": "Create src/components/InteractiveMenu.ts using Terminal-Kit's menu components. Implement menu options for all core commands (Apply Templates, Build Migrations, Watch Mode, Register Templates, Promote Templates, Clear Cache, Initialize Project). Add command descriptions and keyboard shortcuts display. Handle arrow key navigation and Enter for selection.",
+            "status": "done",
+            "testStrategy": "Unit tests for menu rendering and option selection. Mock Terminal-Kit components to verify proper initialization and event handling. Test keyboard navigation flow and selection callbacks."
+          },
+          {
+            "id": 2,
+            "title": "Implement terminal state management and cleanup",
+            "description": "Handle proper terminal initialization, cleanup, and graceful exit handling for Ctrl+C and ESC key interactions",
+            "dependencies": ["19.1"],
+            "details": "Implement terminal state management in the interactive menu component. Add proper event listeners for Ctrl+C and ESC to gracefully exit the menu. Ensure terminal cursor and input state are properly restored on exit. Handle terminal resize events and maintain menu display integrity.",
+            "status": "pending",
+            "testStrategy": "Test terminal cleanup on various exit scenarios (Ctrl+C, ESC, normal exit). Verify terminal state restoration using terminal emulation. Test behavior in different terminal environments and window sizes."
+          },
+          {
+            "id": 3,
+            "title": "Integrate menu with existing command handlers",
+            "description": "Connect the interactive menu selections to the existing command handlers in src/commands/ directory",
+            "dependencies": ["19.1"],
+            "details": "Map each menu option to its corresponding command handler function from src/commands/. Implement proper parameter passing and context setup for each command. Ensure the menu can launch commands with appropriate arguments and handle command completion or errors gracefully.",
+            "status": "pending",
+            "testStrategy": "Integration tests verifying menu selections properly invoke command handlers. Mock command functions to test parameter passing and error handling. Verify menu behavior after command completion or failure."
+          },
+          {
+            "id": 4,
+            "title": "Add fallback handling for non-interactive terminals",
+            "description": "Implement detection for terminal capabilities and provide fallback to help text when interactive features are not supported",
+            "dependencies": ["19.1"],
+            "details": "Detect terminal capabilities using Terminal-Kit's terminal detection features. Implement fallback logic that displays help text or simplified menu when full interactive features are not available. Handle cases like non-TTY environments, CI/CD systems, and limited terminal emulators.",
+            "status": "pending",
+            "testStrategy": "Test fallback behavior in various non-interactive environments (pipes, redirected output, CI systems). Verify proper detection of terminal capabilities and graceful degradation to help text display."
+          },
+          {
+            "id": 5,
+            "title": "Integrate menu into main CLI entry point",
+            "description": "Modify the main CLI entry point to detect when no arguments are provided and launch the interactive menu instead of showing help",
+            "dependencies": ["19.2", "19.3", "19.4"],
+            "details": "Update the main CLI entry point to check for absence of command arguments. When no arguments are provided, launch the interactive menu instead of displaying help text. Maintain existing behavior for when specific commands or flags are provided. Ensure proper error handling and consistent branding throughout the menu experience.",
+            "status": "pending",
+            "testStrategy": "Test CLI behavior with and without arguments. Verify interactive menu launches only when appropriate. Test integration with existing CLI argument parsing and help system. Validate consistent branding and user experience flow."
+          }
+        ]
       }
     ],
     "metadata": {
       "created": "2025-08-18T06:59:50.695Z",
-      "updated": "2025-08-18T17:30:48.426Z",
+      "updated": "2025-08-18T21:51:34.142Z",
       "description": "Tasks for master context"
     }
   }

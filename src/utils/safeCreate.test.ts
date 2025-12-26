@@ -8,12 +8,20 @@ describe('safeCreate', () => {
   let tempDir: string;
 
   beforeEach(async () => {
-    tempDir = path.join(os.tmpdir(), `srtd-test-${Date.now()}`);
+    // Use unique random ID to avoid collisions
+    tempDir = path.join(
+      os.tmpdir(),
+      `srtd-test-${Date.now()}-${Math.random().toString(36).slice(2)}`
+    );
     await fs.mkdir(tempDir, { recursive: true });
   });
 
   afterEach(async () => {
-    await fs.rm(tempDir, { recursive: true, force: true });
+    try {
+      await fs.rm(tempDir, { recursive: true, force: true, maxRetries: 3 });
+    } catch {
+      // Ignore cleanup errors - temp directory will be cleaned up by OS eventually
+    }
   });
 
   it('should create file with content', async () => {

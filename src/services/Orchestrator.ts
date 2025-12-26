@@ -6,11 +6,8 @@
 
 import EventEmitter from 'node:events';
 import path from 'node:path';
-import type { BuildLog, CLIConfig, ProcessedTemplateResult, TemplateStatus } from '../types.js';
-import { applyMigration } from '../utils/applyMigration.js';
+import type { CLIConfig, ProcessedTemplateResult, TemplateStatus } from '../types.js';
 import { isWipTemplate } from '../utils/isWipTemplate.js';
-import { loadBuildLog } from '../utils/loadBuildLog.js';
-import { saveBuildLog } from '../utils/saveBuildLog.js';
 import { DatabaseService } from './DatabaseService.js';
 import { FileSystemService } from './FileSystemService.js';
 import type { WatchEvent } from './FileSystemService.js';
@@ -59,11 +56,10 @@ export class Orchestrator extends EventEmitter implements Disposable {
   private databaseService!: DatabaseService;
   private migrationBuilder!: MigrationBuilder;
 
-  private buildLog!: BuildLog;
-  private localBuildLog!: BuildLog;
   private config: OrchestratorConfig;
 
   private processQueue: Set<string> = new Set();
+  private pendingRecheck: Set<string> = new Set(); // Templates that changed during processing
   private processingTemplate: string | null = null;
   private processing = false;
   private watching = false;
@@ -77,11 +73,7 @@ export class Orchestrator extends EventEmitter implements Disposable {
    * Initialize the orchestrator and all services
    */
   async initialize(): Promise<void> {
-    // Load build logs
-    this.buildLog = await loadBuildLog(this.config.baseDir, 'common');
-    this.localBuildLog = await loadBuildLog(this.config.baseDir, 'local');
-
-    // Initialize services
+    // Initialize services (StateService loads and owns build logs)
     await this.initializeServices();
 
     // Set up event listeners
@@ -105,9 +97,11 @@ export class Orchestrator extends EventEmitter implements Disposable {
       },
     });
 
-    // Initialize StateService
+    // Initialize StateService with build log paths from config
     this.stateService = new StateService({
       baseDir: this.config.baseDir,
+      buildLogPath: path.join(this.config.baseDir, this.config.cliConfig.buildLog),
+      localBuildLogPath: path.join(this.config.baseDir, this.config.cliConfig.localBuildLog),
       autoSave: true,
     });
     await this.stateService.initialize();
@@ -171,6 +165,7 @@ export class Orchestrator extends EventEmitter implements Disposable {
 
   /**
    * Handle FileSystem events - Entry point for unidirectional flow
+   * Uses queue + pendingRecheck to prevent race conditions from rapid file changes
    */
   private async handleFileSystemEvent(
     _eventType: 'changed' | 'added',
@@ -178,8 +173,16 @@ export class Orchestrator extends EventEmitter implements Disposable {
   ): Promise<void> {
     if (!this.watching) return;
 
-    // Add to processing queue if not already there
-    if (!this.processQueue.has(templatePath) && this.processingTemplate !== templatePath) {
+    if (this.processQueue.has(templatePath)) {
+      // Already in queue, nothing to do
+      return;
+    }
+
+    if (this.processingTemplate === templatePath) {
+      // Template changed while being processed - mark for recheck
+      this.pendingRecheck.add(templatePath);
+    } else {
+      // Add to processing queue
       this.processQueue.add(templatePath);
     }
 
@@ -212,6 +215,11 @@ export class Orchestrator extends EventEmitter implements Disposable {
       // Unidirectional flow: Orchestrator → StateService (check) → Action → StateService (update)
       await this.processTemplate(templatePath, false);
     } finally {
+      // Check if template changed during processing - if so, requeue it
+      if (this.pendingRecheck.has(templatePath)) {
+        this.pendingRecheck.delete(templatePath);
+        this.processQueue.add(templatePath);
+      }
       this.processingTemplate = null;
       await this.processNextTemplate();
     }
@@ -318,16 +326,9 @@ export class Orchestrator extends EventEmitter implements Disposable {
    */
   private async getTemplateStatus(templatePath: string): Promise<TemplateStatus> {
     const templateFile = await this.fileSystemService.readTemplate(templatePath);
-    const relPath = templateFile.relativePath;
 
-    // Get state from StateService
-    // const stateInfo = this.stateService.getTemplateStatus(templatePath);
-
-    // Merge build logs (keeping backward compatibility)
-    const buildState = {
-      ...this.buildLog.templates[relPath],
-      ...this.localBuildLog.templates[relPath],
-    };
+    // Get build state from StateService (single source of truth)
+    const buildState = this.stateService.getTemplateBuildState(templatePath) || {};
 
     return {
       name: templateFile.name,
@@ -335,7 +336,7 @@ export class Orchestrator extends EventEmitter implements Disposable {
       currentHash: templateFile.hash,
       migrationHash: null,
       buildState,
-      wip: await isWipTemplate(templatePath),
+      wip: await isWipTemplate(templatePath, this.config.baseDir),
     };
   }
 
@@ -346,49 +347,25 @@ export class Orchestrator extends EventEmitter implements Disposable {
     const template = await this.getTemplateStatus(templatePath);
     const templateFile = await this.fileSystemService.readTemplate(templatePath);
     const content = templateFile.content;
-    const relPath = templateFile.relativePath;
 
     try {
-      const result = await applyMigration(content, template.name, this.config.silent);
+      const result = await this.databaseService.executeMigration(
+        content,
+        template.name,
+        this.config.silent
+      );
 
       if (result === true) {
-        // Step: StateService (update) - Mark as applied in unidirectional flow
+        // StateService (update) - Single source of truth for build logs
         await this.stateService.markAsApplied(templatePath, templateFile.hash);
-
-        // Keep backward compatibility with build logs
-        if (!this.localBuildLog.templates[relPath]) {
-          this.localBuildLog.templates[relPath] = {};
-        }
-
-        this.localBuildLog.templates[relPath] = {
-          ...this.localBuildLog.templates[relPath],
-          lastAppliedHash: templateFile.hash,
-          lastAppliedDate: new Date().toISOString(),
-          lastAppliedError: undefined,
-        };
-
-        await this.saveBuildLogs();
         return { errors: [], applied: [template.name], skipped: [], built: [] };
       }
 
-      // On error, update StateService and build logs
+      // On error, update StateService (single source of truth)
       await this.stateService.markAsError(templatePath, result.error, 'apply');
-
-      this.localBuildLog.templates[relPath] = {
-        ...this.localBuildLog.templates[relPath],
-        lastAppliedError: result.error,
-      };
-
-      await this.saveBuildLogs();
       return { errors: [result], applied: [], skipped: [], built: [] };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-
-      if (!this.localBuildLog.templates) {
-        this.localBuildLog = { templates: {}, version: '1.0', lastTimestamp: '' };
-      }
-
-      await this.saveBuildLogs();
       throw new Error(errorMessage);
     }
   }
@@ -464,7 +441,7 @@ export class Orchestrator extends EventEmitter implements Disposable {
 
     // Collect templates for bundle
     for (const templatePath of templatePaths) {
-      const isWip = await isWipTemplate(templatePath);
+      const isWip = await isWipTemplate(templatePath, this.config.baseDir);
       if (isWip) {
         const template = await this.getTemplateStatus(templatePath);
         this.log(`Skipping WIP template: ${template.name}`, 'skip');
@@ -482,13 +459,15 @@ export class Orchestrator extends EventEmitter implements Disposable {
         continue;
       }
 
+      // Get lastMigrationFile from StateService (single source of truth)
+      const buildState = this.stateService.getTemplateBuildState(templatePath);
       templates.push({
         name: templateFile.name,
         templatePath: templateFile.path,
         relativePath: templateFile.relativePath,
         content: templateFile.content,
         hash: templateFile.hash,
-        lastBuildAt: this.buildLog.templates[templateFile.relativePath]?.lastMigrationFile,
+        lastBuildAt: buildState?.lastMigrationFile,
       });
 
       result.built.push(templateFile.name);
@@ -496,31 +475,22 @@ export class Orchestrator extends EventEmitter implements Disposable {
 
     try {
       // Generate bundled migration using MigrationBuilder
+      // Use StateService's build log reference (read-only)
+      const buildLog = this.stateService.getBuildLogForMigration();
       const { result: migrationResult } =
-        await this.migrationBuilder.generateAndWriteBundledMigration(templates, this.buildLog, {
+        await this.migrationBuilder.generateAndWriteBundledMigration(templates, buildLog, {
           wrapInTransaction: this.config.cliConfig.wrapInTransaction,
         });
 
-      // Update state for all included templates
+      // Update state for all included templates (StateService handles build log updates)
       for (const template of templates) {
         await this.stateService.markAsBuilt(
           template.templatePath,
           template.hash,
           migrationResult.fileName
         );
-
-        // Update build log
-        const relPath = template.relativePath;
-        this.buildLog.templates[relPath] = {
-          ...this.buildLog.templates[relPath],
-          lastBuildHash: template.hash,
-          lastBuildDate: new Date().toISOString(),
-          lastMigrationFile: migrationResult.fileName,
-          lastBuildError: undefined,
-        };
       }
 
-      await this.saveBuildLogs();
       this.log(`Generated bundled migration file: ${migrationResult.fileName}`, 'success');
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
@@ -549,7 +519,7 @@ export class Orchestrator extends EventEmitter implements Disposable {
 
     for (const templatePath of templatePaths) {
       try {
-        const isWip = await isWipTemplate(templatePath);
+        const isWip = await isWipTemplate(templatePath, this.config.baseDir);
         if (isWip) {
           const template = await this.getTemplateStatus(templatePath);
           this.log(`Skipping WIP template: ${template.name}`, 'skip');
@@ -596,58 +566,43 @@ export class Orchestrator extends EventEmitter implements Disposable {
     const template = await this.getTemplateStatus(templatePath);
     const templateFile = await this.fileSystemService.readTemplate(templatePath);
 
+    // Get lastMigrationFile from StateService (single source of truth)
+    const buildState = this.stateService.getTemplateBuildState(templatePath);
     const templateMetadata: TemplateMetadata = {
       name: templateFile.name,
       templatePath: templateFile.path,
       relativePath: templateFile.relativePath,
       content: templateFile.content,
       hash: templateFile.hash,
-      lastBuildAt: this.buildLog.templates[templateFile.relativePath]?.lastMigrationFile,
+      lastBuildAt: buildState?.lastMigrationFile,
     };
 
     try {
       // Generate migration using MigrationBuilder
+      // Use StateService's build log reference (read-only)
+      const buildLog = this.stateService.getBuildLogForMigration();
       const { result: migrationResult } = await this.migrationBuilder.generateAndWriteMigration(
         templateMetadata,
-        this.buildLog,
+        buildLog,
         {
           wrapInTransaction: this.config.cliConfig.wrapInTransaction,
         }
       );
 
-      // Update StateService - unidirectional flow update
+      // Update StateService (single source of truth - handles build log updates)
       await this.stateService.markAsBuilt(
         templatePath,
         templateFile.hash,
         migrationResult.fileName
       );
 
-      // Keep backward compatibility with build logs
-      const relPath = templateFile.relativePath;
-      this.buildLog.templates[relPath] = {
-        ...this.buildLog.templates[relPath],
-        lastBuildHash: templateFile.hash,
-        lastBuildDate: new Date().toISOString(),
-        lastMigrationFile: migrationResult.fileName,
-        lastBuildError: undefined,
-      };
-
-      await this.saveBuildLogs();
       this.emit('templateBuilt', template);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
 
-      // Update StateService with error
+      // Update StateService with error (single source of truth)
       await this.stateService.markAsError(templatePath, errorMessage, 'build');
 
-      // Keep backward compatibility
-      const relPath = templateFile.relativePath;
-      this.buildLog.templates[relPath] = {
-        ...this.buildLog.templates[relPath],
-        lastBuildError: errorMessage,
-      };
-
-      await this.saveBuildLogs();
       this.emit('templateError', { template, error: errorMessage });
       throw error;
     }
@@ -701,17 +656,68 @@ export class Orchestrator extends EventEmitter implements Disposable {
   }
 
   /**
-   * Save build logs to disk
+   * Register a template in the build log without building it
+   * Used when importing existing migrations that should be tracked
    */
-  private async saveBuildLogs(): Promise<void> {
-    try {
-      await Promise.all([
-        saveBuildLog(this.config.baseDir, this.buildLog, 'common'),
-        saveBuildLog(this.config.baseDir, this.localBuildLog, 'local'),
-      ]);
-    } catch (error) {
-      throw new Error(`Failed to save build logs: ${error}`);
+  async registerTemplate(templatePath: string): Promise<void> {
+    // Validate template exists
+    const exists = await this.fileSystemService.fileExists(templatePath);
+    if (!exists) {
+      throw new Error(`Template not found: ${templatePath}`);
     }
+
+    // Validate template is in the correct directory
+    const templateDir = path.resolve(this.config.baseDir, this.config.cliConfig.templateDir);
+    const resolvedPath = path.resolve(templatePath);
+    if (!resolvedPath.startsWith(templateDir)) {
+      throw new Error(
+        `Template must be in configured templateDir: ${this.config.cliConfig.templateDir}/*`
+      );
+    }
+
+    // Read template and compute hash
+    const templateFile = await this.fileSystemService.readTemplate(templatePath);
+
+    // Register via StateService (single source of truth)
+    // Using markAsBuilt with undefined migration file to indicate registration without build
+    await this.stateService.markAsBuilt(templatePath, templateFile.hash, undefined);
+  }
+
+  /**
+   * Promote a WIP template by renaming it and updating build logs
+   * @returns The new path after promotion
+   */
+  async promoteTemplate(templatePath: string): Promise<string> {
+    // Validate template exists
+    const exists = await this.fileSystemService.fileExists(templatePath);
+    if (!exists) {
+      throw new Error(`Template not found: ${templatePath}`);
+    }
+
+    // Check if it's a WIP template
+    const isWip = await isWipTemplate(templatePath, this.config.baseDir);
+    if (!isWip) {
+      throw new Error(`Template is not a WIP template: ${path.basename(templatePath)}`);
+    }
+
+    // Calculate new path (remove WIP indicator)
+    const newPath = templatePath.replace(this.config.cliConfig.wipIndicator, '');
+
+    // Rename file via FileSystemService
+    await this.fileSystemService.renameFile(templatePath, newPath);
+
+    // Update build logs via StateService (single source of truth)
+    await this.stateService.renameTemplate(templatePath, newPath);
+
+    return newPath;
+  }
+
+  /**
+   * Clear build logs via StateService (single source of truth)
+   * @param type - 'local' clears local only, 'shared' clears shared only, 'both' clears all
+   */
+  async clearBuildLogs(type: 'local' | 'shared' | 'both'): Promise<void> {
+    await this.stateService.clearBuildLogs(type);
   }
 
   /**
@@ -736,14 +742,29 @@ export class Orchestrator extends EventEmitter implements Disposable {
   }
 
   /**
-   * Dispose of all services and clean up
+   * Dispose of all services and clean up (async version for proper cleanup)
+   */
+  async dispose(): Promise<void> {
+    this.watching = false;
+    this.processing = false;
+    this.processQueue.clear();
+    this.pendingRecheck.clear();
+
+    // Wait for all services to dispose, even if some fail
+    await Promise.allSettled([
+      this.fileSystemService?.dispose(),
+      this.stateService?.dispose(),
+      this.databaseService?.dispose(),
+    ]);
+
+    this.removeAllListeners();
+  }
+
+  /**
+   * Synchronous dispose for using statement compatibility
    */
   [Symbol.dispose](): void {
-    this.watching = false;
-    void this.fileSystemService?.dispose();
-    void this.stateService?.dispose();
-    void this.databaseService?.dispose();
-    this.removeAllListeners();
+    void this.dispose();
   }
 
   /**
