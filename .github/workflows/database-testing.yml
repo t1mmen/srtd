@@ -95,7 +95,7 @@ jobs:
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: srtd_test_${{ needs.setup.outputs.test-id }}
         ports:
-          - 54322:5432
+          - 54323:5432
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -136,7 +136,7 @@ jobs:
 
       - name: Create isolated test schema
         env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:54322/srtd_test_${{ needs.setup.outputs.test-id }}
+          DATABASE_URL: postgresql://postgres:postgres@localhost:54323/srtd_test_${{ needs.setup.outputs.test-id }}
         run: |
           # Create test schema with unique name
           SCHEMA_NAME="srtd_${{ needs.setup.outputs.test-id }}_${{ matrix.environment }}"
@@ -202,7 +202,7 @@ jobs:
 
       - name: Test SRTD register command
         env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:54322/srtd_test_${{ needs.setup.outputs.test-id }}
+          DATABASE_URL: postgresql://postgres:postgres@localhost:54323/srtd_test_${{ needs.setup.outputs.test-id }}
         run: |
           # Register all templates
           node dist/cli.js register templates/*.sql
@@ -212,7 +212,7 @@ jobs:
 
       - name: Test SRTD apply command
         env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:54322/srtd_test_${{ needs.setup.outputs.test-id }}
+          DATABASE_URL: postgresql://postgres:postgres@localhost:54323/srtd_test_${{ needs.setup.outputs.test-id }}
         run: |
           # Apply templates to database
           node dist/cli.js apply --force
@@ -238,7 +238,7 @@ jobs:
 
       - name: Test SRTD watch command (background)
         env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:54322/srtd_test_${{ needs.setup.outputs.test-id }}
+          DATABASE_URL: postgresql://postgres:postgres@localhost:54323/srtd_test_${{ needs.setup.outputs.test-id }}
         run: |
           # Start watch mode in background
           timeout 10 node dist/cli.js watch &
@@ -263,7 +263,7 @@ jobs:
 
       - name: Validate SQL syntax and migrations
         env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:54322/srtd_test_${{ needs.setup.outputs.test-id }}
+          DATABASE_URL: postgresql://postgres:postgres@localhost:54323/srtd_test_${{ needs.setup.outputs.test-id }}
         run: |
           # Validate all SQL templates syntax
           for template in templates/*.sql; do
@@ -281,7 +281,7 @@ jobs:
 
       - name: Run integration tests with real database
         env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:54322/srtd_test_${{ needs.setup.outputs.test-id }}
+          DATABASE_URL: postgresql://postgres:postgres@localhost:54323/srtd_test_${{ needs.setup.outputs.test-id }}
           SUPABASE_URL: http://localhost:54321
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY_TEST }}
           SRTD_TEST_MODE: integration
@@ -291,7 +291,7 @@ jobs:
 
       - name: Test database operations and performance
         env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:54322/srtd_test_${{ needs.setup.outputs.test-id }}
+          DATABASE_URL: postgresql://postgres:postgres@localhost:54323/srtd_test_${{ needs.setup.outputs.test-id }}
         run: |
           # Test connection pooling
           node -e "
@@ -326,7 +326,7 @@ jobs:
       - name: Cleanup test database
         if: always()
         env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:54322/postgres
+          DATABASE_URL: postgresql://postgres:postgres@localhost:54323/postgres
         run: |
           # Drop test database and schema
           psql "$DATABASE_URL" -c "DROP DATABASE IF EXISTS srtd_test_${{ needs.setup.outputs.test-id }};" || true
@@ -363,7 +363,7 @@ jobs:
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: perf_test
         ports:
-          - 54322:5432
+          - 54323:5432
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -386,7 +386,7 @@ jobs:
 
       - name: Run performance benchmarks
         env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:54322/perf_test
+          DATABASE_URL: postgresql://postgres:postgres@localhost:54323/perf_test
         run: |
           # Create performance test script
           cat > perf-test.js <<-'EOF'
