@@ -57,7 +57,7 @@ jobs:
       - name: Setup Biome
         uses: biomejs/setup-biome@v2
         with:
-          version: latest
+          version: 1.9.4
 
       - name: Run Biome
         run: biome ci .
@@ -109,7 +109,59 @@ jobs:
       - name: Install Dependencies
         run: npm ci
 
-      - name: Create Release Pull Request or Publish
+      - name: Check if this is a Version Packages merge
+        id: check
+        run: |
+          COMMIT_MSG=$(git log -1 --pretty=%B)
+          if echo "$COMMIT_MSG" | grep -q "^chore: version packages"; then
+            echo "is_release=true" >> $GITHUB_OUTPUT
+          else
+            echo "is_release=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Check for pending changesets
+        id: changesets
+        if: steps.check.outputs.is_release == 'false'
+        run: |
+          # Use changeset status to reliably check for pending changesets
+          if npx changeset status 2>/dev/null | grep -q "changeset"; then
+            echo "has_changesets=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_changesets=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Build for snapshot
+        if: steps.check.outputs.is_release == 'false' && steps.changesets.outputs.has_changesets == 'true'
+        run: npm run build
+
+      - name: Publish snapshot to @next
+        if: steps.check.outputs.is_release == 'false' && steps.changesets.outputs.has_changesets == 'true'
+        run: |
+          # Configure npm for publishing
+          echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > ~/.npmrc
+
+          # Create snapshot version and publish to @next
+          npx changeset version --snapshot next
+          npx changeset publish --tag next
+
+          # Reset specific files so changesets/action can create the Version Packages PR
+          git restore .changeset
+          git restore package.json
+          git restore CHANGELOG.md 2>/dev/null || true
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Create Release Pull Request
+        if: steps.check.outputs.is_release == 'false'
+        uses: changesets/action@v1
+        with:
+          commit: "chore: version packages"
+          title: "chore: version packages"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish stable release
+        if: steps.check.outputs.is_release == 'true'
         uses: changesets/action@v1
         with:
           publish: npm run release
