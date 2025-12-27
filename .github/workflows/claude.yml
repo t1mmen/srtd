@@ -73,58 +73,25 @@ jobs:
             # SRTD Development Context
 
             You are Claude, assisting with the SRTD (Supabase Repeatable Template Definitions) project.
-            SRTD is a CLI tool for live-reloading SQL templates into Supabase local databases.
 
-            ## Required Skills (MUST LOAD FIRST)
+            ## First Steps (REQUIRED)
 
-            Before starting any work, load the relevant skills:
+            1. **Read project context**: `Read('CLAUDE.md')` - Contains commands, architecture, key paths
+            2. **Load relevant skills**:
+               - [ ] `Skill('srtd-dev')` - For development work (bugs, features, architecture)
+               - [ ] `Skill('requesting-code-review')` - For PR reviews
 
-            - [ ] `Skill('srtd-dev')` - **REQUIRED** - Architecture, commands, debugging for SRTD development
-            - [ ] `Skill('requesting-code-review')` - **REQUIRED for PRs** - Structured code review workflow
-
-            **Do not proceed until you have loaded the relevant skills for your task.**
-
-            ## Quick Reference (if skills unavailable)
-
-            **Key Commands:**
-            ```bash
-            npm test                    # Run all tests
-            npm run typecheck           # Type check
-            npm run lint                # Biome lint
-            npx vitest run -t "pattern" # Run specific test
-            ```
-
-            **Service Boundaries (Critical):**
-            - StateService: ALL state mutations, build log persistence
-            - FileSystemService: File I/O, watching, hash computation
-            - DatabaseService: Connection pooling, retry logic, transactions
-            - MigrationBuilder: Timestamp generation, file formatting
-            - Orchestrator: Service coordination only (no state ownership)
-
-            **State Flow:**
-            ```
-            UNSEEN → CHANGED → APPLIED (local) or BUILT (migration) → SYNCED
-            ```
-
-            **Dual Build Logs:**
-            - `.buildlog.json` - What was BUILT to migrations (commit this)
-            - `.buildlog.local.json` - What was APPLIED locally (gitignore)
-
-            ## Workflow
-
-            1. **Load skills** - Check boxes above as you load each required skill
-            2. **Understand request** - Parse user's ask
-            3. **Implement** - Write tests first (TDD), then implement
-            4. **Verify** - Run `npm test && npm run typecheck && npm run lint`
-            5. **Review** - Use code-reviewer template for PRs
+            **Do not proceed until you have read CLAUDE.md and loaded relevant skills.**
 
             ## Your Task
 
             Respond to the user's request:
-            - **Review code**: Load `requesting-code-review`, use `.claude/skills/requesting-code-review/code-reviewer.md`
-            - **Fix a bug**: Load `srtd-dev`, write regression test first, then fix
-            - **Add a feature**: Load `srtd-dev`, check architecture, follow service boundaries
+            - **Review code**: Use `.claude/skills/requesting-code-review/code-reviewer.md` template
+            - **Fix a bug**: Write regression test first, then fix
+            - **Add a feature**: Check architecture in srtd-dev skill, follow service boundaries
             - **Answer a question**: Reference the codebase, be specific with file:line
+
+            Always verify with `npm test && npm run typecheck && npm run lint` before completing.
 
             ---
 
@@ -135,8 +102,9 @@ jobs:
       - name: Audit log
         if: always()
         run: |
+          TIMESTAMP=$(date -u +%Y-%m-%dT%H:%M:%SZ)
           echo "=== Claude Code Audit Log ==="
-          echo "Timestamp: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          echo "Timestamp: $TIMESTAMP"
           echo "Actor: ${{ github.actor }}"
           echo "Event: ${{ github.event_name }}"
           echo "Repository: ${{ github.repository }}"
@@ -144,15 +112,14 @@ jobs:
           echo "=============================="
 
           # Write to GitHub Actions Job Summary
-          cat >> $GITHUB_STEP_SUMMARY << 'EOF'
+          cat >> $GITHUB_STEP_SUMMARY << EOF
           ## Claude Code Execution Summary
 
           | Field | Value |
           |-------|-------|
-          | **Timestamp** | ${{ github.event.created_at || 'N/A' }} |
+          | **Timestamp** | $TIMESTAMP |
           | **Actor** | @${{ github.actor }} |
-          | **Event** | `${{ github.event_name }}` |
+          | **Event** | \`${{ github.event_name }}\` |
           | **Repository** | ${{ github.repository }} |
           | **Run ID** | [${{ github.run_id }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) |
-
           EOF
