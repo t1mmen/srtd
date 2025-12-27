@@ -1,0 +1,145 @@
+name: Claude Code
+
+on:
+  issue_comment:
+    types: [created]
+  pull_request_review_comment:
+    types: [created]
+  pull_request_review:
+    types: [submitted]
+  issues:
+    types: [opened]
+
+jobs:
+  claude:
+    # Security: Only allow users with write access, prevent bot loops
+    if: |
+      github.event.sender.type != 'Bot' &&
+      github.actor != 'claude[bot]' &&
+      github.actor != 'github-actions[bot]' &&
+      (
+        (github.event_name == 'issue_comment' && startsWith(github.event.comment.body, '@claude')) ||
+        (github.event_name == 'pull_request_review_comment' && startsWith(github.event.comment.body, '@claude')) ||
+        (github.event_name == 'pull_request_review' && startsWith(github.event.review.body, '@claude')) ||
+        (github.event_name == 'issues' && startsWith(github.event.issue.body, '@claude'))
+      )
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+      id-token: write
+      actions: read
+    steps:
+      # Security: Verify actor has write permission before proceeding
+      - name: Check write permission
+        id: check_permission
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: permissionLevel } = await github.rest.repos.getCollaboratorPermissionLevel({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              username: context.actor
+            });
+            const hasWriteAccess = ['admin', 'write'].includes(permissionLevel.permission);
+            if (!hasWriteAccess) {
+              core.setFailed(`User ${context.actor} does not have write access (has: ${permissionLevel.permission})`);
+              return;
+            }
+            core.info(`User ${context.actor} has ${permissionLevel.permission} access - proceeding`);
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run Claude Code
+        id: claude
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+
+          # Enable progress tracking and sticky comments for better UX
+          track_progress: true
+          use_sticky_comment: true
+
+          # Allow Claude to read CI results
+          additional_permissions: |
+            actions: read
+
+          # Custom prompt that loads project context and review skills
+          prompt: |
+            # SRTD Development Context
+
+            You are Claude, assisting with the SRTD (Supabase Repeatable Template Definitions) project.
+            SRTD is a CLI tool for live-reloading SQL templates into Supabase local databases.
+
+            ## Project Skills Available
+
+            **Load these skills for context:**
+            - `Skill('srtd-dev')` - Architecture, key commands, debugging workflows for SRTD development
+            - `Skill('requesting-code-review')` - Structured code review workflow
+            - `Skill('test-driven-development')` - TDD practices (red-green-refactor)
+            - `Skill('verification-before-completion')` - Verification before marking work done
+
+            ## Key Commands
+            ```bash
+            npm test                    # Run all tests
+            npm run typecheck           # Type check
+            npm run lint                # Biome lint
+            npx vitest run -t "pattern" # Run specific test
+            ```
+
+            ## Architecture Quick Reference
+
+            **Service Boundaries (Critical):**
+            - StateService: ALL state mutations, build log persistence
+            - FileSystemService: File I/O, watching, hash computation
+            - DatabaseService: Connection pooling, retry logic, transactions
+            - MigrationBuilder: Timestamp generation, file formatting
+            - Orchestrator: Service coordination only (no state ownership)
+
+            **State Flow:**
+            ```
+            UNSEEN → CHANGED → APPLIED (local) or BUILT (migration) → SYNCED
+            ```
+
+            **Dual Build Logs:**
+            - `.buildlog.json` - What was BUILT to migrations (commit this)
+            - `.buildlog.local.json` - What was APPLIED locally (gitignore)
+
+            ## When Modifying Code
+
+            1. **Before implementing**: Check if tests exist, understand the service boundaries
+            2. **When implementing**: Follow TDD (write failing test first)
+            3. **After implementing**: Run `npm test && npm run typecheck && npm run lint`
+            4. **Before marking done**: Request code review using the review skill
+
+            ## Your Task
+
+            Respond to the user's request. If they asked you to:
+            - **Review code**: Use the code-reviewer template from `.claude/skills/requesting-code-review/code-reviewer.md`
+            - **Fix a bug**: Follow TDD, write regression test first
+            - **Add a feature**: Check architecture, follow service boundaries
+            - **Answer a question**: Reference the codebase, be specific with file:line
+
+            Always verify your work passes tests before considering it complete.
+
+            ---
+
+            **User Request:**
+            ${{ github.event.comment.body || github.event.review.body || github.event.issue.body }}
+
+      # Audit logging: Record what Claude did
+      - name: Audit log
+        if: always()
+        run: |
+          echo "=== Claude Code Audit Log ==="
+          echo "Timestamp: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          echo "Actor: ${{ github.actor }}"
+          echo "Event: ${{ github.event_name }}"
+          echo "Repository: ${{ github.repository }}"
+          echo "Run ID: ${{ github.run_id }}"
+          echo "Run URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          echo "=============================="
