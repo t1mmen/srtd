@@ -5,30 +5,54 @@ on:
     types: [created]
   pull_request_review_comment:
     types: [created]
-  issues:
-    types: [opened, assigned]
   pull_request_review:
     types: [submitted]
+  issues:
+    types: [opened]
 
 jobs:
   claude:
+    # Security: Only allow users with write access, prevent bot loops
     if: |
-      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
-      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
-      (github.event_name == 'pull_request_review' && contains(github.event.review.body, '@claude')) ||
-      (github.event_name == 'issues' && (contains(github.event.issue.body, '@claude') || contains(github.event.issue.title, '@claude')))
+      github.event.sender.type != 'Bot' &&
+      github.actor != 'claude[bot]' &&
+      github.actor != 'github-actions[bot]' &&
+      (
+        (github.event_name == 'issue_comment' && startsWith(github.event.comment.body, '@claude')) ||
+        (github.event_name == 'pull_request_review_comment' && startsWith(github.event.comment.body, '@claude')) ||
+        (github.event_name == 'pull_request_review' && startsWith(github.event.review.body, '@claude')) ||
+        (github.event_name == 'issues' && startsWith(github.event.issue.body, '@claude'))
+      )
     runs-on: ubuntu-latest
     permissions:
-      contents: read
-      pull-requests: read
-      issues: read
+      contents: write
+      pull-requests: write
+      issues: write
       id-token: write
-      actions: read # Required for Claude to read CI results on PRs
+      actions: read
     steps:
+      # Security: Verify actor has write permission before proceeding
+      - name: Check write permission
+        id: check_permission
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: permissionLevel } = await github.rest.repos.getCollaboratorPermissionLevel({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              username: context.actor
+            });
+            const hasWriteAccess = ['admin', 'write'].includes(permissionLevel.permission);
+            if (!hasWriteAccess) {
+              core.setFailed(`User ${context.actor} does not have write access (has: ${permissionLevel.permission})`);
+              return;
+            }
+            core.info(`User ${context.actor} has ${permissionLevel.permission} access - proceeding`);
+
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 1
+          fetch-depth: 0
 
       - name: Run Claude Code
         id: claude
@@ -36,15 +60,99 @@ jobs:
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
 
-          # This is an optional setting that allows Claude to read CI results on PRs
+          # Enable progress tracking and sticky comments for better UX
+          track_progress: true
+          use_sticky_comment: true
+
+          # Allow Claude to read CI results
           additional_permissions: |
             actions: read
 
-          # Optional: Give a custom prompt to Claude. If this is not specified, Claude will perform the instructions specified in the comment that tagged it.
-          # prompt: 'Update the pull request description to include a summary of changes.'
+          # Custom prompt that loads project context and review skills
+          prompt: |
+            # SRTD Development Context
 
-          # Optional: Add claude_args to customize behavior and configuration
-          # See https://github.com/anthropics/claude-code-action/blob/main/docs/usage.md
-          # or https://code.claude.com/docs/en/cli-reference for available options
-          # claude_args: '--allowed-tools Bash(gh pr:*)'
+            You are Claude, assisting with the SRTD (Supabase Repeatable Template Definitions) project.
+            SRTD is a CLI tool for live-reloading SQL templates into Supabase local databases.
 
+            ## Required Skills (MUST LOAD FIRST)
+
+            Before starting any work, load the relevant skills:
+
+            - [ ] `Skill('srtd-dev')` - **REQUIRED** - Architecture, commands, debugging for SRTD development
+            - [ ] `Skill('requesting-code-review')` - **REQUIRED for PRs** - Structured code review workflow
+
+            **Do not proceed until you have loaded the relevant skills for your task.**
+
+            ## Quick Reference (if skills unavailable)
+
+            **Key Commands:**
+            ```bash
+            npm test                    # Run all tests
+            npm run typecheck           # Type check
+            npm run lint                # Biome lint
+            npx vitest run -t "pattern" # Run specific test
+            ```
+
+            **Service Boundaries (Critical):**
+            - StateService: ALL state mutations, build log persistence
+            - FileSystemService: File I/O, watching, hash computation
+            - DatabaseService: Connection pooling, retry logic, transactions
+            - MigrationBuilder: Timestamp generation, file formatting
+            - Orchestrator: Service coordination only (no state ownership)
+
+            **State Flow:**
+            ```
+            UNSEEN → CHANGED → APPLIED (local) or BUILT (migration) → SYNCED
+            ```
+
+            **Dual Build Logs:**
+            - `.buildlog.json` - What was BUILT to migrations (commit this)
+            - `.buildlog.local.json` - What was APPLIED locally (gitignore)
+
+            ## Workflow
+
+            1. **Load skills** - Check boxes above as you load each required skill
+            2. **Understand request** - Parse user's ask
+            3. **Implement** - Write tests first (TDD), then implement
+            4. **Verify** - Run `npm test && npm run typecheck && npm run lint`
+            5. **Review** - Use code-reviewer template for PRs
+
+            ## Your Task
+
+            Respond to the user's request:
+            - **Review code**: Load `requesting-code-review`, use `.claude/skills/requesting-code-review/code-reviewer.md`
+            - **Fix a bug**: Load `srtd-dev`, write regression test first, then fix
+            - **Add a feature**: Load `srtd-dev`, check architecture, follow service boundaries
+            - **Answer a question**: Reference the codebase, be specific with file:line
+
+            ---
+
+            **User Request:**
+            ${{ github.event.comment.body || github.event.review.body || github.event.issue.body }}
+
+      # Audit logging: Record what Claude did with GitHub Actions summary
+      - name: Audit log
+        if: always()
+        run: |
+          echo "=== Claude Code Audit Log ==="
+          echo "Timestamp: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          echo "Actor: ${{ github.actor }}"
+          echo "Event: ${{ github.event_name }}"
+          echo "Repository: ${{ github.repository }}"
+          echo "Run ID: ${{ github.run_id }}"
+          echo "=============================="
+
+          # Write to GitHub Actions Job Summary
+          cat >> $GITHUB_STEP_SUMMARY << 'EOF'
+          ## Claude Code Execution Summary
+
+          | Field | Value |
+          |-------|-------|
+          | **Timestamp** | ${{ github.event.created_at || 'N/A' }} |
+          | **Actor** | @${{ github.actor }} |
+          | **Event** | `${{ github.event_name }}` |
+          | **Repository** | ${{ github.repository }} |
+          | **Run ID** | [${{ github.run_id }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) |
+
+          EOF
