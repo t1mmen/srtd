@@ -112,12 +112,145 @@ describe('StateService', () => {
         return JSON.stringify(mockLocalBuildLog);
       });
 
-      const errorHandler = vi.fn();
+      const warningHandler = vi.fn();
       const newService = new StateService(config);
-      newService.on('error', errorHandler);
+      newService.on('validation:warning', warningHandler);
 
       await newService.initialize();
-      expect(errorHandler).toHaveBeenCalledWith(expect.any(Error));
+      // Now emits validation:warning instead of error for corrupted JSON
+      expect(warningHandler).toHaveBeenCalledWith(
+        expect.objectContaining({
+          source: 'buildLog',
+          type: 'parse',
+          message: expect.stringContaining('Invalid JSON'),
+        })
+      );
+
+      await newService.dispose();
+    });
+
+    it('should emit validation:warning when build log contains malformed JSON', async () => {
+      vi.mocked(fs.readFile).mockImplementation(async filePath => {
+        if (filePath === config.buildLogPath) {
+          return '{ invalid json without closing brace';
+        }
+        return JSON.stringify(mockLocalBuildLog);
+      });
+
+      const warningHandler = vi.fn();
+      const newService = new StateService(config);
+      newService.on('validation:warning', warningHandler);
+
+      await newService.initialize();
+
+      expect(warningHandler).toHaveBeenCalledWith(
+        expect.objectContaining({
+          source: 'buildLog',
+          type: 'parse',
+          path: config.buildLogPath,
+          message: expect.stringContaining('Invalid JSON'),
+        })
+      );
+
+      await newService.dispose();
+    });
+
+    it('should emit validation:warning when build log has invalid schema', async () => {
+      vi.mocked(fs.readFile).mockImplementation(async filePath => {
+        if (filePath === config.buildLogPath) {
+          // version should be string, not number
+          return JSON.stringify({
+            version: 123,
+            lastTimestamp: '',
+            templates: {},
+          });
+        }
+        return JSON.stringify(mockLocalBuildLog);
+      });
+
+      const warningHandler = vi.fn();
+      const newService = new StateService(config);
+      newService.on('validation:warning', warningHandler);
+
+      await newService.initialize();
+
+      expect(warningHandler).toHaveBeenCalledWith(
+        expect.objectContaining({
+          source: 'buildLog',
+          type: 'validation',
+          path: config.buildLogPath,
+          message: expect.stringContaining('version'),
+        })
+      );
+
+      await newService.dispose();
+    });
+
+    it('should not emit validation:warning when build log is valid', async () => {
+      const warningHandler = vi.fn();
+      const newService = new StateService(config);
+      newService.on('validation:warning', warningHandler);
+
+      await newService.initialize();
+
+      expect(warningHandler).not.toHaveBeenCalled();
+
+      await newService.dispose();
+    });
+
+    it('should only warn about local build log when shared is valid but local is corrupted', async () => {
+      vi.mocked(fs.readFile).mockImplementation(async filePath => {
+        if (filePath === config.buildLogPath) {
+          return JSON.stringify(mockBuildLog);
+        }
+        if (filePath === config.localBuildLogPath) {
+          return '{ broken local json';
+        }
+        throw new Error('File not found');
+      });
+
+      const warningHandler = vi.fn();
+      const newService = new StateService(config);
+      newService.on('validation:warning', warningHandler);
+
+      await newService.initialize();
+
+      // Should have exactly one warning for the local build log
+      expect(warningHandler).toHaveBeenCalledTimes(1);
+      expect(warningHandler).toHaveBeenCalledWith(
+        expect.objectContaining({
+          source: 'localBuildLog',
+          type: 'parse',
+          path: config.localBuildLogPath,
+          message: expect.stringContaining('Invalid JSON'),
+        })
+      );
+
+      await newService.dispose();
+    });
+
+    it('should provide validation warnings via getValidationWarnings()', async () => {
+      vi.mocked(fs.readFile).mockImplementation(async filePath => {
+        if (filePath === config.buildLogPath) {
+          return '{ invalid';
+        }
+        if (filePath === config.localBuildLogPath) {
+          return '{ also invalid';
+        }
+        throw new Error('File not found');
+      });
+
+      const newService = new StateService(config);
+      await newService.initialize();
+
+      const warnings = newService.getValidationWarnings();
+      expect(warnings).toHaveLength(2);
+      expect(warnings).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ source: 'buildLog', type: 'parse' }),
+          expect.objectContaining({ source: 'localBuildLog', type: 'parse' }),
+        ])
+      );
 
       await newService.dispose();
     });

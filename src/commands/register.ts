@@ -59,7 +59,7 @@ export const registerCommand = new Command('register')
 
       // Initialize Orchestrator and get templates
       const projectRoot = await findProjectRoot();
-      const config = await getConfig(projectRoot);
+      const { config } = await getConfig(projectRoot);
       await using orchestrator = await Orchestrator.create(projectRoot, config, { silent: true });
 
       // If templates were provided as arguments, register them directly

@@ -93,7 +93,7 @@ export const promoteCommand = new Command('promote')
 
       // Get configuration and initialize Orchestrator
       const projectRoot = await findProjectRoot();
-      const config = await getConfig(projectRoot);
+      const { config } = await getConfig(projectRoot);
       await using orchestrator = await Orchestrator.create(projectRoot, config, { silent: true });
 
       // If template was provided as argument, promote it directly

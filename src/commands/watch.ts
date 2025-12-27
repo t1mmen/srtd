@@ -6,6 +6,7 @@ import { Command } from 'commander';
 import figures from 'figures';
 import { Orchestrator } from '../services/Orchestrator.js';
 import type { TemplateStatus } from '../types.js';
+import { displayValidationWarnings } from '../ui/displayWarnings.js';
 import { createSpinner, renderBranding } from '../ui/index.js';
 import { getConfig } from '../utils/config.js';
 import { findProjectRoot } from '../utils/findProjectRoot.js';
@@ -120,8 +121,14 @@ export const watchCommand = new Command('watch')
 
       // Initialize Orchestrator
       const projectRoot = await findProjectRoot();
-      const config = await getConfig(projectRoot);
-      orchestrator = await Orchestrator.create(projectRoot, config, { silent: true });
+      const { config, warnings: configWarnings } = await getConfig(projectRoot);
+      orchestrator = await Orchestrator.create(projectRoot, config, {
+        silent: true,
+        configWarnings,
+      });
+
+      // Display validation warnings
+      displayValidationWarnings(orchestrator.getValidationWarnings());
 
       // Load initial templates
       const templatePaths = await orchestrator.findTemplates();

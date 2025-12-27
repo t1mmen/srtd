@@ -77,17 +77,20 @@ vi.mock('../utils/config', async importOriginal => {
   return {
     ...actual,
     getConfig: vi.fn().mockResolvedValue({
-      wipIndicator: '.wip',
-      filter: '**/*.sql',
-      templateDir: 'test-templates',
-      migrationDir: 'test-migrations',
-      buildLog: '.buildlog-test.json',
-      localBuildLog: '.buildlog-test.local.json',
-      pgConnection:
-        process.env.POSTGRES_URL || 'postgresql://postgres:postgres@localhost:54322/postgres',
-      banner: 'Test banner',
-      footer: 'Test footer',
-      wrapInTransaction: true,
+      config: {
+        wipIndicator: '.wip',
+        filter: '**/*.sql',
+        templateDir: 'test-templates',
+        migrationDir: 'test-migrations',
+        buildLog: '.buildlog-test.json',
+        localBuildLog: '.buildlog-test.local.json',
+        pgConnection:
+          process.env.POSTGRES_URL || 'postgresql://postgres:postgres@localhost:54322/postgres',
+        banner: 'Test banner',
+        footer: 'Test footer',
+        wrapInTransaction: true,
+      },
+      warnings: [],
     }),
   };
 });

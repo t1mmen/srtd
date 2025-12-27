@@ -7,6 +7,7 @@ import { EventEmitter } from 'node:events';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import type { BuildLog, TemplateBuildState } from '../types.js';
+import { type ValidationWarning, validateBuildLog } from '../utils/schemas.js';
 
 /**
  * Template states in the state machine
@@ -54,6 +55,9 @@ export interface StateServiceConfig {
   localBuildLogPath?: string;
   autoSave?: boolean;
 }
+
+// Re-export ValidationWarning for consumers
+export type { ValidationWarning } from '../utils/schemas.js';
 
 /**
  * Valid state transitions matrix
@@ -111,6 +115,7 @@ export class StateService extends EventEmitter {
   private buildLog: BuildLog;
   private localBuildLog: BuildLog;
   private saveTimer: NodeJS.Timeout | null = null;
+  private validationWarnings: ValidationWarning[] = [];
 
   constructor(config: StateServiceConfig) {
     super();
@@ -147,10 +152,26 @@ export class StateService extends EventEmitter {
     const localBuildLogPath =
       this.config.localBuildLogPath || path.join(this.config.baseDir, '.buildlog.local.json');
 
-    // Load remote build log
+    // Reset validation warnings
+    this.validationWarnings = [];
+
+    // Load shared build log
     try {
       const content = await fs.readFile(buildLogPath, 'utf-8');
-      this.buildLog = JSON.parse(content);
+      const result = validateBuildLog(content);
+      if (result.success && result.data) {
+        this.buildLog = result.data;
+      } else {
+        const warning: ValidationWarning = {
+          source: 'buildLog',
+          type: result.errorType ?? 'validation',
+          message: result.error ?? 'Validation failed',
+          path: buildLogPath,
+        };
+        this.validationWarnings.push(warning);
+        this.emit('validation:warning', warning);
+        // Keep empty build log (current behavior)
+      }
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
         this.emit('error', new Error(`Failed to load build log: ${error}`));
@@ -160,7 +181,20 @@ export class StateService extends EventEmitter {
     // Load local build log
     try {
       const content = await fs.readFile(localBuildLogPath, 'utf-8');
-      this.localBuildLog = JSON.parse(content);
+      const result = validateBuildLog(content);
+      if (result.success && result.data) {
+        this.localBuildLog = result.data;
+      } else {
+        const warning: ValidationWarning = {
+          source: 'localBuildLog',
+          type: result.errorType ?? 'validation',
+          message: result.error ?? 'Validation failed',
+          path: localBuildLogPath,
+        };
+        this.validationWarnings.push(warning);
+        this.emit('validation:warning', warning);
+        // Keep empty local build log (current behavior)
+      }
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
         this.emit('error', new Error(`Failed to load local build log: ${error}`));
@@ -342,6 +376,14 @@ export class StateService extends EventEmitter {
    */
   getAllTemplateStatuses(): Map<string, TemplateStateInfo> {
     return new Map(this.templateStates);
+  }
+
+  /**
+   * Get validation warnings from initialization
+   * Returns any warnings about corrupted or invalid build log files
+   */
+  getValidationWarnings(): ValidationWarning[] {
+    return [...this.validationWarnings];
   }
 
   /**

@@ -12,11 +12,14 @@ vi.mock('../utils/findProjectRoot.js', () => createMockFindProjectRoot());
 
 vi.mock('../utils/config.js', () => ({
   getConfig: vi.fn().mockResolvedValue({
-    templateDir: 'templates',
-    migrationDir: 'migrations',
-    wipIndicator: '.wip',
-    buildLog: '.buildlog.json',
-    localBuildLog: '.buildlog.local.json',
+    config: {
+      templateDir: 'templates',
+      migrationDir: 'migrations',
+      wipIndicator: '.wip',
+      buildLog: '.buildlog.json',
+      localBuildLog: '.buildlog.local.json',
+    },
+    warnings: [],
   }),
   resetConfig: vi.fn().mockResolvedValue(undefined),
 }));
