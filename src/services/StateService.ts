@@ -162,11 +162,10 @@ export class StateService extends EventEmitter {
       if (result.success && result.data) {
         this.buildLog = result.data;
       } else {
-        const errorMsg = result.error || 'Unknown validation error';
         const warning: ValidationWarning = {
           source: 'buildLog',
-          type: errorMsg.includes('Invalid JSON') ? 'parse' : 'validation',
-          message: errorMsg,
+          type: result.errorType ?? 'validation',
+          message: result.error ?? 'Validation failed',
           path: buildLogPath,
         };
         this.validationWarnings.push(warning);
@@ -186,11 +185,10 @@ export class StateService extends EventEmitter {
       if (result.success && result.data) {
         this.localBuildLog = result.data;
       } else {
-        const errorMsg = result.error || 'Unknown validation error';
         const warning: ValidationWarning = {
           source: 'localBuildLog',
-          type: errorMsg.includes('Invalid JSON') ? 'parse' : 'validation',
-          message: errorMsg,
+          type: result.errorType ?? 'validation',
+          message: result.error ?? 'Validation failed',
           path: localBuildLogPath,
         };
         this.validationWarnings.push(warning);

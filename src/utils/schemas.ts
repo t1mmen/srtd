@@ -81,6 +81,7 @@ export interface ValidationResult<T> {
   success: boolean;
   data?: T;
   error?: string;
+  errorType?: 'parse' | 'validation';
 }
 
 /**
@@ -94,6 +95,7 @@ export function validateBuildLog(content: string): ValidationResult<BuildLog> {
     return {
       success: false,
       error: 'Empty content provided',
+      errorType: 'parse',
     };
   }
 
@@ -105,6 +107,7 @@ export function validateBuildLog(content: string): ValidationResult<BuildLog> {
     return {
       success: false,
       error: `Invalid JSON: ${e instanceof Error ? e.message : 'Parse error'}`,
+      errorType: 'parse',
     };
   }
 
@@ -121,5 +124,6 @@ export function validateBuildLog(content: string): ValidationResult<BuildLog> {
   return {
     success: false,
     error: formatZodErrors(result.error),
+    errorType: 'validation',
   };
 }
