@@ -17,11 +17,17 @@ vi.mock('../utils/config.js', () => ({
     buildLog: '.buildlog.json',
     localBuildLog: '.buildlog.local.json',
   }),
+  getConfigWarnings: vi.fn().mockReturnValue([]),
+}));
+
+vi.mock('../ui/displayWarnings.js', () => ({
+  displayValidationWarnings: vi.fn(),
 }));
 
 const mockOrchestrator = {
   build: vi.fn(),
   apply: vi.fn(),
+  getValidationWarnings: vi.fn().mockReturnValue([]),
   [Symbol.asyncDispose]: vi.fn().mockResolvedValue(undefined),
   [Symbol.dispose]: vi.fn(),
 };

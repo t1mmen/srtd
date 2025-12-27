@@ -4,8 +4,9 @@ import { Command } from 'commander';
 import figures from 'figures';
 import { Orchestrator } from '../services/Orchestrator.js';
 import type { ProcessedTemplateResult } from '../types.js';
+import { displayValidationWarnings } from '../ui/displayWarnings.js';
 import { createSpinner, renderBranding, renderResults } from '../ui/index.js';
-import { getConfig } from '../utils/config.js';
+import { getConfig, getConfigWarnings } from '../utils/config.js';
 import { findProjectRoot } from '../utils/findProjectRoot.js';
 import { getErrorMessage } from '../utils/getErrorMessage.js';
 
@@ -24,6 +25,9 @@ export const applyCommand = new Command('apply')
       const projectRoot = await findProjectRoot();
       const config = await getConfig(projectRoot);
       await using orchestrator = await Orchestrator.create(projectRoot, config, { silent: true });
+
+      // Display validation warnings
+      displayValidationWarnings(orchestrator.getValidationWarnings(), getConfigWarnings());
 
       // Execute apply operation
       const result: ProcessedTemplateResult = await orchestrator.apply({

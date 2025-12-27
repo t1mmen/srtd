@@ -13,7 +13,10 @@ import type { WatchEvent } from './FileSystemService.js';
 import { FileSystemService } from './FileSystemService.js';
 import type { TemplateMetadata } from './MigrationBuilder.js';
 import { MigrationBuilder } from './MigrationBuilder.js';
-import { StateService } from './StateService.js';
+import { StateService, type ValidationWarning } from './StateService.js';
+
+// Re-export ValidationWarning for consumers
+export type { ValidationWarning } from './StateService.js';
 
 // Event types for Orchestrator
 export interface OrchestratorEvent {
@@ -717,6 +720,14 @@ export class Orchestrator extends EventEmitter implements Disposable {
    */
   async clearBuildLogs(type: 'local' | 'shared' | 'both'): Promise<void> {
     await this.stateService.clearBuildLogs(type);
+  }
+
+  /**
+   * Get validation warnings from StateService
+   * Returns any warnings about corrupted or invalid build log files
+   */
+  getValidationWarnings(): ValidationWarning[] {
+    return this.stateService.getValidationWarnings();
   }
 
   /**
