@@ -35,14 +35,9 @@ export default defineConfig({
       provider: 'v8',
       reporter: ['json'],
       reportsDirectory: './coverage/e2e',
-      exclude: [
-        'coverage/**',
-        'dist/**',
-        '**/node_modules/**',
-        '**/*.d.ts',
-        '**/*.test.{ts,tsx}',
-        '**/vitest.config.*',
-      ],
+      // Vitest 4.x requires explicit include pattern for coverage
+      include: ['src/**/*.ts'],
+      exclude: ['src/**/*.test.ts', 'src/**/*.d.ts', 'src/__tests__/**'],
     },
   },
 });

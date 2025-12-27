@@ -36,9 +36,9 @@ describe('getNextTimestamp', () => {
   });
 
   it('should increment when timestamp equals lastTimestamp', () => {
-    // Mock a fixed time
-    const mockDate = new Date('2023-01-01T12:00:00Z');
-    vi.spyOn(global, 'Date').mockImplementation(() => mockDate);
+    // Mock a fixed time using vi.useFakeTimers
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2023-01-01T12:00:00Z'));
 
     // Generate first timestamp
     const result1 = getNextTimestamp('');
@@ -50,7 +50,7 @@ describe('getNextTimestamp', () => {
     expect(result2.timestamp).toBe('20230101120001');
     expect(result2.newLastTimestamp).toBe('20230101120001');
 
-    vi.restoreAllMocks();
+    vi.useRealTimers();
   });
 
   it('should use current time when it is greater than lastTimestamp', () => {
@@ -76,13 +76,19 @@ describe('getNextTimestamp', () => {
   });
 
   it('should handle BigInt increment correctly for large timestamps', () => {
+    // Mock time to be before the large timestamp so increment is used
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2023-01-01T00:00:00Z'));
+
     // Use max realistic timestamp
     const largeTimestamp = '99991231235959';
 
     const result = getNextTimestamp(largeTimestamp);
 
-    // Should increment by 1
+    // Should increment by 1 since current time is less than largeTimestamp
     expect(result.timestamp).toBe('99991231235960');
     expect(result.newLastTimestamp).toBe('99991231235960');
+
+    vi.useRealTimers();
   });
 });

@@ -10,14 +10,9 @@ export default defineConfig({
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
       reportsDirectory: './coverage/unit',
-      exclude: [
-        'coverage/**',
-        'dist/**',
-        '**/node_modules/**',
-        '**/*.d.ts',
-        '**/*.test.{ts,tsx}',
-        '**/vitest.config.*',
-      ],
+      // Vitest 4.x requires explicit include pattern for coverage
+      include: ['src/**/*.ts'],
+      exclude: ['src/**/*.test.ts', 'src/**/*.d.ts', 'src/__tests__/**'],
     },
     setupFiles: ['./src/__tests__/vitest.setup.ts'],
     testTimeout: 10000,
