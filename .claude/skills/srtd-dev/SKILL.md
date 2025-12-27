@@ -1,6 +1,6 @@
 ---
-name: srtd
-description: Expert knowledge for developing, debugging, and maintaining SRTD (Supabase Repeatable Template Definitions). Use when implementing features, fixing bugs, understanding architecture, or writing tests for the SRTD CLI tool.
+name: srtd-dev
+description: Expert knowledge for developing the SRTD codebase itself. Use when implementing features, fixing bugs, understanding architecture, or writing tests for SRTD internals. NOT for end users of srtd CLI.
 ---
 
 # SRTD Development Skill

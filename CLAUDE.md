@@ -6,9 +6,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 CLI tool for live-reloading SQL templates into Supabase local databases. Templates are the single source of truth for database objects (functions, views, RLS policies, triggers), enabling sane code reviews and `git blame`. Templates `build` to timestamped migrations for deployment.
 
-**For development work, load the SRTD skill first:**
+**For development work, load the SRTD development skill:**
 ```
-Skill('srtd')
+Skill('srtd-dev')
 ```
 
 ## Development Commands
