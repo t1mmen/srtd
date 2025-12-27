@@ -55,8 +55,11 @@ export interface MigrationBuilderConfig {
   wrapInTransaction?: boolean;
 }
 
+/** Internal config with all optional fields resolved to required values */
+type ResolvedMigrationBuilderConfig = Required<MigrationBuilderConfig>;
+
 export class MigrationBuilder {
-  private config: MigrationBuilderConfig;
+  private config: ResolvedMigrationBuilderConfig;
 
   constructor(config: MigrationBuilderConfig) {
     this.config = {
@@ -80,7 +83,7 @@ export class MigrationBuilder {
   ): MigrationResult {
     const { timestamp, newLastTimestamp } = getNextTimestamp(buildLog.lastTimestamp);
     const fileName = interpolateMigrationFilename({
-      template: this.config.migrationFilename!,
+      template: this.config.migrationFilename,
       timestamp,
       migrationName: template.name,
       prefix: this.config.migrationPrefix,
@@ -115,7 +118,7 @@ export class MigrationBuilder {
   ): BundleMigrationResult {
     const { timestamp, newLastTimestamp } = getNextTimestamp(buildLog.lastTimestamp);
     const fileName = interpolateMigrationFilename({
-      template: this.config.migrationFilename!,
+      template: this.config.migrationFilename,
       timestamp,
       migrationName: 'bundle',
       prefix: this.config.migrationPrefix,
@@ -181,15 +184,20 @@ export class MigrationBuilder {
    * Create MigrationBuilder from CLI config
    */
   static fromConfig(config: CLIConfig, baseDir: string): MigrationBuilder {
+    // Only include defined properties to allow constructor defaults to apply
     return new MigrationBuilder({
       baseDir,
       templateDir: config.templateDir,
       migrationDir: config.migrationDir,
-      migrationPrefix: config.migrationPrefix,
-      migrationFilename: config.migrationFilename,
-      banner: config.banner,
-      footer: config.footer,
-      wrapInTransaction: config.wrapInTransaction,
+      ...(config.migrationPrefix !== undefined && { migrationPrefix: config.migrationPrefix }),
+      ...(config.migrationFilename !== undefined && {
+        migrationFilename: config.migrationFilename,
+      }),
+      ...(config.banner !== undefined && { banner: config.banner }),
+      ...(config.footer !== undefined && { footer: config.footer }),
+      ...(config.wrapInTransaction !== undefined && {
+        wrapInTransaction: config.wrapInTransaction,
+      }),
     });
   }
 
@@ -198,7 +206,7 @@ export class MigrationBuilder {
    */
   getMigrationPath(templateName: string, timestamp: string): string {
     const fileName = interpolateMigrationFilename({
-      template: this.config.migrationFilename!,
+      template: this.config.migrationFilename,
       timestamp,
       migrationName: templateName,
       prefix: this.config.migrationPrefix,

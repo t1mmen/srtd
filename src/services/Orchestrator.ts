@@ -385,7 +385,7 @@ export class Orchestrator extends EventEmitter implements Disposable {
       currentHash: templateFile.hash,
       migrationHash: null,
       buildState,
-      wip: await isWipTemplate(templatePath, this.config.baseDir),
+      wip: isWipTemplate(templatePath, this.config.cliConfig.wipIndicator),
     };
   }
 
@@ -437,6 +437,15 @@ export class Orchestrator extends EventEmitter implements Disposable {
 
     for (const templatePath of templates) {
       try {
+        // Skip WIP templates
+        const isWip = isWipTemplate(templatePath, this.config.cliConfig.wipIndicator);
+        if (isWip) {
+          const templateName = path.basename(templatePath, '.sql');
+          this.log(`Skipping WIP template: ${templateName}`, 'skip');
+          result.skipped.push(templateName);
+          continue;
+        }
+
         const processResult = await this.processTemplate(templatePath, options.force);
         result.errors.push(...(processResult.errors || []));
         result.applied.push(...(processResult.applied || []));
@@ -494,7 +503,7 @@ export class Orchestrator extends EventEmitter implements Disposable {
 
     // Collect templates for bundle
     for (const templatePath of templatePaths) {
-      const isWip = await isWipTemplate(templatePath, this.config.baseDir);
+      const isWip = isWipTemplate(templatePath, this.config.cliConfig.wipIndicator);
       if (isWip) {
         const template = await this.getTemplateStatus(templatePath);
         this.log(`Skipping WIP template: ${template.name}`, 'skip');
@@ -575,7 +584,7 @@ export class Orchestrator extends EventEmitter implements Disposable {
 
     for (const templatePath of templatePaths) {
       try {
-        const isWip = await isWipTemplate(templatePath, this.config.baseDir);
+        const isWip = isWipTemplate(templatePath, this.config.cliConfig.wipIndicator);
         if (isWip) {
           const template = await this.getTemplateStatus(templatePath);
           this.log(`Skipping WIP template: ${template.name}`, 'skip');
@@ -754,7 +763,7 @@ export class Orchestrator extends EventEmitter implements Disposable {
     }
 
     // Check if it's a WIP template
-    const isWip = await isWipTemplate(templatePath, this.config.baseDir);
+    const isWip = isWipTemplate(templatePath, this.config.cliConfig.wipIndicator);
     if (!isWip) {
       throw new Error(`Template is not a WIP template: ${path.basename(templatePath)}`);
     }

@@ -268,7 +268,9 @@ describe.sequential('Database E2E Tests', () => {
           expect(files).toHaveLength(1);
 
           // Verify migration content includes banner
-          const migrationContent = await fs.readFile(path.join(migrationsDir, files[0]!), 'utf-8');
+          const firstFile = files[0];
+          expect(firstFile).toBeDefined();
+          const migrationContent = await fs.readFile(path.join(migrationsDir, firstFile), 'utf-8');
           expect(migrationContent).toContain('-- SRTD Test Migration');
           expect(migrationContent).toContain('CREATE OR REPLACE FUNCTION');
         } finally {
@@ -285,27 +287,32 @@ describe.sequential('Database E2E Tests', () => {
       try {
         // Create template
         const templatePath = await resources.createTemplateWithFunc('buildlog', '_log');
+        const buildlogPath = path.join(resources.testDir, '.buildlog.json');
 
         const orchestrator = await createTestOrchestrator(resources.testDir);
         try {
-          await orchestrator.build({ templatePaths: [templatePath] });
+          const result = await orchestrator.build({ templatePaths: [templatePath] });
 
-          // Verify buildlog was created/updated
-          const buildlogPath = path.join(resources.testDir, '.buildlog.json');
-          const buildlogExists = await fs
-            .access(buildlogPath)
-            .then(() => true)
-            .catch(() => false);
-          expect(buildlogExists).toBe(true);
-
-          // Verify buildlog has correct structure
-          const buildlog = JSON.parse(await fs.readFile(buildlogPath, 'utf-8'));
-          expect(buildlog).toHaveProperty('version');
-          expect(buildlog).toHaveProperty('lastTimestamp');
-          expect(buildlog).toHaveProperty('templates');
+          // Verify build succeeded
+          expect(result.errors).toHaveLength(0);
+          expect(result.built).toHaveLength(1);
         } finally {
+          // dispose() flushes pending auto-save operations
           await orchestrator.dispose();
         }
+
+        // Verify buildlog was created (check AFTER dispose flushes pending saves)
+        const buildlogExists = await fs
+          .access(buildlogPath)
+          .then(() => true)
+          .catch(() => false);
+        expect(buildlogExists).toBe(true);
+
+        // Verify buildlog has correct structure
+        const buildlog = JSON.parse(await fs.readFile(buildlogPath, 'utf-8'));
+        expect(buildlog).toHaveProperty('version');
+        expect(buildlog).toHaveProperty('lastTimestamp');
+        expect(buildlog).toHaveProperty('templates');
       } finally {
         if (resources) await resources.cleanup();
       }
@@ -321,25 +328,30 @@ describe.sequential('Database E2E Tests', () => {
       try {
         // Create template
         const templatePath = await resources.createTemplateWithFunc('state', '_state');
+        const localBuildlogPath = path.join(resources.testDir, '.buildlog.local.json');
 
         const orchestrator = await createTestOrchestrator(resources.testDir);
         try {
           // Apply template
-          await orchestrator.apply({ templatePaths: [templatePath] });
+          const result = await orchestrator.apply({ templatePaths: [templatePath] });
 
-          // Verify local buildlog was updated
-          const localBuildlogPath = path.join(resources.testDir, '.buildlog.local.json');
-          const localBuildlogExists = await fs
-            .access(localBuildlogPath)
-            .then(() => true)
-            .catch(() => false);
-          expect(localBuildlogExists).toBe(true);
-
-          const localBuildlog = JSON.parse(await fs.readFile(localBuildlogPath, 'utf-8'));
-          expect(Object.keys(localBuildlog.templates)).toHaveLength(1);
+          // Verify apply succeeded
+          expect(result.applied).toHaveLength(1);
+          expect(result.errors).toHaveLength(0);
         } finally {
+          // dispose() flushes pending auto-save operations
           await orchestrator.dispose();
         }
+
+        // Verify local buildlog was updated (check AFTER dispose flushes pending saves)
+        const localBuildlogExists = await fs
+          .access(localBuildlogPath)
+          .then(() => true)
+          .catch(() => false);
+        expect(localBuildlogExists).toBe(true);
+
+        const localBuildlog = JSON.parse(await fs.readFile(localBuildlogPath, 'utf-8'));
+        expect(Object.keys(localBuildlog.templates)).toHaveLength(1);
       } finally {
         if (resources) await resources.cleanup();
       }
