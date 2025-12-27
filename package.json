@@ -98,7 +98,6 @@
     "@types/update-notifier": "^6.0.8",
     "@vitest/coverage-v8": "^3.2.4",
     "lefthook": "^1.10.1",
-    "task-master-ai": "^0.24.0",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2",
     "vitest": "^3.2.4"
