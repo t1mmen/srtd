@@ -238,10 +238,9 @@ export class MigrationBuilder {
     const resolvedPath = path.resolve(this.config.baseDir, filePath);
     const resolvedMigrationDir = path.resolve(this.config.baseDir, this.config.migrationDir);
 
-    if (
-      !resolvedPath.startsWith(resolvedMigrationDir + path.sep) &&
-      resolvedPath !== resolvedMigrationDir
-    ) {
+    // Use path.relative() for robust cross-platform path traversal detection
+    const relativePath = path.relative(resolvedMigrationDir, resolvedPath);
+    if (relativePath.startsWith('..') || path.isAbsolute(relativePath)) {
       throw new Error(
         `Invalid migration path: "${filePath}" would write outside migration directory`
       );
