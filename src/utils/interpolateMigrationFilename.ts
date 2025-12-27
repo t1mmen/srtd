@@ -51,8 +51,9 @@ export function interpolateMigrationFilename(options: InterpolationOptions): str
   // Prefix gets a trailing dash when it exists, empty string otherwise
   const prefixValue = prefix ? `${prefix}-` : '';
 
+  // Use replacer functions to prevent special replacement patterns (e.g., $&, $`)
   return template
-    .replace(/\$timestamp/g, timestamp)
-    .replace(/\$migrationName/g, migrationName)
-    .replace(/\$prefix/g, prefixValue);
+    .replace(/\$timestamp/g, () => timestamp)
+    .replace(/\$migrationName/g, () => migrationName)
+    .replace(/\$prefix/g, () => prefixValue);
 }

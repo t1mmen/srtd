@@ -585,5 +585,27 @@ describe('MigrationBuilder', () => {
 
       expect(migrationPath).toBe('migrations/create_users/migrate.sql');
     });
+
+    it('should reject path traversal attempts in template', async () => {
+      const maliciousBuilder = new MigrationBuilder({
+        ...config,
+        migrationFilename: '../../../etc/$migrationName.sql',
+      });
+
+      await expect(
+        maliciousBuilder.generateMigration(templateMetadata, mockBuildLog)
+      ).rejects.toThrow('would write outside migration directory');
+    });
+
+    it('should reject path traversal in bundled migrations', async () => {
+      const maliciousBuilder = new MigrationBuilder({
+        ...config,
+        migrationFilename: '../$migrationName.sql',
+      });
+
+      await expect(
+        maliciousBuilder.generateBundledMigration([templateMetadata], mockBuildLog)
+      ).rejects.toThrow('would write outside migration directory');
+    });
   });
 });

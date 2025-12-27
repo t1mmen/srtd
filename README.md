@@ -15,7 +15,7 @@
 Two things drove me crazy while building [Timely](https://www.timely.com)'s [Memory Engine](https://www.timely.com/memory-app) on Supabase:
 
 **1. Iterating on database logic was painfully slow.**
-Change a function → create migration → apply → hit an error → create another migration → apply → repeat. I was spending more time on migration ceremony than actual logic.
+Edit in your IDE → copy to Supabase SQL editor → run → hit an error → fix in IDE → copy again → repeat. Or: create migration → apply → error → create another migration → apply. Either way, more ceremony than actual coding.
 
 **2. Code reviews for database changes were useless.**
 Every function change showed up as a complete rewrite in git. Reviewers couldn't see what actually changed. `git blame` was worthless.

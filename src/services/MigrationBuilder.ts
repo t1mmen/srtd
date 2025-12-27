@@ -82,6 +82,9 @@ export class MigrationBuilder {
     });
     const filePath = path.join(this.config.migrationDir, fileName);
 
+    // Validate path stays within migration directory (prevent path traversal)
+    this.validateMigrationPath(filePath);
+
     const content = this.formatMigrationContent(template, {
       isBundled: false,
       ...options,
@@ -111,6 +114,9 @@ export class MigrationBuilder {
       prefix: this.config.migrationPrefix,
     });
     const filePath = path.join(this.config.migrationDir, fileName);
+
+    // Validate path stays within migration directory (prevent path traversal)
+    this.validateMigrationPath(filePath);
 
     let content = '';
     const includedTemplates: string[] = [];
@@ -222,6 +228,24 @@ export class MigrationBuilder {
       valid: errors.length === 0,
       errors,
     };
+  }
+
+  /**
+   * Validate that a migration path stays within the migration directory
+   * Prevents path traversal attacks via malicious template patterns
+   */
+  private validateMigrationPath(filePath: string): void {
+    const resolvedPath = path.resolve(this.config.baseDir, filePath);
+    const resolvedMigrationDir = path.resolve(this.config.baseDir, this.config.migrationDir);
+
+    if (
+      !resolvedPath.startsWith(resolvedMigrationDir + path.sep) &&
+      resolvedPath !== resolvedMigrationDir
+    ) {
+      throw new Error(
+        `Invalid migration path: "${filePath}" would write outside migration directory`
+      );
+    }
   }
 
   /**
