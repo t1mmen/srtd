@@ -74,6 +74,7 @@ describe('Init Command', () => {
 
     await initCommand.parseAsync(['node', 'test']);
 
+    spies.assertNoStderr();
     expect(saveConfig).toHaveBeenCalled();
     expect(ensureDirectories).toHaveBeenCalled();
     expect(createEmptyBuildLog).toHaveBeenCalled();
@@ -89,6 +90,7 @@ describe('Init Command', () => {
 
     await initCommand.parseAsync(['node', 'test']);
 
+    spies.assertNoStderr();
     // Should not call saveConfig if config already exists
     expect(saveConfig).not.toHaveBeenCalled();
     expect(spies.exitSpy).toHaveBeenCalledWith(0);

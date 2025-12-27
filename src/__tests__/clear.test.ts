@@ -86,6 +86,8 @@ describe('Clear Command', () => {
 
     await clearCommand.parseAsync(['node', 'test', '--local']);
 
+    // Verify no Commander parse errors (they go to stderr)
+    spies.assertNoStderr();
     expect(mockOrchestrator.clearBuildLogs).toHaveBeenCalledWith('local');
     expect(spies.exitSpy).toHaveBeenCalledWith(0);
   });
@@ -97,6 +99,7 @@ describe('Clear Command', () => {
 
     await clearCommand.parseAsync(['node', 'test', '--shared']);
 
+    spies.assertNoStderr();
     expect(mockOrchestrator.clearBuildLogs).toHaveBeenCalledWith('shared');
     expect(spies.exitSpy).toHaveBeenCalledWith(0);
   });
@@ -109,6 +112,7 @@ describe('Clear Command', () => {
 
     await clearCommand.parseAsync(['node', 'test', '--reset']);
 
+    spies.assertNoStderr();
     expect(resetConfig).toHaveBeenCalledWith('/test/project');
     expect(mockOrchestrator.clearBuildLogs).toHaveBeenCalledWith('both');
     expect(spies.exitSpy).toHaveBeenCalledWith(0);
@@ -152,6 +156,7 @@ describe('Clear Command', () => {
 
     await clearCommand.parseAsync(['node', 'test']);
 
+    spies.assertNoStderr();
     expect(select).toHaveBeenCalled();
     expect(mockOrchestrator.clearBuildLogs).toHaveBeenCalledWith('local');
     expect(spies.exitSpy).toHaveBeenCalledWith(0);

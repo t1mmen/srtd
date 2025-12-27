@@ -74,6 +74,7 @@ describe('Apply Command', () => {
 
     await applyCommand.parseAsync(['node', 'test']);
 
+    spies.assertNoStderr();
     expect(mockOrchestrator.apply).toHaveBeenCalledWith({
       force: undefined,
       silent: true,
@@ -93,6 +94,7 @@ describe('Apply Command', () => {
 
     await applyCommand.parseAsync(['node', 'test', '--force']);
 
+    spies.assertNoStderr();
     expect(mockOrchestrator.apply).toHaveBeenCalledWith({
       force: true,
       silent: true,

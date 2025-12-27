@@ -88,6 +88,7 @@ describe('Promote Command', () => {
     // Note: Don't include 'promote' in args - it's already the subcommand being tested
     await promoteCommand.parseAsync(['node', 'test', 'test.wip.sql']);
 
+    spies.assertNoStderr();
     expect(mockOrchestrator.promoteTemplate).toHaveBeenCalled();
     expect(spies.exitSpy).toHaveBeenCalledWith(0);
   });
@@ -157,6 +158,7 @@ describe('Promote Command', () => {
 
     await promoteCommand.parseAsync(['node', 'test']);
 
+    spies.assertNoStderr();
     const output = spies.consoleLogSpy.mock.calls.flat().join('\n');
     expect(output).toContain('No WIP templates found');
     expect(spies.exitSpy).toHaveBeenCalledWith(0);
@@ -173,6 +175,7 @@ describe('Promote Command', () => {
 
     await promoteCommand.parseAsync(['node', 'test', 'test.wip.sql']);
 
+    spies.assertNoStderr();
     // Orchestrator now handles build log updates internally
     expect(mockOrchestrator.promoteTemplate).toHaveBeenCalled();
     expect(spies.exitSpy).toHaveBeenCalledWith(0);
@@ -216,6 +219,7 @@ describe('Promote Command', () => {
 
     await promoteCommand.parseAsync(['node', 'test']);
 
+    spies.assertNoStderr();
     expect(select).toHaveBeenCalled();
     expect(mockOrchestrator.promoteTemplate).toHaveBeenCalled();
     expect(spies.exitSpy).toHaveBeenCalledWith(0);

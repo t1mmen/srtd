@@ -89,6 +89,7 @@ describe('Build Command', () => {
 
     await buildCommand.parseAsync(['node', 'test']);
 
+    spies.assertNoStderr();
     expect(mockOrchestrator.build).toHaveBeenCalledWith({
       force: undefined,
       bundle: undefined,
@@ -109,6 +110,7 @@ describe('Build Command', () => {
 
     await buildCommand.parseAsync(['node', 'test', '--force']);
 
+    spies.assertNoStderr();
     expect(mockOrchestrator.build).toHaveBeenCalledWith({
       force: true,
       bundle: undefined,
@@ -128,6 +130,7 @@ describe('Build Command', () => {
 
     await buildCommand.parseAsync(['node', 'test', '--bundle']);
 
+    spies.assertNoStderr();
     expect(mockOrchestrator.build).toHaveBeenCalledWith({
       force: undefined,
       bundle: true,
@@ -154,6 +157,7 @@ describe('Build Command', () => {
 
     await buildCommand.parseAsync(['node', 'test', '--apply']);
 
+    spies.assertNoStderr();
     expect(mockOrchestrator.build).toHaveBeenCalled();
     expect(mockOrchestrator.apply).toHaveBeenCalled();
     expect(spies.exitSpy).toHaveBeenCalledWith(0);

@@ -100,7 +100,8 @@ describe('Watch Command', () => {
 
     const { watchCommand } = await import('../commands/watch.js');
 
-    // This should not throw - errors are collected
+    // This should not throw - errors are collected, but we don't assert on stderr
+    // because template errors are expected and handled internally
     await expect(watchCommand.parseAsync(['node', 'test'])).resolves.not.toThrow();
   });
 });
