@@ -90,7 +90,7 @@ describe('Watch Command', () => {
 
     const { watchCommand } = await import('../commands/watch.js');
 
-    await watchCommand.parseAsync(['node', 'test', 'watch']);
+    await watchCommand.parseAsync(['node', 'test']);
 
     expect(spies.exitSpy).toHaveBeenCalledWith(1);
   });
@@ -101,7 +101,7 @@ describe('Watch Command', () => {
     const { watchCommand } = await import('../commands/watch.js');
 
     // This should not throw - errors are collected
-    await expect(watchCommand.parseAsync(['node', 'test', 'watch'])).resolves.not.toThrow();
+    await expect(watchCommand.parseAsync(['node', 'test'])).resolves.not.toThrow();
   });
 });
 

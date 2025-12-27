@@ -84,7 +84,7 @@ describe('Clear Command', () => {
 
     const { clearCommand } = await import('../commands/clear.js');
 
-    await clearCommand.parseAsync(['node', 'test', 'clear', '--local']);
+    await clearCommand.parseAsync(['node', 'test', '--local']);
 
     expect(mockOrchestrator.clearBuildLogs).toHaveBeenCalledWith('local');
     expect(spies.exitSpy).toHaveBeenCalledWith(0);
@@ -95,7 +95,7 @@ describe('Clear Command', () => {
 
     const { clearCommand } = await import('../commands/clear.js');
 
-    await clearCommand.parseAsync(['node', 'test', 'clear', '--shared']);
+    await clearCommand.parseAsync(['node', 'test', '--shared']);
 
     expect(mockOrchestrator.clearBuildLogs).toHaveBeenCalledWith('shared');
     expect(spies.exitSpy).toHaveBeenCalledWith(0);
@@ -107,7 +107,7 @@ describe('Clear Command', () => {
     const { clearCommand } = await import('../commands/clear.js');
     const { resetConfig } = await import('../utils/config.js');
 
-    await clearCommand.parseAsync(['node', 'test', 'clear', '--reset']);
+    await clearCommand.parseAsync(['node', 'test', '--reset']);
 
     expect(resetConfig).toHaveBeenCalledWith('/test/project');
     expect(mockOrchestrator.clearBuildLogs).toHaveBeenCalledWith('both');
@@ -119,7 +119,7 @@ describe('Clear Command', () => {
 
     const { clearCommand } = await import('../commands/clear.js');
 
-    await clearCommand.parseAsync(['node', 'test', 'clear', '--local']);
+    await clearCommand.parseAsync(['node', 'test', '--local']);
 
     expect(spies.exitSpy).toHaveBeenCalledWith(1);
   });
@@ -130,7 +130,7 @@ describe('Clear Command', () => {
 
     const { clearCommand } = await import('../commands/clear.js');
 
-    await clearCommand.parseAsync(['node', 'test', 'clear']);
+    await clearCommand.parseAsync(['node', 'test']);
 
     expect(spies.exitSpy).toHaveBeenCalledWith(1);
     const output = spies.consoleLogSpy.mock.calls.flat().join('\n');
@@ -150,7 +150,7 @@ describe('Clear Command', () => {
 
     const { clearCommand } = await import('../commands/clear.js');
 
-    await clearCommand.parseAsync(['node', 'test', 'clear']);
+    await clearCommand.parseAsync(['node', 'test']);
 
     expect(select).toHaveBeenCalled();
     expect(mockOrchestrator.clearBuildLogs).toHaveBeenCalledWith('local');
@@ -170,7 +170,7 @@ describe('Clear Command', () => {
 
     const { clearCommand } = await import('../commands/clear.js');
 
-    await clearCommand.parseAsync(['node', 'test', 'clear']);
+    await clearCommand.parseAsync(['node', 'test']);
 
     expect(spies.exitSpy).toHaveBeenCalledWith(0);
 
@@ -183,7 +183,7 @@ describe('Clear Command', () => {
 
     const { clearCommand } = await import('../commands/clear.js');
 
-    await clearCommand.parseAsync(['node', 'test', 'clear', '--local']);
+    await clearCommand.parseAsync(['node', 'test', '--local']);
 
     expect(spies.exitSpy).toHaveBeenCalledWith(1);
     const output = spies.consoleLogSpy.mock.calls.flat().join('\n');
