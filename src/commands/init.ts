@@ -38,7 +38,10 @@ export const initCommand = new Command('init')
       }
 
       // Ensure directories exist
-      const dirs = await ensureDirectories(baseDir);
+      const dirs = await ensureDirectories(baseDir, {
+        templateDir: config.templateDir,
+        migrationDir: config.migrationDir,
+      });
 
       if (dirs.templateDir) {
         console.log(

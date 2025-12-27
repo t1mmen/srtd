@@ -152,16 +152,16 @@ describe('FileSystemService', () => {
 
   describe('fileExists', () => {
     it('should return true for existing file', async () => {
-      vi.mocked(fs.stat).mockResolvedValue({} as Stats);
+      vi.mocked(fs.access).mockResolvedValue();
 
       const result = await service.fileExists('/test/file.sql');
 
       expect(result).toBe(true);
-      expect(fs.stat).toHaveBeenCalledWith('/test/file.sql');
+      expect(fs.access).toHaveBeenCalledWith('/test/file.sql');
     });
 
     it('should return false for non-existent file', async () => {
-      vi.mocked(fs.stat).mockRejectedValue(new Error('ENOENT'));
+      vi.mocked(fs.access).mockRejectedValue(new Error('ENOENT'));
 
       const result = await service.fileExists('/test/missing.sql');
 

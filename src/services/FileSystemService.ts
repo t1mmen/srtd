@@ -10,6 +10,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import type { FSWatcher } from 'chokidar';
 import { glob } from 'glob';
+import { fileExists as fileExistsUtil } from '../utils/fileExists.js';
 
 export interface FileSystemConfig {
   baseDir: string;
@@ -90,12 +91,7 @@ export class FileSystemService extends EventEmitter {
    * Check if a file exists
    */
   async fileExists(filePath: string): Promise<boolean> {
-    try {
-      await fs.stat(filePath);
-      return true;
-    } catch {
-      return false;
-    }
+    return fileExistsUtil(filePath);
   }
 
   /**

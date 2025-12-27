@@ -1,15 +1,22 @@
 // utils/ensureDirectories.ts
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { getConfig } from './config.js';
 import { fileExists } from './fileExists.js';
 
+/**
+ * Ensure template and migration directories exist.
+ * Creates them if they don't exist.
+ *
+ * @param baseDir - Base directory for the project
+ * @param dirs - Directory paths relative to baseDir (from config)
+ * @returns Object indicating which directories were created
+ */
 export async function ensureDirectories(
-  baseDir: string
+  baseDir: string,
+  dirs: { templateDir: string; migrationDir: string }
 ): Promise<{ templateDir: boolean; migrationDir: boolean }> {
-  const { config } = await getConfig(baseDir);
-  const templatePath = path.join(baseDir, config.templateDir);
-  const migrationPath = path.join(baseDir, config.migrationDir);
+  const templatePath = path.join(baseDir, dirs.templateDir);
+  const migrationPath = path.join(baseDir, dirs.migrationDir);
 
   const templateExists = await fileExists(templatePath);
   const migrationExists = await fileExists(migrationPath);
