@@ -87,8 +87,9 @@ describe('Build Command', () => {
       errors: [],
     });
 
-    await buildCommand.parseAsync(['node', 'test', 'build']);
+    await buildCommand.parseAsync(['node', 'test']);
 
+    spies.assertNoStderr();
     expect(mockOrchestrator.build).toHaveBeenCalledWith({
       force: undefined,
       bundle: undefined,
@@ -107,8 +108,9 @@ describe('Build Command', () => {
       errors: [],
     });
 
-    await buildCommand.parseAsync(['node', 'test', 'build', '--force']);
+    await buildCommand.parseAsync(['node', 'test', '--force']);
 
+    spies.assertNoStderr();
     expect(mockOrchestrator.build).toHaveBeenCalledWith({
       force: true,
       bundle: undefined,
@@ -126,8 +128,9 @@ describe('Build Command', () => {
       errors: [],
     });
 
-    await buildCommand.parseAsync(['node', 'test', 'build', '--bundle']);
+    await buildCommand.parseAsync(['node', 'test', '--bundle']);
 
+    spies.assertNoStderr();
     expect(mockOrchestrator.build).toHaveBeenCalledWith({
       force: undefined,
       bundle: true,
@@ -152,8 +155,9 @@ describe('Build Command', () => {
       errors: [],
     });
 
-    await buildCommand.parseAsync(['node', 'test', 'build', '--apply']);
+    await buildCommand.parseAsync(['node', 'test', '--apply']);
 
+    spies.assertNoStderr();
     expect(mockOrchestrator.build).toHaveBeenCalled();
     expect(mockOrchestrator.apply).toHaveBeenCalled();
     expect(spies.exitSpy).toHaveBeenCalledWith(0);
@@ -169,7 +173,7 @@ describe('Build Command', () => {
       errors: [{ templateName: 'bad.sql', error: 'Template parse error' }],
     });
 
-    await buildCommand.parseAsync(['node', 'test', 'build']);
+    await buildCommand.parseAsync(['node', 'test']);
 
     expect(spies.exitSpy).toHaveBeenCalledWith(1);
   });
@@ -179,7 +183,7 @@ describe('Build Command', () => {
 
     mockOrchestrator.build.mockRejectedValue(new Error('File system error'));
 
-    await buildCommand.parseAsync(['node', 'test', 'build']);
+    await buildCommand.parseAsync(['node', 'test']);
 
     expect(spies.exitSpy).toHaveBeenCalledWith(1);
   });
@@ -194,7 +198,7 @@ describe('Build Command', () => {
       errors: [],
     });
 
-    await buildCommand.parseAsync(['node', 'test', 'build']);
+    await buildCommand.parseAsync(['node', 'test']);
 
     // Verify async dispose was called (await using triggers Symbol.asyncDispose)
     expect(mockOrchestrator[Symbol.asyncDispose]).toHaveBeenCalled();

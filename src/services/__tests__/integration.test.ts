@@ -12,8 +12,8 @@ import type { CLIConfig } from '../../types.js';
 import type { DatabaseService } from '../DatabaseService.js';
 import { FileSystemService } from '../FileSystemService.js';
 import { MigrationBuilder } from '../MigrationBuilder.js';
-import { Orchestrator } from '../Orchestrator.js';
 import type { OrchestratorConfig } from '../Orchestrator.js';
+import { Orchestrator } from '../Orchestrator.js';
 import { StateService } from '../StateService.js';
 
 describe('Service Integration Tests', () => {

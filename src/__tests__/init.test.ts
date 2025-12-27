@@ -72,8 +72,9 @@ describe('Init Command', () => {
     const { ensureDirectories } = await import('../utils/ensureDirectories.js');
     const { createEmptyBuildLog } = await import('../utils/createEmptyBuildLog.js');
 
-    await initCommand.parseAsync(['node', 'test', 'init']);
+    await initCommand.parseAsync(['node', 'test']);
 
+    spies.assertNoStderr();
     expect(saveConfig).toHaveBeenCalled();
     expect(ensureDirectories).toHaveBeenCalled();
     expect(createEmptyBuildLog).toHaveBeenCalled();
@@ -87,8 +88,9 @@ describe('Init Command', () => {
     const { initCommand } = await import('../commands/init.js');
     const { saveConfig } = await import('../utils/config.js');
 
-    await initCommand.parseAsync(['node', 'test', 'init']);
+    await initCommand.parseAsync(['node', 'test']);
 
+    spies.assertNoStderr();
     // Should not call saveConfig if config already exists
     expect(saveConfig).not.toHaveBeenCalled();
     expect(spies.exitSpy).toHaveBeenCalledWith(0);
@@ -100,7 +102,7 @@ describe('Init Command', () => {
 
     const { initCommand } = await import('../commands/init.js');
 
-    await initCommand.parseAsync(['node', 'test', 'init']);
+    await initCommand.parseAsync(['node', 'test']);
 
     expect(spies.exitSpy).toHaveBeenCalledWith(1);
   });

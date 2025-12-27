@@ -1,5 +1,9 @@
 /**
  * Shared test utilities for reducing boilerplate across test files
+ *
+ * IMPORTANT: Command tests must capture BOTH console.log AND console.error.
+ * Commander.js writes parse errors to stderr (console.error), not stdout.
+ * If console.error is not captured, parse errors silently pass tests!
  */
 
 import { vi } from 'vitest';
@@ -10,6 +14,15 @@ import { vi } from 'vitest';
  */
 export function mockConsoleLog() {
   return vi.spyOn(console, 'log').mockImplementation(() => undefined);
+}
+
+/**
+ * Create a mock for console.error that returns undefined (lint-compliant)
+ * CRITICAL: Commander.js writes parse errors to console.error!
+ * @returns Spy that can be restored in afterEach
+ */
+export function mockConsoleError() {
+  return vi.spyOn(console, 'error').mockImplementation(() => undefined);
 }
 
 /**
@@ -66,18 +79,34 @@ export function createMockFindProjectRoot(projectRoot = '/test/project') {
 }
 
 /**
- * Setup common command test spies (console.log + process.exit)
+ * Setup common command test spies (console.log + console.error + process.exit)
  * Call in beforeEach, returns cleanup function for afterEach
+ *
+ * IMPORTANT: console.error is captured because Commander.js writes parse errors
+ * there. Without this, tests can pass even when commands fail to parse!
  */
 export function setupCommandTestSpies() {
   const consoleLogSpy = mockConsoleLog();
+  const consoleErrorSpy = mockConsoleError();
   const exitSpy = mockProcessExit();
 
   return {
     consoleLogSpy,
+    consoleErrorSpy,
     exitSpy,
+    /**
+     * Verify no unexpected errors were written to stderr.
+     * Call this after parseAsync to catch Commander parse errors.
+     */
+    assertNoStderr: () => {
+      const stderrOutput = consoleErrorSpy.mock.calls.flat().join('\n');
+      if (stderrOutput.length > 0) {
+        throw new Error(`Unexpected stderr output:\n${stderrOutput}`);
+      }
+    },
     cleanup: () => {
       consoleLogSpy.mockRestore();
+      consoleErrorSpy.mockRestore();
       exitSpy.mockRestore();
     },
   };

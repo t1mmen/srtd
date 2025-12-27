@@ -78,6 +78,7 @@ describe('Register Command', () => {
     // When parsing a subcommand directly, don't include the command name
     await registerCommand.parseAsync(['node', 'test', 'template1.sql', 'template2.sql']);
 
+    spies.assertNoStderr();
     expect(mockOrchestrator.registerTemplate).toHaveBeenCalledTimes(2);
     expect(spies.exitSpy).toHaveBeenCalledWith(0);
   });
@@ -105,6 +106,7 @@ describe('Register Command', () => {
     // No template arguments - triggers interactive mode path
     await registerCommand.parseAsync(['node', 'test']);
 
+    spies.assertNoStderr();
     const output = spies.consoleLogSpy.mock.calls.flat().join('\n');
     expect(output).toContain('No templates found');
     expect(spies.exitSpy).toHaveBeenCalledWith(0);
@@ -126,6 +128,7 @@ describe('Register Command', () => {
 
     // The command exits with 0 when all templates are already registered
     const output = spies.consoleLogSpy.mock.calls.flat().join('\n');
+    spies.assertNoStderr();
     // The message says "All X template(s) are already registered."
     expect(output).toMatch(/already registered|No unregistered templates/);
     expect(spies.exitSpy).toHaveBeenCalledWith(0);

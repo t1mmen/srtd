@@ -34,9 +34,8 @@ import { randomUUID } from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import type { PoolClient } from 'pg';
-import { DatabaseService } from '../../services/DatabaseService.js';
 import { ensureDirectories } from '../../utils/ensureDirectories.js';
-import { TEST_FN_PREFIX, TEST_ROOT_BASE, getTestDatabaseService } from '../vitest.setup.js';
+import { getTestDatabaseService, TEST_FN_PREFIX, TEST_ROOT_BASE } from '../vitest.setup.js';
 
 /**
  * Helper class to manage test resources consistently across all tests.
@@ -331,7 +330,7 @@ export class TestResource {
           const res = await client.query(`SELECT COUNT(*) FROM pg_proc WHERE proname = $1`, [
             funcName,
           ]);
-          return Number.parseInt(res.rows[0].count) > 0;
+          return Number.parseInt(res.rows[0].count, 10) > 0;
         } catch (error) {
           if (retries <= 0) throw error;
           await this.wait(delay);

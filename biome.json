@@ -1,7 +1,10 @@
 {
-  "$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.3.10/schema.json",
   "vcs": { "enabled": false, "clientKind": "git", "useIgnoreFile": false },
-  "files": { "ignoreUnknown": false, "ignore": ["dist/**", "build/**", "coverage/**"] },
+  "files": {
+    "ignoreUnknown": false,
+    "includes": ["**", "!**/dist", "!**/build", "!**/coverage"]
+  },
   "formatter": {
     "enabled": true,
     "useEditorconfig": true,
@@ -12,23 +15,29 @@
     "lineWidth": 100,
     "attributePosition": "auto",
     "bracketSpacing": true,
-    "ignore": ["dist/**", "package-lock.json", "package.json", "build/**", "coverage/**"]
+    "includes": [
+      "**",
+      "!**/dist/**",
+      "!**/package-lock.json",
+      "!**/package.json",
+      "!**/build/**",
+      "!**/coverage/**"
+    ]
   },
-  "organizeImports": { "enabled": true },
+  "assist": { "actions": { "source": { "organizeImports": "on" } } },
   "linter": {
-    "ignore": ["dist/**", "build/**", "package-lock.json", "package.json"],
+    "includes": ["**", "!**/dist/**", "!**/build/**", "!**/package-lock.json", "!**/package.json"],
     "enabled": true,
     "rules": {
       "recommended": true,
-      "a11y": { "noBlankTarget": "error" },
+      "a11y": {},
       "complexity": {
         "noBannedTypes": "error",
         "noExtraBooleanCast": "error",
-        "noMultipleSpacesInRegularExpressionLiterals": "error",
         "noUselessCatch": "error",
         "noUselessThisAlias": "error",
         "noUselessTypeConstraint": "error",
-        "noWith": "error"
+        "noAdjacentSpacesInRegex": "error"
       },
       "correctness": {
         "noConstAssign": "error",
@@ -38,7 +47,6 @@
         "noGlobalObjectCalls": "error",
         "noInnerDeclarations": "error",
         "noInvalidConstructorSuper": "error",
-        "noNewSymbol": "error",
         "noNonoctalDecimalEscape": "error",
         "noPrecisionLoss": "error",
         "noSelfAssign": "error",
@@ -51,17 +59,19 @@
         "noUnsafeOptionalChaining": "error",
         "noUnusedLabels": "error",
         "noUnusedVariables": "error",
-        "useArrayLiterals": "off",
         "useIsNan": "error",
         "useValidForDirection": "error",
-        "useYield": "error"
+        "useYield": "error",
+        "noInvalidBuiltinInstantiation": "error",
+        "useValidTypeof": "error"
       },
-      "security": {},
+      "security": { "noBlankTarget": "error" },
       "style": {
         "noNamespace": "error",
         "useAsConstAssertion": "error",
         "useBlockStatements": "off",
-        "noUnusedTemplateLiteral": "off"
+        "noUnusedTemplateLiteral": "off",
+        "useArrayLiterals": "off"
       },
       "suspicious": {
         "noAssignInExpressions": "error",
@@ -92,7 +102,7 @@
         "noUnsafeDeclarationMerging": "error",
         "noUnsafeNegation": "error",
         "useGetterReturn": "error",
-        "useValidTypeof": "error"
+        "noWith": "error"
       }
     }
   },
@@ -108,7 +118,7 @@
   },
   "overrides": [
     {
-      "include": ["**/*.test.ts", "**/*.test.tsx", "**/__tests__/**"],
+      "includes": ["**/*.test.ts", "**/*.test.tsx", "**/__tests__/**"],
       "linter": {
         "rules": {
           "suspicious": {
@@ -121,22 +131,20 @@
       }
     },
     {
-      "include": ["*.ts", "*.tsx", "*.mts", "*.cts"],
+      "includes": ["**/*.ts", "**/*.tsx", "**/*.mts", "**/*.cts"],
       "linter": {
         "rules": {
           "correctness": {
             "noConstAssign": "off",
             "noGlobalObjectCalls": "off",
             "noInvalidConstructorSuper": "off",
-            "noNewSymbol": "off",
             "noSetterReturn": "off",
             "noUndeclaredVariables": "off",
             "noUnreachable": "off",
-            "noUnreachableSuper": "off"
+            "noUnreachableSuper": "off",
+            "noInvalidBuiltinInstantiation": "off"
           },
           "style": {
-            "noArguments": "error",
-            "noVar": "error",
             "useConst": "error"
           },
           "suspicious": {
@@ -147,7 +155,11 @@
             "noImportAssign": "off",
             "noRedeclare": "off",
             "noUnsafeNegation": "off",
-            "useGetterReturn": "off"
+            "useGetterReturn": "off",
+            "noVar": "error"
+          },
+          "complexity": {
+            "noArguments": "error"
           }
         }
       }

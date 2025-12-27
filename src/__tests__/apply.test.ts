@@ -72,8 +72,9 @@ describe('Apply Command', () => {
       errors: [],
     });
 
-    await applyCommand.parseAsync(['node', 'test', 'apply']);
+    await applyCommand.parseAsync(['node', 'test']);
 
+    spies.assertNoStderr();
     expect(mockOrchestrator.apply).toHaveBeenCalledWith({
       force: undefined,
       silent: true,
@@ -91,8 +92,9 @@ describe('Apply Command', () => {
       errors: [],
     });
 
-    await applyCommand.parseAsync(['node', 'test', 'apply', '--force']);
+    await applyCommand.parseAsync(['node', 'test', '--force']);
 
+    spies.assertNoStderr();
     expect(mockOrchestrator.apply).toHaveBeenCalledWith({
       force: true,
       silent: true,
@@ -109,7 +111,7 @@ describe('Apply Command', () => {
       errors: [{ templateName: 'bad.sql', error: 'Syntax error' }],
     });
 
-    await applyCommand.parseAsync(['node', 'test', 'apply']);
+    await applyCommand.parseAsync(['node', 'test']);
 
     expect(spies.exitSpy).toHaveBeenCalledWith(1);
   });
@@ -119,7 +121,7 @@ describe('Apply Command', () => {
 
     mockOrchestrator.apply.mockRejectedValue(new Error('Database connection failed'));
 
-    await applyCommand.parseAsync(['node', 'test', 'apply']);
+    await applyCommand.parseAsync(['node', 'test']);
 
     expect(spies.exitSpy).toHaveBeenCalledWith(1);
   });
