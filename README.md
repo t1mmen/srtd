@@ -1,4 +1,4 @@
-# `srtd` — Live-Reloading SQL Templates for Supabase
+# `srtd` — Live-Reloading SQL Templates for Postgres
 
 > Edit `my_function.sql` → save → it's running on your local database. No migration dance, no restart. When you're ready to ship, build to migrations that show real diffs in PRs.
 
@@ -15,7 +15,7 @@
 Two things drove me crazy while building [Timely](https://www.timely.com)'s [Memory Engine](https://www.timely.com/memory-app) on Supabase:
 
 **1. Iterating on database logic was painfully slow.**
-Change a function → create migration → apply → hit an error → create another migration → apply → repeat. I was spending more time on migration ceremony than actual logic.
+Edit in your IDE → copy to Supabase SQL editor → run → hit an error → fix in IDE → copy again → repeat. Or: create migration → apply → error → create another migration → apply. Either way, more ceremony than actual coding.
 
 **2. Code reviews for database changes were useless.**
 Every function change showed up as a complete rewrite in git. Reviewers couldn't see what actually changed. `git blame` was worthless.
@@ -153,10 +153,57 @@ Defaults work for standard Supabase projects. Optional `srtd.config.json`:
   "templateDir": "supabase/migrations-templates",
   "migrationDir": "supabase/migrations",
   "pgConnection": "postgresql://postgres:postgres@localhost:54322/postgres",
+  "migrationPrefix": "srtd",
+  "migrationFilename": "$timestamp_$prefix$migrationName.sql",
   "wipIndicator": ".wip",
   "wrapInTransaction": true
 }
 ```
+
+
+## Custom Migration Paths
+
+The `migrationFilename` option lets you match your project's existing migration structure using template variables:
+
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `$timestamp` | Build timestamp (YYYYMMDDHHmmss) | `20240315143022` |
+| `$migrationName` | Template name (without .sql) | `create_users` |
+| `$prefix` | Migration prefix with trailing dash | `srtd-` |
+
+### Examples
+
+**Default (Supabase-style):**
+```jsonc
+{ "migrationFilename": "$timestamp_$prefix$migrationName.sql" }
+// → migrations/20240315143022_srtd-create_users.sql
+```
+
+**Directory per migration ([Prisma](https://prisma.io)-style):**
+```jsonc
+{ "migrationFilename": "$timestamp_$migrationName/migration.sql" }
+// → migrations/20240315143022_create_users/migration.sql
+```
+
+**Folder-based ([Issue #41](https://github.com/t1mmen/srtd/issues/41) request):**
+```jsonc
+{ "migrationFilename": "$migrationName/migrate.sql", "migrationPrefix": "" }
+// → migrations/create_users/migrate.sql
+```
+
+**Flyway-style (V prefix):**
+```jsonc
+{ "migrationFilename": "V$timestamp__$migrationName.sql", "migrationPrefix": "" }
+// → migrations/V20240315143022__create_users.sql
+```
+
+**Simple timestamp:**
+```jsonc
+{ "migrationFilename": "$timestamp.sql", "migrationPrefix": "" }
+// → migrations/20240315143022.sql
+```
+
+Nested directories are created automatically.
 
 
 ## State Tracking

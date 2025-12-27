@@ -7,6 +7,7 @@ import { logger } from './logger.js';
 const defaultConfig: CLIConfig = {
   wipIndicator: '.wip',
   migrationPrefix: 'srtd',
+  migrationFilename: '$timestamp_$prefix$migrationName.sql',
   filter: '**/*.sql',
   banner: 'You very likely **DO NOT** want to manually edit this generated file.',
   footer: '',

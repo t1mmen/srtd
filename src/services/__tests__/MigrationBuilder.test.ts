@@ -496,4 +496,116 @@ describe('MigrationBuilder', () => {
       expect(uniqueFilenames.size).toBe(3);
     });
   });
+
+  describe('custom migration filename templates', () => {
+    it('should use default template when migrationFilename not specified', async () => {
+      const result = await builder.generateMigration(templateMetadata, mockBuildLog);
+
+      // Default behavior: $timestamp_$prefix$migrationName.sql
+      expect(result.fileName).toBe('20240101123456_test-create_users.sql');
+      expect(result.filePath).toBe('migrations/20240101123456_test-create_users.sql');
+    });
+
+    it('should use custom template from config', async () => {
+      const customBuilder = new MigrationBuilder({
+        ...config,
+        migrationFilename: '$migrationName/migrate.sql',
+      });
+
+      const result = await customBuilder.generateMigration(templateMetadata, mockBuildLog);
+
+      expect(result.fileName).toBe('create_users/migrate.sql');
+      expect(result.filePath).toBe('migrations/create_users/migrate.sql');
+    });
+
+    it('should handle custom template without prefix variable', async () => {
+      const customBuilder = new MigrationBuilder({
+        ...config,
+        migrationFilename: '$timestamp/$migrationName.sql',
+      });
+
+      const result = await customBuilder.generateMigration(templateMetadata, mockBuildLog);
+
+      expect(result.fileName).toBe('20240101123456/create_users.sql');
+      expect(result.filePath).toBe('migrations/20240101123456/create_users.sql');
+    });
+
+    it('should create nested directories when writing migration with directory template', async () => {
+      const customBuilder = new MigrationBuilder({
+        ...config,
+        migrationFilename: '$migrationName/migrate.sql',
+      });
+
+      const migrationResult = await customBuilder.generateMigration(templateMetadata, mockBuildLog);
+      await customBuilder.writeMigration(migrationResult);
+
+      // Should create the nested directory
+      expect(fs.mkdir).toHaveBeenCalledWith('/test/project/migrations/create_users', {
+        recursive: true,
+      });
+      expect(fs.writeFile).toHaveBeenCalledWith(
+        '/test/project/migrations/create_users/migrate.sql',
+        migrationResult.content,
+        'utf-8'
+      );
+    });
+
+    it('should apply custom template to bundled migrations', async () => {
+      const customBuilder = new MigrationBuilder({
+        ...config,
+        migrationFilename: '$timestamp_$prefix$migrationName.sql',
+      });
+
+      const templates = [templateMetadata];
+      const result = await customBuilder.generateBundledMigration(templates, mockBuildLog);
+
+      expect(result.fileName).toBe('20240101123456_test-bundle.sql');
+    });
+
+    it('should apply directory template to bundled migrations', async () => {
+      const customBuilder = new MigrationBuilder({
+        ...config,
+        migrationFilename: '$migrationName/migrate.sql',
+      });
+
+      const templates = [templateMetadata];
+      const result = await customBuilder.generateBundledMigration(templates, mockBuildLog);
+
+      expect(result.fileName).toBe('bundle/migrate.sql');
+      expect(result.filePath).toBe('migrations/bundle/migrate.sql');
+    });
+
+    it('should generate correct path with getMigrationPath using custom template', () => {
+      const customBuilder = new MigrationBuilder({
+        ...config,
+        migrationFilename: '$migrationName/migrate.sql',
+      });
+
+      const migrationPath = customBuilder.getMigrationPath('create_users', '20240101123456');
+
+      expect(migrationPath).toBe('migrations/create_users/migrate.sql');
+    });
+
+    it('should reject path traversal attempts in template', async () => {
+      const maliciousBuilder = new MigrationBuilder({
+        ...config,
+        migrationFilename: '../../../etc/$migrationName.sql',
+      });
+
+      await expect(
+        maliciousBuilder.generateMigration(templateMetadata, mockBuildLog)
+      ).rejects.toThrow('would write outside migration directory');
+    });
+
+    it('should reject path traversal in bundled migrations', async () => {
+      const maliciousBuilder = new MigrationBuilder({
+        ...config,
+        migrationFilename: '../$migrationName.sql',
+      });
+
+      await expect(
+        maliciousBuilder.generateBundledMigration([templateMetadata], mockBuildLog)
+      ).rejects.toThrow('would write outside migration directory');
+    });
+  });
 });

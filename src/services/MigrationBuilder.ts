@@ -7,6 +7,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import type { BuildLog, CLIConfig } from '../types.js';
 import { getNextTimestamp } from '../utils/getNextTimestamp.js';
+import { interpolateMigrationFilename } from '../utils/interpolateMigrationFilename.js';
 
 export interface TemplateMetadata {
   name: string;
@@ -44,6 +45,7 @@ export interface MigrationBuilderConfig {
   templateDir: string;
   migrationDir: string;
   migrationPrefix?: string;
+  migrationFilename?: string;
   banner?: string;
   footer?: string;
   wrapInTransaction?: boolean;
@@ -55,6 +57,7 @@ export class MigrationBuilder {
   constructor(config: MigrationBuilderConfig) {
     this.config = {
       migrationPrefix: '',
+      migrationFilename: '$timestamp_$prefix$migrationName.sql',
       banner: '',
       footer: '',
       wrapInTransaction: true,
@@ -71,9 +74,16 @@ export class MigrationBuilder {
     options: MigrationOptions = {}
   ): Promise<MigrationResult> {
     const timestamp = await getNextTimestamp(buildLog);
-    const prefix = this.config.migrationPrefix ? `${this.config.migrationPrefix}-` : '';
-    const fileName = `${timestamp}_${prefix}${template.name}.sql`;
+    const fileName = interpolateMigrationFilename({
+      template: this.config.migrationFilename!,
+      timestamp,
+      migrationName: template.name,
+      prefix: this.config.migrationPrefix,
+    });
     const filePath = path.join(this.config.migrationDir, fileName);
+
+    // Validate path stays within migration directory (prevent path traversal)
+    this.validateMigrationPath(filePath);
 
     const content = this.formatMigrationContent(template, {
       isBundled: false,
@@ -97,9 +107,16 @@ export class MigrationBuilder {
     options: MigrationOptions = {}
   ): Promise<BundleMigrationResult> {
     const timestamp = await getNextTimestamp(buildLog);
-    const prefix = this.config.migrationPrefix ? `${this.config.migrationPrefix}-` : '';
-    const fileName = `${timestamp}_${prefix}bundle.sql`;
+    const fileName = interpolateMigrationFilename({
+      template: this.config.migrationFilename!,
+      timestamp,
+      migrationName: 'bundle',
+      prefix: this.config.migrationPrefix,
+    });
     const filePath = path.join(this.config.migrationDir, fileName);
+
+    // Validate path stays within migration directory (prevent path traversal)
+    this.validateMigrationPath(filePath);
 
     let content = '';
     const includedTemplates: string[] = [];
@@ -161,6 +178,7 @@ export class MigrationBuilder {
       templateDir: config.templateDir,
       migrationDir: config.migrationDir,
       migrationPrefix: config.migrationPrefix,
+      migrationFilename: config.migrationFilename,
       banner: config.banner,
       footer: config.footer,
       wrapInTransaction: config.wrapInTransaction,
@@ -171,8 +189,12 @@ export class MigrationBuilder {
    * Generate migration file path for a template
    */
   getMigrationPath(templateName: string, timestamp: string): string {
-    const prefix = this.config.migrationPrefix ? `${this.config.migrationPrefix}-` : '';
-    const fileName = `${timestamp}_${prefix}${templateName}.sql`;
+    const fileName = interpolateMigrationFilename({
+      template: this.config.migrationFilename!,
+      timestamp,
+      migrationName: templateName,
+      prefix: this.config.migrationPrefix,
+    });
     return path.join(this.config.migrationDir, fileName);
   }
 
@@ -206,6 +228,23 @@ export class MigrationBuilder {
       valid: errors.length === 0,
       errors,
     };
+  }
+
+  /**
+   * Validate that a migration path stays within the migration directory
+   * Prevents path traversal attacks via malicious template patterns
+   */
+  private validateMigrationPath(filePath: string): void {
+    const resolvedPath = path.resolve(this.config.baseDir, filePath);
+    const resolvedMigrationDir = path.resolve(this.config.baseDir, this.config.migrationDir);
+
+    // Use path.relative() for robust cross-platform path traversal detection
+    const relativePath = path.relative(resolvedMigrationDir, resolvedPath);
+    if (relativePath.startsWith('..') || path.isAbsolute(relativePath)) {
+      throw new Error(
+        `Invalid migration path: "${filePath}" would write outside migration directory`
+      );
+    }
   }
 
   /**

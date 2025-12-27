@@ -32,6 +32,7 @@ export interface CLIConfig {
   templateDir: string;
   migrationDir: string;
   migrationPrefix?: string;
+  migrationFilename?: string;
   buildLog: string;
   localBuildLog: string;
   pgConnection: string;
