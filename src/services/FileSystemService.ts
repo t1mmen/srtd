@@ -138,9 +138,12 @@ export class FileSystemService extends EventEmitter {
 
   /**
    * Calculate MD5 hash of content
+   * Normalizes line endings to LF for cross-platform consistency
+   * (Fix contributed by @louisandred - https://github.com/t1mmen/srtd/pull/42)
    */
   private calculateHash(content: string): string {
-    return crypto.createHash('md5').update(content).digest('hex');
+    const normalized = content.replace(/\r\n/g, '\n');
+    return crypto.createHash('md5').update(normalized).digest('hex');
   }
 
   /**
