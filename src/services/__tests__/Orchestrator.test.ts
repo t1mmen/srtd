@@ -123,4 +123,80 @@ describe('Orchestrator', () => {
       expect(() => orchestrator[Symbol.dispose]()).not.toThrow();
     });
   });
+
+  describe('typed events', () => {
+    it('should support once() for single-fire listeners', async () => {
+      await orchestrator.initialize();
+      const handler = vi.fn();
+
+      orchestrator.once('templateApplied', handler);
+
+      // Emit twice - handler should only fire once
+      orchestrator.emit('templateApplied', {
+        templatePath: '/test/template.sql',
+        relativePath: 'template.sql',
+        hash: 'abc123',
+        status: 'applied' as const,
+      });
+      orchestrator.emit('templateApplied', {
+        templatePath: '/test/template2.sql',
+        relativePath: 'template2.sql',
+        hash: 'def456',
+        status: 'applied' as const,
+      });
+
+      expect(handler).toHaveBeenCalledTimes(1);
+    });
+
+    it('should support off() to remove listeners', async () => {
+      await orchestrator.initialize();
+      const handler = vi.fn();
+
+      orchestrator.on('templateApplied', handler);
+
+      // Emit once - should fire
+      orchestrator.emit('templateApplied', {
+        templatePath: '/test/template.sql',
+        relativePath: 'template.sql',
+        hash: 'abc123',
+        status: 'applied' as const,
+      });
+      expect(handler).toHaveBeenCalledTimes(1);
+
+      // Remove listener
+      orchestrator.off('templateApplied', handler);
+
+      // Emit again - should not fire
+      orchestrator.emit('templateApplied', {
+        templatePath: '/test/template2.sql',
+        relativePath: 'template2.sql',
+        hash: 'def456',
+        status: 'applied' as const,
+      });
+      expect(handler).toHaveBeenCalledTimes(1);
+    });
+
+    it('should support on() for persistent listeners', async () => {
+      await orchestrator.initialize();
+      const handler = vi.fn();
+
+      orchestrator.on('templateApplied', handler);
+
+      // Emit twice - handler should fire both times
+      orchestrator.emit('templateApplied', {
+        templatePath: '/test/template.sql',
+        relativePath: 'template.sql',
+        hash: 'abc123',
+        status: 'applied' as const,
+      });
+      orchestrator.emit('templateApplied', {
+        templatePath: '/test/template2.sql',
+        relativePath: 'template2.sql',
+        hash: 'def456',
+        status: 'applied' as const,
+      });
+
+      expect(handler).toHaveBeenCalledTimes(2);
+    });
+  });
 });

@@ -24,6 +24,21 @@ import { getTestDatabaseService } from '../vitest.setup.js';
 const POSTGRES_URL = process.env.POSTGRES_URL || DEFAULT_PG_CONNECTION;
 
 /**
+ * Redact credentials from a PostgreSQL connection URL for safe logging.
+ * Replaces username:password with *****:***** to prevent credential exposure.
+ * Handles passwords containing @ by matching the last @ before the host.
+ */
+function redactCredentials(url: string): string {
+  // Match: protocol://credentials@host where we split on the LAST @
+  // This handles passwords containing @ characters (e.g., p@ssword)
+  const match = url.match(/^(\w+:\/\/)(.+)@([^@]+)$/);
+  if (match) {
+    return `${match[1]}*****:*****@${match[3]}`;
+  }
+  return url;
+}
+
+/**
  * Prerequisite check - fail fast if database is not available.
  * This runs before all tests in this file.
  */
@@ -38,10 +53,11 @@ beforeAll(async () => {
       client.release();
     }
   } catch (error) {
+    // SECURITY: Redact credentials from error message to prevent exposure in logs
     throw new Error(
       `Database E2E tests require a running Postgres instance.\n` +
         `Run: npm run supabase:start\n` +
-        `Connection: ${POSTGRES_URL}\n` +
+        `Connection: ${redactCredentials(POSTGRES_URL)}\n` +
         `Error: ${error instanceof Error ? error.message : String(error)}`
     );
   }
@@ -79,7 +95,7 @@ async function createTestOrchestrator(
 
 describe.sequential('Database E2E Tests', () => {
   describe.sequential('Template Apply Operations', () => {
-    let resources: TestResource;
+    let resources: TestResource | undefined;
 
     it('should apply a simple function template to database', async () => {
       resources = await createTestResource({ prefix: 'apply-simple' });
@@ -110,7 +126,7 @@ describe.sequential('Database E2E Tests', () => {
           await orchestrator.dispose();
         }
       } finally {
-        await resources.cleanup();
+        if (resources) await resources.cleanup();
       }
     });
 
@@ -158,7 +174,7 @@ describe.sequential('Database E2E Tests', () => {
           await orchestrator.dispose();
         }
       } finally {
-        await resources.cleanup();
+        if (resources) await resources.cleanup();
       }
     });
 
@@ -184,7 +200,7 @@ describe.sequential('Database E2E Tests', () => {
           await orchestrator.dispose();
         }
       } finally {
-        await resources.cleanup();
+        if (resources) await resources.cleanup();
       }
     });
 
@@ -222,13 +238,13 @@ describe.sequential('Database E2E Tests', () => {
           await orchestrator.dispose();
         }
       } finally {
-        await resources.cleanup();
+        if (resources) await resources.cleanup();
       }
     });
   });
 
   describe.sequential('Template Build Operations', () => {
-    let resources: TestResource;
+    let resources: TestResource | undefined;
 
     it('should build migration file with correct content', async () => {
       resources = await createTestResource({ prefix: 'build' });
@@ -259,7 +275,7 @@ describe.sequential('Database E2E Tests', () => {
           await orchestrator.dispose();
         }
       } finally {
-        await resources.cleanup();
+        if (resources) await resources.cleanup();
       }
     });
 
@@ -291,13 +307,13 @@ describe.sequential('Database E2E Tests', () => {
           await orchestrator.dispose();
         }
       } finally {
-        await resources.cleanup();
+        if (resources) await resources.cleanup();
       }
     });
   });
 
   describe.sequential('State Management', () => {
-    let resources: TestResource;
+    let resources: TestResource | undefined;
 
     it('should track template state correctly after apply', async () => {
       resources = await createTestResource({ prefix: 'state' });
@@ -325,7 +341,7 @@ describe.sequential('Database E2E Tests', () => {
           await orchestrator.dispose();
         }
       } finally {
-        await resources.cleanup();
+        if (resources) await resources.cleanup();
       }
     });
 
@@ -353,13 +369,13 @@ describe.sequential('Database E2E Tests', () => {
           await orchestrator.dispose();
         }
       } finally {
-        await resources.cleanup();
+        if (resources) await resources.cleanup();
       }
     });
   });
 
   describe.sequential('Complex SQL Operations', () => {
-    let resources: TestResource;
+    let resources: TestResource | undefined;
 
     it('should handle complex function with parameters and return types', async () => {
       resources = await createTestResource({ prefix: 'complex' });
@@ -390,13 +406,13 @@ describe.sequential('Database E2E Tests', () => {
           await orchestrator.dispose();
         }
       } finally {
-        await resources.cleanup();
+        if (resources) await resources.cleanup();
       }
     });
   });
 
   describe.sequential('WIP Template Handling', () => {
-    let resources: TestResource;
+    let resources: TestResource | undefined;
 
     it('should skip templates with WIP indicator', async () => {
       resources = await createTestResource({ prefix: 'wip' });
@@ -432,7 +448,7 @@ describe.sequential('Database E2E Tests', () => {
           await orchestrator.dispose();
         }
       } finally {
-        await resources.cleanup();
+        if (resources) await resources.cleanup();
       }
     });
   });
