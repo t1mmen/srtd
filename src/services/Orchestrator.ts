@@ -16,9 +16,6 @@ import type { TemplateMetadata } from './MigrationBuilder.js';
 import { MigrationBuilder } from './MigrationBuilder.js';
 import { StateService } from './StateService.js';
 
-// Re-export ValidationWarning for consumers
-export type { ValidationWarning } from '../utils/schemas.js';
-
 /**
  * Event types for Orchestrator - defines the payload for each event.
  * Used for type-safe event emission and subscription.

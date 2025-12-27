@@ -56,9 +56,6 @@ export interface StateServiceConfig {
   autoSave?: boolean;
 }
 
-// Re-export ValidationWarning for consumers
-export type { ValidationWarning } from '../utils/schemas.js';
-
 /**
  * Valid state transitions matrix
  */
