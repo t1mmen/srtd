@@ -59,7 +59,7 @@ jobs:
         run: npm run typecheck
 
 
-      - name: Test
+      - name: Test (Unit + Integration)
         id: test
         run: |
           node --no-warnings \
@@ -73,6 +73,13 @@ jobs:
           CI: true
           POSTGRES_URL: postgresql://postgres:postgres@localhost:54322/postgres
           NODE_OPTIONS: --experimental-json-modules
+
+      - name: Test (Database E2E)
+        id: test-db
+        run: npm run test:e2e:db
+        env:
+          CI: true
+          POSTGRES_URL: postgresql://postgres:postgres@localhost:54322/postgres
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
