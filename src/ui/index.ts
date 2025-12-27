@@ -1,4 +1,4 @@
-export { renderBranding, type BrandingOptions } from './branding.js';
 export { renderStatBadge, renderStatBadges } from './badge.js';
+export { type BrandingOptions, renderBranding } from './branding.js';
+export { type ResultsOptions, renderResults } from './results.js';
 export { createSpinner } from './spinner.js';
-export { renderResults, type ResultsOptions } from './results.js';

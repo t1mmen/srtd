@@ -9,10 +9,10 @@ import path from 'node:path';
 import type { CLIConfig, ProcessedTemplateResult, TemplateStatus } from '../types.js';
 import { isWipTemplate } from '../utils/isWipTemplate.js';
 import { DatabaseService } from './DatabaseService.js';
-import { FileSystemService } from './FileSystemService.js';
 import type { WatchEvent } from './FileSystemService.js';
-import { MigrationBuilder } from './MigrationBuilder.js';
+import { FileSystemService } from './FileSystemService.js';
 import type { TemplateMetadata } from './MigrationBuilder.js';
+import { MigrationBuilder } from './MigrationBuilder.js';
 import { StateService } from './StateService.js';
 
 // Event types for Orchestrator
