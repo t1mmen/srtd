@@ -1,11 +1,16 @@
 import { defineConfig } from 'vitest/config';
 
+const isCI = process.env.CI === 'true';
+
 export default defineConfig({
   test: {
     globals: true,
     fileParallelism: true, // Enable running files in parallel
     maxConcurrency: 5, // Allow up to 5 files to run concurrently
     environment: 'node',
+    // Use JUnit reporter in CI for Codecov test results upload
+    reporters: isCI ? ['default', 'junit'] : ['default'],
+    outputFile: isCI ? { junit: 'test-report.junit.xml' } : undefined,
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],

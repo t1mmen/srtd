@@ -201,8 +201,6 @@ export class TestResource {
     } catch (e) {
       console.error('Failed to clean up test directory:', e);
     }
-
-    this.isCleanedUp = true;
   }
 
   /**
