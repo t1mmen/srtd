@@ -112,6 +112,22 @@ describe('FileSystemService', () => {
       expect(result.hash).toBe('71568061b2970a4b7c5160fe75356e10');
     });
 
+    it('should normalize CRLF line endings before hashing for cross-platform consistency', async () => {
+      // Fix contributed by @louisandred (https://github.com/t1mmen/srtd/pull/42)
+      const templatePath = '/test/base/templates/test.sql';
+      const contentWithLF = 'SELECT 1;\nSELECT 2;';
+      const contentWithCRLF = 'SELECT 1;\r\nSELECT 2;';
+
+      vi.mocked(fs.readFile).mockResolvedValue(contentWithLF);
+      const resultLF = await service.readTemplate(templatePath);
+
+      vi.mocked(fs.readFile).mockResolvedValue(contentWithCRLF);
+      const resultCRLF = await service.readTemplate(templatePath);
+
+      // Both should produce the same hash regardless of line endings
+      expect(resultCRLF.hash).toBe(resultLF.hash);
+    });
+
     it('should throw error for non-existent file', async () => {
       const templatePath = '/test/base/templates/missing.sql';
       const error = new Error('ENOENT');
