@@ -22,7 +22,7 @@ export const initCommand = new Command('init')
       const spinner = createSpinner('Initializing srtd...').start();
 
       const baseDir = await findProjectRoot();
-      const config = await getConfig(baseDir);
+      const { config } = await getConfig(baseDir);
       const configPath = path.join(baseDir, CONFIG_FILE);
 
       spinner.stop();

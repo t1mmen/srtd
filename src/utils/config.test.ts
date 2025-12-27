@@ -17,7 +17,7 @@ describe('config', () => {
   });
 
   it('should return mocked test config values', async () => {
-    const config = await getConfig(TEST_ROOT);
+    const { config, warnings } = await getConfig(TEST_ROOT);
     expect(config).toEqual({
       wipIndicator: '.wip',
       filter: '**/*.sql',
@@ -31,11 +31,12 @@ describe('config', () => {
       footer: 'Test footer',
       wrapInTransaction: true,
     });
+    expect(warnings).toEqual([]);
   });
 
   it('should handle nested paths correctly', async () => {
     const nestedPath = path.join(TEST_ROOT, 'nested', 'config');
-    const config = await getConfig(nestedPath);
+    const { config } = await getConfig(nestedPath);
     expect(config.templateDir).toBe('test-templates');
   });
 });
@@ -106,7 +107,7 @@ describe('config file operations', () => {
 
     // Fresh import after unmocking
     const { getConfig } = await import('./config.js');
-    const config = await getConfig(tempDir);
+    const { config } = await getConfig(tempDir);
 
     expect(config.templateDir).toBe('my-templates');
     expect(config.migrationDir).toBe('my-migrations');
@@ -118,7 +119,7 @@ describe('config file operations', () => {
   it('should return default config when file does not exist', async () => {
     // Fresh import after unmocking
     const { getConfig } = await import('./config.js');
-    const config = await getConfig(tempDir);
+    const { config } = await getConfig(tempDir);
 
     expect(config.templateDir).toBe('supabase/migrations-templates');
     expect(config.migrationDir).toBe('supabase/migrations');

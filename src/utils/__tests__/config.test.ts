@@ -14,9 +14,7 @@ vi.unmock('../logger.js');
 vi.unmock('../config.js');
 
 // Must dynamically import after unmocking to get the real implementations
-const { getConfig, clearConfigCache, clearConfigWarnings, getConfigWarnings } = await import(
-  '../config.js'
-);
+const { getConfig, clearConfigCache } = await import('../config.js');
 
 describe('getConfig validation', () => {
   const tempDirs: string[] = [];
@@ -25,7 +23,6 @@ describe('getConfig validation', () => {
   beforeEach(async () => {
     // Clear all state
     clearConfigCache();
-    clearConfigWarnings();
     // Spy on console.log to capture logger output (noop implementation)
     consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
   });
@@ -54,7 +51,7 @@ describe('getConfig validation', () => {
       const configPath = path.join(testDir, 'srtd.config.json');
       await fs.writeFile(configPath, '{ invalid json }');
 
-      const config = await getConfig(testDir);
+      const { config, warnings } = await getConfig(testDir);
 
       // Should return default config
       expect(config.filter).toBe('**/*.sql');
@@ -66,8 +63,8 @@ describe('getConfig validation', () => {
       expect(logOutput).toContain('Invalid JSON');
 
       // Should record the warning
-      const warnings = getConfigWarnings();
       expect(warnings).toHaveLength(1);
+      expect(warnings[0].source).toBe('config');
       expect(warnings[0].type).toBe('parse');
       expect(warnings[0].message).toContain('Invalid JSON');
     });
@@ -79,7 +76,7 @@ describe('getConfig validation', () => {
       const configPath = path.join(testDir, 'srtd.config.json');
       await fs.writeFile(configPath, JSON.stringify({ filter: '*.sql' }));
 
-      const config = await getConfig(testDir);
+      const { config, warnings } = await getConfig(testDir);
 
       // Should merge with defaults - partial config overrides defaults
       expect(config.filter).toBe('*.sql');
@@ -90,7 +87,6 @@ describe('getConfig validation', () => {
       expect(consoleLogSpy).not.toHaveBeenCalled();
 
       // Should NOT record any warnings
-      const warnings = getConfigWarnings();
       expect(warnings).toHaveLength(0);
     });
   });
@@ -102,7 +98,7 @@ describe('getConfig validation', () => {
       // Invalid: filter should be string, not number
       await fs.writeFile(configPath, JSON.stringify({ filter: 12345 }));
 
-      const config = await getConfig(testDir);
+      const { config, warnings } = await getConfig(testDir);
 
       // Should return default config (not the invalid one)
       expect(config.filter).toBe('**/*.sql');
@@ -114,8 +110,8 @@ describe('getConfig validation', () => {
       expect(logOutput).toContain('filter');
 
       // Should record the validation warning
-      const warnings = getConfigWarnings();
       expect(warnings).toHaveLength(1);
+      expect(warnings[0].source).toBe('config');
       expect(warnings[0].type).toBe('validation');
       expect(warnings[0].message).toContain('filter');
     });
@@ -126,14 +122,14 @@ describe('getConfig validation', () => {
       // Invalid: wrapInTransaction should be boolean, not string
       await fs.writeFile(configPath, JSON.stringify({ wrapInTransaction: 'yes' }));
 
-      const config = await getConfig(testDir);
+      const { config, warnings } = await getConfig(testDir);
 
       // Should return default config
       expect(config.wrapInTransaction).toBe(true);
 
       // Should record the validation warning
-      const warnings = getConfigWarnings();
       expect(warnings).toHaveLength(1);
+      expect(warnings[0].source).toBe('config');
       expect(warnings[0].type).toBe('validation');
       expect(warnings[0].message).toContain('wrapInTransaction');
     });
@@ -152,7 +148,7 @@ describe('getConfig validation', () => {
         })
       );
 
-      const config = await getConfig(testDir);
+      const { config, warnings } = await getConfig(testDir);
 
       // Should return merged config with custom values
       expect(config.filter).toBe('custom/*.sql');
@@ -167,7 +163,6 @@ describe('getConfig validation', () => {
       expect(consoleLogSpy).not.toHaveBeenCalled();
 
       // Should NOT record any warnings
-      const warnings = getConfigWarnings();
       expect(warnings).toHaveLength(0);
     });
   });
@@ -176,7 +171,7 @@ describe('getConfig validation', () => {
     it('returns default config without warning when config file does not exist', async () => {
       const testDir = await createTestDir();
 
-      const config = await getConfig(testDir);
+      const { config, warnings } = await getConfig(testDir);
 
       // Should return default config
       expect(config.filter).toBe('**/*.sql');
@@ -185,7 +180,6 @@ describe('getConfig validation', () => {
       expect(consoleLogSpy).not.toHaveBeenCalled();
 
       // Should NOT record any warnings
-      const warnings = getConfigWarnings();
       expect(warnings).toHaveLength(0);
     });
   });

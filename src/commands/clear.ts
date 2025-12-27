@@ -19,7 +19,7 @@ async function handleClearAction(value: string, projectRoot: string): Promise<nu
   const spinner = createSpinner('Processing...').start();
 
   try {
-    const config = await getConfig(projectRoot);
+    const { config } = await getConfig(projectRoot);
     await using orchestrator = await Orchestrator.create(projectRoot, config, { silent: true });
 
     switch (value) {

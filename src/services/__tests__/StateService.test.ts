@@ -120,8 +120,9 @@ describe('StateService', () => {
       // Now emits validation:warning instead of error for corrupted JSON
       expect(warningHandler).toHaveBeenCalledWith(
         expect.objectContaining({
-          file: 'buildLog',
-          error: expect.stringContaining('Invalid JSON'),
+          source: 'buildLog',
+          type: 'parse',
+          message: expect.stringContaining('Invalid JSON'),
         })
       );
 
@@ -144,9 +145,10 @@ describe('StateService', () => {
 
       expect(warningHandler).toHaveBeenCalledWith(
         expect.objectContaining({
-          file: 'buildLog',
+          source: 'buildLog',
+          type: 'parse',
           path: config.buildLogPath,
-          error: expect.stringContaining('Invalid JSON'),
+          message: expect.stringContaining('Invalid JSON'),
         })
       );
 
@@ -174,9 +176,10 @@ describe('StateService', () => {
 
       expect(warningHandler).toHaveBeenCalledWith(
         expect.objectContaining({
-          file: 'buildLog',
+          source: 'buildLog',
+          type: 'validation',
           path: config.buildLogPath,
-          error: expect.stringContaining('version'),
+          message: expect.stringContaining('version'),
         })
       );
 
@@ -216,9 +219,10 @@ describe('StateService', () => {
       expect(warningHandler).toHaveBeenCalledTimes(1);
       expect(warningHandler).toHaveBeenCalledWith(
         expect.objectContaining({
-          file: 'localBuildLog',
+          source: 'localBuildLog',
+          type: 'parse',
           path: config.localBuildLogPath,
-          error: expect.stringContaining('Invalid JSON'),
+          message: expect.stringContaining('Invalid JSON'),
         })
       );
 
@@ -243,8 +247,8 @@ describe('StateService', () => {
       expect(warnings).toHaveLength(2);
       expect(warnings).toEqual(
         expect.arrayContaining([
-          expect.objectContaining({ file: 'buildLog' }),
-          expect.objectContaining({ file: 'localBuildLog' }),
+          expect.objectContaining({ source: 'buildLog', type: 'parse' }),
+          expect.objectContaining({ source: 'localBuildLog', type: 'parse' }),
         ])
       );
 

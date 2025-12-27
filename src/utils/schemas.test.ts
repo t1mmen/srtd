@@ -1,7 +1,62 @@
 import { describe, expect, it } from 'vitest';
-import { validateBuildLog, validateConfig } from './schemas.js';
+import { z } from 'zod';
+import { formatZodErrors, validateBuildLog } from './schemas.js';
 
 describe('schemas', () => {
+  describe('formatZodErrors', () => {
+    it('formats single error with path', () => {
+      const schema = z.object({ name: z.string() });
+      const result = schema.safeParse({ name: 123 });
+
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        const formatted = formatZodErrors(result.error);
+        // Zod error message includes path prefix and type info
+        expect(formatted).toMatch(/^name: /);
+        expect(formatted).toContain('string');
+      }
+    });
+
+    it('formats multiple errors with paths', () => {
+      const schema = z.object({ name: z.string(), age: z.number() });
+      const result = schema.safeParse({ name: 123, age: 'not a number' });
+
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        const formatted = formatZodErrors(result.error);
+        expect(formatted).toContain('name:');
+        expect(formatted).toContain('age:');
+        expect(formatted).toContain(';');
+      }
+    });
+
+    it('formats error without path (root level)', () => {
+      const schema = z.string();
+      const result = schema.safeParse(123);
+
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        const formatted = formatZodErrors(result.error);
+        // Root-level errors have no path prefix
+        expect(formatted).not.toMatch(/^\w+: /);
+        expect(formatted).toContain('string');
+      }
+    });
+
+    it('formats nested path errors', () => {
+      const schema = z.object({ user: z.object({ email: z.string() }) });
+      const result = schema.safeParse({ user: { email: 42 } });
+
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        const formatted = formatZodErrors(result.error);
+        // Nested paths are dot-separated
+        expect(formatted).toMatch(/^user\.email: /);
+        expect(formatted).toContain('string');
+      }
+    });
+  });
+
   describe('validateBuildLog', () => {
     it('parses valid BuildLog correctly', () => {
       const validBuildLog = JSON.stringify({
@@ -152,102 +207,6 @@ describe('schemas', () => {
 
       expect(result.success).toBe(false);
       expect(result.error).toContain('version');
-    });
-  });
-
-  describe('validateConfig', () => {
-    it('parses valid CLIConfig correctly', () => {
-      const validConfig = JSON.stringify({
-        filter: '**/*.sql',
-        wipIndicator: '.wip',
-        wrapInTransaction: true,
-        banner: '-- Banner',
-        footer: '-- Footer',
-        templateDir: 'supabase/migrations-templates',
-        migrationDir: 'supabase/migrations',
-        buildLog: '.buildlog.json',
-        localBuildLog: '.buildlog.local.json',
-        pgConnection: 'postgresql://localhost:5432/db',
-      });
-
-      const result = validateConfig(validConfig);
-
-      expect(result.success).toBe(true);
-      expect(result.data).toEqual({
-        filter: '**/*.sql',
-        wipIndicator: '.wip',
-        wrapInTransaction: true,
-        banner: '-- Banner',
-        footer: '-- Footer',
-        templateDir: 'supabase/migrations-templates',
-        migrationDir: 'supabase/migrations',
-        buildLog: '.buildlog.json',
-        localBuildLog: '.buildlog.local.json',
-        pgConnection: 'postgresql://localhost:5432/db',
-      });
-    });
-
-    it('parses CLIConfig with optional migrationPrefix', () => {
-      const validConfig = JSON.stringify({
-        filter: '**/*.sql',
-        wipIndicator: '.wip',
-        wrapInTransaction: true,
-        banner: '',
-        footer: '',
-        templateDir: 'templates',
-        migrationDir: 'migrations',
-        migrationPrefix: 'custom_',
-        buildLog: '.buildlog.json',
-        localBuildLog: '.buildlog.local.json',
-        pgConnection: 'postgresql://localhost/db',
-      });
-
-      const result = validateConfig(validConfig);
-
-      expect(result.success).toBe(true);
-      expect(result.data?.migrationPrefix).toBe('custom_');
-    });
-
-    it('fails when required field is missing', () => {
-      const invalidConfig = JSON.stringify({
-        filter: '**/*.sql',
-        wipIndicator: '.wip',
-        // missing wrapInTransaction and other required fields
-      });
-
-      const result = validateConfig(invalidConfig);
-
-      expect(result.success).toBe(false);
-      expect(result.error).toBeDefined();
-    });
-
-    it('fails gracefully on malformed JSON', () => {
-      const truncatedJson = '{"filter": "**/*.sql"';
-
-      const result = validateConfig(truncatedJson);
-
-      expect(result.success).toBe(false);
-      expect(result.error).toContain('JSON');
-    });
-
-    it('fails when wrapInTransaction is wrong type', () => {
-      const invalidConfig = JSON.stringify({
-        filter: '**/*.sql',
-        wipIndicator: '.wip',
-        wrapInTransaction: 'yes', // should be boolean
-        banner: '',
-        footer: '',
-        templateDir: 'templates',
-        migrationDir: 'migrations',
-        buildLog: '.buildlog.json',
-        localBuildLog: '.buildlog.local.json',
-        pgConnection: 'postgresql://localhost/db',
-      });
-
-      const result = validateConfig(invalidConfig);
-
-      expect(result.success).toBe(false);
-      expect(result.error).toContain('wrapInTransaction');
     });
   });
 });

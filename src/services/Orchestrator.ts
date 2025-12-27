@@ -8,15 +8,16 @@ import EventEmitter from 'node:events';
 import path from 'node:path';
 import type { CLIConfig, ProcessedTemplateResult, TemplateStatus } from '../types.js';
 import { isWipTemplate } from '../utils/isWipTemplate.js';
+import type { ValidationWarning } from '../utils/schemas.js';
 import { DatabaseService } from './DatabaseService.js';
 import type { WatchEvent } from './FileSystemService.js';
 import { FileSystemService } from './FileSystemService.js';
 import type { TemplateMetadata } from './MigrationBuilder.js';
 import { MigrationBuilder } from './MigrationBuilder.js';
-import { StateService, type ValidationWarning } from './StateService.js';
+import { StateService } from './StateService.js';
 
 // Re-export ValidationWarning for consumers
-export type { ValidationWarning } from './StateService.js';
+export type { ValidationWarning } from '../utils/schemas.js';
 
 // Event types for Orchestrator
 export interface OrchestratorEvent {
@@ -60,6 +61,7 @@ export class Orchestrator extends EventEmitter implements Disposable {
   private migrationBuilder!: MigrationBuilder;
 
   private config: OrchestratorConfig;
+  private configWarnings: ValidationWarning[] = [];
 
   private processQueue: Set<string> = new Set();
   private pendingRecheck: Set<string> = new Set(); // Templates that changed during processing
@@ -67,9 +69,10 @@ export class Orchestrator extends EventEmitter implements Disposable {
   private processing = false;
   private watching = false;
 
-  constructor(config: OrchestratorConfig) {
+  constructor(config: OrchestratorConfig, configWarnings: ValidationWarning[] = []) {
     super();
     this.config = config;
+    this.configWarnings = configWarnings;
   }
 
   /**
@@ -723,11 +726,11 @@ export class Orchestrator extends EventEmitter implements Disposable {
   }
 
   /**
-   * Get validation warnings from StateService
-   * Returns any warnings about corrupted or invalid build log files
+   * Get all validation warnings (config + build logs)
+   * Returns combined warnings from config loading and build log loading
    */
   getValidationWarnings(): ValidationWarning[] {
-    return this.stateService.getValidationWarnings();
+    return [...this.configWarnings, ...this.stateService.getValidationWarnings()];
   }
 
   /**
@@ -791,13 +794,16 @@ export class Orchestrator extends EventEmitter implements Disposable {
   static async create(
     baseDir: string,
     cliConfig: CLIConfig,
-    options: { silent?: boolean } = {}
+    options: { silent?: boolean; configWarnings?: ValidationWarning[] } = {}
   ): Promise<Orchestrator> {
-    const orchestrator = new Orchestrator({
-      baseDir,
-      cliConfig,
-      silent: options.silent,
-    });
+    const orchestrator = new Orchestrator(
+      {
+        baseDir,
+        cliConfig,
+        silent: options.silent,
+      },
+      options.configWarnings
+    );
 
     await orchestrator.initialize();
     return orchestrator;

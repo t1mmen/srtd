@@ -1,41 +1,14 @@
 // types.ts
-export interface TemplateBuildState {
-  lastBuildHash?: string;
-  lastBuildDate?: string;
-  lastBuildError?: string;
-  lastMigrationFile?: string;
-  lastAppliedHash?: string;
-  lastAppliedDate?: string;
-  lastAppliedError?: string;
-}
+// Import types derived from Zod schemas for local use
+import type { TemplateBuildState } from './utils/schemas.js';
 
-export interface BuildLog {
-  version: string;
-  lastTimestamp: string;
-  templates: {
-    [templatePath: string]: TemplateBuildState;
-  };
-}
+// Re-export types derived from Zod schemas (single source of truth)
+export type { BuildLog, CLIConfig, TemplateBuildState } from './utils/schemas.js';
 
 export interface MigrationError {
   file: string;
   error: string;
   templateName: string;
-}
-
-export interface CLIConfig {
-  filter: string;
-  wipIndicator: string;
-  wrapInTransaction: boolean;
-  banner: string;
-  footer: string;
-  templateDir: string;
-  migrationDir: string;
-  migrationPrefix?: string;
-  migrationFilename?: string;
-  buildLog: string;
-  localBuildLog: string;
-  pgConnection: string;
 }
 
 export interface ProcessedTemplateResult {

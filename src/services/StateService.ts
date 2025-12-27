@@ -7,7 +7,7 @@ import { EventEmitter } from 'node:events';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import type { BuildLog, TemplateBuildState } from '../types.js';
-import { validateBuildLog } from '../utils/schemas.js';
+import { type ValidationWarning, validateBuildLog } from '../utils/schemas.js';
 
 /**
  * Template states in the state machine
@@ -56,14 +56,8 @@ export interface StateServiceConfig {
   autoSave?: boolean;
 }
 
-/**
- * Validation warning for corrupted or invalid build log files
- */
-export interface ValidationWarning {
-  file: 'buildLog' | 'localBuildLog' | 'config';
-  path: string;
-  error: string;
-}
+// Re-export ValidationWarning for consumers
+export type { ValidationWarning } from '../utils/schemas.js';
 
 /**
  * Valid state transitions matrix
@@ -168,10 +162,12 @@ export class StateService extends EventEmitter {
       if (result.success && result.data) {
         this.buildLog = result.data;
       } else {
+        const errorMsg = result.error || 'Unknown validation error';
         const warning: ValidationWarning = {
-          file: 'buildLog',
+          source: 'buildLog',
+          type: errorMsg.includes('Invalid JSON') ? 'parse' : 'validation',
+          message: errorMsg,
           path: buildLogPath,
-          error: result.error || 'Unknown validation error',
         };
         this.validationWarnings.push(warning);
         this.emit('validation:warning', warning);
@@ -190,10 +186,12 @@ export class StateService extends EventEmitter {
       if (result.success && result.data) {
         this.localBuildLog = result.data;
       } else {
+        const errorMsg = result.error || 'Unknown validation error';
         const warning: ValidationWarning = {
-          file: 'localBuildLog',
+          source: 'localBuildLog',
+          type: errorMsg.includes('Invalid JSON') ? 'parse' : 'validation',
+          message: errorMsg,
           path: localBuildLogPath,
-          error: result.error || 'Unknown validation error',
         };
         this.validationWarnings.push(warning);
         this.emit('validation:warning', warning);

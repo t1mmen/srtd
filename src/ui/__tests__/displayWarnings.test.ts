@@ -1,7 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { mockConsoleLog } from '../../__tests__/helpers/testUtils.js';
-import type { ValidationWarning } from '../../services/StateService.js';
-import type { ValidationWarning as ConfigValidationWarning } from '../../utils/config.js';
+import type { ValidationWarning } from '../../utils/schemas.js';
 import { displayValidationWarnings } from '../displayWarnings.js';
 
 describe('displayValidationWarnings', () => {
@@ -16,21 +15,22 @@ describe('displayValidationWarnings', () => {
   });
 
   it('displays nothing when there are no warnings', () => {
-    displayValidationWarnings([], []);
+    displayValidationWarnings([]);
 
     expect(consoleLogSpy).not.toHaveBeenCalled();
   });
 
-  it('displays state service validation warnings', () => {
-    const stateWarnings: ValidationWarning[] = [
+  it('displays buildLog validation warnings', () => {
+    const warnings: ValidationWarning[] = [
       {
-        file: 'buildLog',
+        source: 'buildLog',
+        type: 'parse',
+        message: 'Invalid JSON format',
         path: '/path/to/buildlog.json',
-        error: 'Invalid JSON format',
       },
     ];
 
-    displayValidationWarnings(stateWarnings, []);
+    displayValidationWarnings(warnings);
 
     expect(consoleLogSpy).toHaveBeenCalled();
     const output = consoleLogSpy.mock.calls.flat().join('\n');
@@ -40,39 +40,41 @@ describe('displayValidationWarnings', () => {
   });
 
   it('displays config validation warnings', () => {
-    const configWarnings: ConfigValidationWarning[] = [
+    const warnings: ValidationWarning[] = [
       {
+        source: 'config',
         type: 'parse',
         message: 'Invalid JSON in config',
         path: '/path/to/config.json',
       },
     ];
 
-    displayValidationWarnings([], configWarnings);
+    displayValidationWarnings(warnings);
 
     expect(consoleLogSpy).toHaveBeenCalled();
     const output = consoleLogSpy.mock.calls.flat().join('\n');
     expect(output).toContain('Validation Warnings');
+    expect(output).toContain('config (parse)');
     expect(output).toContain('Invalid JSON in config');
   });
 
-  it('displays both state and config warnings together', () => {
-    const stateWarnings: ValidationWarning[] = [
+  it('displays both buildLog and config warnings together', () => {
+    const warnings: ValidationWarning[] = [
       {
-        file: 'localBuildLog',
+        source: 'localBuildLog',
+        type: 'validation',
+        message: 'Schema validation failed',
         path: '/path/to/local.json',
-        error: 'Schema validation failed',
       },
-    ];
-    const configWarnings: ConfigValidationWarning[] = [
       {
+        source: 'config',
         type: 'validation',
         message: 'Unknown field in config',
         path: '/path/to/config.json',
       },
     ];
 
-    displayValidationWarnings(stateWarnings, configWarnings);
+    displayValidationWarnings(warnings);
 
     expect(consoleLogSpy).toHaveBeenCalled();
     const output = consoleLogSpy.mock.calls.flat().join('\n');
@@ -82,15 +84,16 @@ describe('displayValidationWarnings', () => {
   });
 
   it('displays path information when available', () => {
-    const stateWarnings: ValidationWarning[] = [
+    const warnings: ValidationWarning[] = [
       {
-        file: 'buildLog',
+        source: 'buildLog',
+        type: 'parse',
+        message: 'Corrupted file',
         path: '/project/supabase/.buildlog.json',
-        error: 'Corrupted file',
       },
     ];
 
-    displayValidationWarnings(stateWarnings, []);
+    displayValidationWarnings(warnings);
 
     const output = consoleLogSpy.mock.calls.flat().join('\n');
     expect(output).toContain('/project/supabase/.buildlog.json');

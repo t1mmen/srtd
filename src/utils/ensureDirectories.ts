@@ -7,7 +7,7 @@ import { fileExists } from './fileExists.js';
 export async function ensureDirectories(
   baseDir: string
 ): Promise<{ templateDir: boolean; migrationDir: boolean }> {
-  const config = await getConfig(baseDir);
+  const { config } = await getConfig(baseDir);
   const templatePath = path.join(baseDir, config.templateDir);
   const migrationPath = path.join(baseDir, config.migrationDir);
 
