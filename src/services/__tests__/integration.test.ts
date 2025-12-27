@@ -173,9 +173,9 @@ describe('Service Integration Tests', () => {
       // Start watching
       await fileSystemService.watchTemplates();
 
-      // Setup event listener
+      // Setup event listener - use correct event name emitted by FileSystemService
       const changePromise = new Promise<void>(resolve => {
-        fileSystemService.on('templateChanged', () => {
+        fileSystemService.on('template:changed', () => {
           resolve();
         });
       });

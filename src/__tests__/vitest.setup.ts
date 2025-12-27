@@ -2,6 +2,7 @@ import fs from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, beforeAll, vi } from 'vitest';
+import { DEFAULT_PG_CONNECTION } from '../constants.js';
 
 export const TEST_FN_PREFIX = 'srtd_scoped_test_func_';
 export const TEST_ROOT_BASE = join(tmpdir(), 'srtd-test');
@@ -21,8 +22,7 @@ export async function getTestDatabaseService(): Promise<
 > {
   if (!testDatabaseService) {
     const { DatabaseService } = await import('../services/DatabaseService.js');
-    const connectionString =
-      process.env.POSTGRES_URL || 'postgresql://postgres:postgres@localhost:54322/postgres';
+    const connectionString = process.env.POSTGRES_URL || DEFAULT_PG_CONNECTION;
     testDatabaseService = new DatabaseService({ connectionString });
   }
   return testDatabaseService;
@@ -84,8 +84,7 @@ vi.mock('../utils/config', async importOriginal => {
         migrationDir: 'test-migrations',
         buildLog: '.buildlog-test.json',
         localBuildLog: '.buildlog-test.local.json',
-        pgConnection:
-          process.env.POSTGRES_URL || 'postgresql://postgres:postgres@localhost:54322/postgres',
+        pgConnection: process.env.POSTGRES_URL || DEFAULT_PG_CONNECTION,
         banner: 'Test banner',
         footer: 'Test footer',
         wrapInTransaction: true,

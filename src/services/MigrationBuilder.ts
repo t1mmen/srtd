@@ -30,6 +30,8 @@ export interface MigrationResult {
   filePath: string;
   content: string;
   timestamp: string;
+  /** The new lastTimestamp to store in the build log */
+  newLastTimestamp: string;
 }
 
 export interface BundleMigrationResult {
@@ -37,6 +39,8 @@ export interface BundleMigrationResult {
   filePath: string;
   content: string;
   timestamp: string;
+  /** The new lastTimestamp to store in the build log */
+  newLastTimestamp: string;
   includedTemplates: string[];
 }
 
@@ -66,14 +70,15 @@ export class MigrationBuilder {
   }
 
   /**
-   * Generate a migration file from a single template
+   * Generate a migration file from a single template.
+   * Note: Caller is responsible for updating the build log with newLastTimestamp.
    */
-  async generateMigration(
+  generateMigration(
     template: TemplateMetadata,
     buildLog: BuildLog,
     options: MigrationOptions = {}
-  ): Promise<MigrationResult> {
-    const timestamp = await getNextTimestamp(buildLog);
+  ): MigrationResult {
+    const { timestamp, newLastTimestamp } = getNextTimestamp(buildLog.lastTimestamp);
     const fileName = interpolateMigrationFilename({
       template: this.config.migrationFilename!,
       timestamp,
@@ -95,18 +100,20 @@ export class MigrationBuilder {
       filePath,
       content,
       timestamp,
+      newLastTimestamp,
     };
   }
 
   /**
-   * Generate a bundled migration file from multiple templates
+   * Generate a bundled migration file from multiple templates.
+   * Note: Caller is responsible for updating the build log with newLastTimestamp.
    */
-  async generateBundledMigration(
+  generateBundledMigration(
     templates: TemplateMetadata[],
     buildLog: BuildLog,
     options: MigrationOptions = {}
-  ): Promise<BundleMigrationResult> {
-    const timestamp = await getNextTimestamp(buildLog);
+  ): BundleMigrationResult {
+    const { timestamp, newLastTimestamp } = getNextTimestamp(buildLog.lastTimestamp);
     const fileName = interpolateMigrationFilename({
       template: this.config.migrationFilename!,
       timestamp,
@@ -135,6 +142,7 @@ export class MigrationBuilder {
       filePath,
       content: content.trim(),
       timestamp,
+      newLastTimestamp,
       includedTemplates,
     };
   }
@@ -280,27 +288,29 @@ export class MigrationBuilder {
   }
 
   /**
-   * Generate and write migration file in one operation
+   * Generate and write migration file in one operation.
+   * Note: Caller is responsible for updating the build log with result.newLastTimestamp.
    */
   async generateAndWriteMigration(
     template: TemplateMetadata,
     buildLog: BuildLog,
     options: MigrationOptions = {}
   ): Promise<{ result: MigrationResult; filePath: string }> {
-    const result = await this.generateMigration(template, buildLog, options);
+    const result = this.generateMigration(template, buildLog, options);
     const filePath = await this.writeMigration(result);
     return { result, filePath };
   }
 
   /**
-   * Generate and write bundled migration file in one operation
+   * Generate and write bundled migration file in one operation.
+   * Note: Caller is responsible for updating the build log with result.newLastTimestamp.
    */
   async generateAndWriteBundledMigration(
     templates: TemplateMetadata[],
     buildLog: BuildLog,
     options: MigrationOptions = {}
   ): Promise<{ result: BundleMigrationResult; filePath: string }> {
-    const result = await this.generateBundledMigration(templates, buildLog, options);
+    const result = this.generateBundledMigration(templates, buildLog, options);
     const filePath = await this.writeBundledMigration(result);
     return { result, filePath };
   }

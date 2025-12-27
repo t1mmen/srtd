@@ -20,5 +20,7 @@ export default defineConfig({
     },
     setupFiles: ['./src/__tests__/vitest.setup.ts'],
     testTimeout: 10000,
+    // Exclude DB E2E tests from default run - they require real Postgres
+    exclude: ['**/node_modules/**', 'src/__tests__/e2e/database.test.ts'],
   },
 });

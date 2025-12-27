@@ -1,5 +1,8 @@
 /**
  * Tests for CLI functionality for common integration scenarios
+ *
+ * IMPORTANT: These tests must FAIL when CLI execution fails.
+ * No silent skipping - CI must catch broken CLI builds.
  */
 
 import { execSync } from 'node:child_process';
@@ -7,23 +10,27 @@ import { describe, expect, it } from 'vitest';
 
 describe('CLI Version Test', () => {
   it('should display version information', () => {
+    let output: string;
+
     try {
-      const output = execSync('npm run start -- --version', {
+      output = execSync('npm run start -- --version', {
         encoding: 'utf-8',
         stdio: ['ignore', 'pipe', 'pipe'],
       });
-
-      // Should match semver pattern
-      expect(output).toMatch(/\d+\.\d+\.\d+/);
     } catch (error) {
-      if (error && typeof error === 'object' && 'stdout' in error) {
-        const output = String(error.stdout);
-        // Even if command fails, check for version in output
-        expect(output).toMatch(/\d+\.\d+\.\d+/);
+      // Commander exits with code 0 for --version but execSync may still throw
+      // if there's output on stderr. Extract stdout if available.
+      if (error && typeof error === 'object' && 'stdout' in error && error.stdout) {
+        output = String(error.stdout);
       } else {
-        // Skip test if command execution fails completely
-        console.warn('Skipping version test due to command execution failure');
+        // CLI execution failed completely - this is a test failure
+        throw new Error(
+          `CLI execution failed: ${error instanceof Error ? error.message : String(error)}`
+        );
       }
     }
+
+    // Should match semver pattern
+    expect(output).toMatch(/\d+\.\d+\.\d+/);
   });
 });

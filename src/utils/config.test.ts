@@ -3,6 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { TEST_ROOT } from '../__tests__/vitest.setup.js';
+import { DEFAULT_PG_CONNECTION } from '../constants.js';
 import { getConfig } from './config.js';
 
 describe('config', () => {
@@ -25,8 +26,7 @@ describe('config', () => {
       migrationDir: 'test-migrations',
       buildLog: '.buildlog-test.json',
       localBuildLog: '.buildlog-test.local.json',
-      pgConnection:
-        process.env.POSTGRES_URL || 'postgresql://postgres:postgres@localhost:54322/postgres',
+      pgConnection: process.env.POSTGRES_URL || DEFAULT_PG_CONNECTION,
       banner: 'Test banner',
       footer: 'Test footer',
       wrapInTransaction: true,
