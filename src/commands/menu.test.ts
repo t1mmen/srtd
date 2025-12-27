@@ -77,7 +77,9 @@ describe('menu', () => {
 
     await showMenu();
 
-    expect(initCommand.parseAsync).toHaveBeenCalledWith(['node', 'srtd', 'init']);
+    // Standalone commands should not include command name in parseAsync args
+    // because the Command already knows its name
+    expect(initCommand.parseAsync).toHaveBeenCalledWith(['node', 'srtd']);
   });
 
   it('should execute build command when selected', async () => {
@@ -89,7 +91,7 @@ describe('menu', () => {
 
     await showMenu();
 
-    expect(buildCommand.parseAsync).toHaveBeenCalledWith(['node', 'srtd', 'build']);
+    expect(buildCommand.parseAsync).toHaveBeenCalledWith(['node', 'srtd']);
   });
 
   it('should execute apply command when selected', async () => {
@@ -101,7 +103,7 @@ describe('menu', () => {
 
     await showMenu();
 
-    expect(applyCommand.parseAsync).toHaveBeenCalledWith(['node', 'srtd', 'apply']);
+    expect(applyCommand.parseAsync).toHaveBeenCalledWith(['node', 'srtd']);
   });
 
   it('should execute watch command when selected', async () => {
@@ -113,7 +115,7 @@ describe('menu', () => {
 
     await showMenu();
 
-    expect(watchCommand.parseAsync).toHaveBeenCalledWith(['node', 'srtd', 'watch']);
+    expect(watchCommand.parseAsync).toHaveBeenCalledWith(['node', 'srtd']);
   });
 
   it('should execute register command when selected', async () => {
@@ -125,7 +127,7 @@ describe('menu', () => {
 
     await showMenu();
 
-    expect(registerCommand.parseAsync).toHaveBeenCalledWith(['node', 'srtd', 'register']);
+    expect(registerCommand.parseAsync).toHaveBeenCalledWith(['node', 'srtd']);
   });
 
   it('should execute promote command when selected', async () => {
@@ -137,7 +139,7 @@ describe('menu', () => {
 
     await showMenu();
 
-    expect(promoteCommand.parseAsync).toHaveBeenCalledWith(['node', 'srtd', 'promote']);
+    expect(promoteCommand.parseAsync).toHaveBeenCalledWith(['node', 'srtd']);
   });
 
   it('should execute clear command when selected', async () => {
@@ -149,7 +151,7 @@ describe('menu', () => {
 
     await showMenu();
 
-    expect(clearCommand.parseAsync).toHaveBeenCalledWith(['node', 'srtd', 'clear']);
+    expect(clearCommand.parseAsync).toHaveBeenCalledWith(['node', 'srtd']);
   });
 
   it('should exit gracefully on Ctrl+C', async () => {

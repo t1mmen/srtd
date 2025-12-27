@@ -28,40 +28,43 @@ export async function showMenu(): Promise<void> {
     });
 
     // Execute the selected command by dynamically importing it
+    // Note: Don't include command name in args - standalone Command already knows its name
+    const baseArgs = ['node', 'srtd'];
+
     switch (selectedCommand) {
       case 'init': {
         const { initCommand } = await import('./init.js');
-        await initCommand.parseAsync(['node', 'srtd', 'init']);
+        await initCommand.parseAsync(baseArgs);
         break;
       }
       case 'build': {
         const { buildCommand } = await import('./build.js');
-        await buildCommand.parseAsync(['node', 'srtd', 'build']);
+        await buildCommand.parseAsync(baseArgs);
         break;
       }
       case 'apply': {
         const { applyCommand } = await import('./apply.js');
-        await applyCommand.parseAsync(['node', 'srtd', 'apply']);
+        await applyCommand.parseAsync(baseArgs);
         break;
       }
       case 'watch': {
         const { watchCommand } = await import('./watch.js');
-        await watchCommand.parseAsync(['node', 'srtd', 'watch']);
+        await watchCommand.parseAsync(baseArgs);
         break;
       }
       case 'register': {
         const { registerCommand } = await import('./register.js');
-        await registerCommand.parseAsync(['node', 'srtd', 'register']);
+        await registerCommand.parseAsync(baseArgs);
         break;
       }
       case 'promote': {
         const { promoteCommand } = await import('./promote.js');
-        await promoteCommand.parseAsync(['node', 'srtd', 'promote']);
+        await promoteCommand.parseAsync(baseArgs);
         break;
       }
       case 'clear': {
         const { clearCommand } = await import('./clear.js');
-        await clearCommand.parseAsync(['node', 'srtd', 'clear']);
+        await clearCommand.parseAsync(baseArgs);
         break;
       }
     }
