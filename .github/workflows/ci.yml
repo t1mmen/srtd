@@ -59,24 +59,16 @@ jobs:
         run: npm run typecheck
 
 
-      - name: Test (Unit + Integration)
+      - name: Test (Unit + Integration) with Coverage
         id: test
-        run: |
-          node --no-warnings \
-            --experimental-json-modules \
-            node_modules/.bin/vitest run \
-            --coverage \
-            --reporter=verbose \
-            --reporter=junit \
-            --outputFile=test-report.junit.xml
+        run: npm run test:coverage
         env:
           CI: true
           POSTGRES_URL: postgresql://postgres:postgres@localhost:54322/postgres
-          NODE_OPTIONS: --experimental-json-modules
 
-      - name: Test (Database E2E)
+      - name: Test (Database E2E) with Coverage
         id: test-db
-        run: npm run test:e2e:db
+        run: npm run test:e2e:db:coverage
         env:
           CI: true
           POSTGRES_URL: postgresql://postgres:postgres@localhost:54322/postgres
@@ -85,6 +77,9 @@ jobs:
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage/unit/coverage-final.json,./coverage/e2e/coverage-final.json
+          flags: unittests,e2e
+          fail_ci_if_error: false
 
       - name: Upload test results to Codecov
         if: ${{ !cancelled() }}

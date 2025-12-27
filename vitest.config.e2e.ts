@@ -9,6 +9,7 @@
  * - Longer timeout (30s for DB operations)
  * - Bail on first failure (fail fast)
  * - Only includes database.test.ts
+ * - Coverage outputs to separate directory for merging
  */
 import { defineConfig } from 'vitest/config';
 
@@ -28,6 +29,20 @@ export default defineConfig({
     // Ensure proper cleanup order (LIFO)
     sequence: {
       hooks: 'stack',
+    },
+    // Coverage configuration - outputs to separate directory for merging
+    coverage: {
+      provider: 'v8',
+      reporter: ['json'],
+      reportsDirectory: './coverage/e2e',
+      exclude: [
+        'coverage/**',
+        'dist/**',
+        '**/node_modules/**',
+        '**/*.d.ts',
+        '**/*.test.{ts,tsx}',
+        '**/vitest.config.*',
+      ],
     },
   },
 });
