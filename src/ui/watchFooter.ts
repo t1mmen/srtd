@@ -1,5 +1,4 @@
 import chalk from 'chalk';
-import { SEPARATOR } from './constants.js';
 
 /**
  * A keyboard shortcut definition for the watch footer.
@@ -17,6 +16,8 @@ export interface WatchFooterShortcut {
 export interface WatchFooterOptions {
   /** Custom shortcuts to display, or use DEFAULT_WATCH_SHORTCUTS if not provided */
   shortcuts?: WatchFooterShortcut[];
+  /** Optional destination path to display above shortcuts */
+  destination?: string;
 }
 
 /**
@@ -36,17 +37,24 @@ export const DEFAULT_WATCH_SHORTCUTS: WatchFooterShortcut[] = [
  *
  * Output format:
  * ```
- * ───────────────────────────────────────────────────
+ * dest: supabase/migrations
  * q quit  u toggle unchanged  b build all
  * ```
  *
  * Keys are rendered dim, labels in normal text, separated by double-space.
+ * Uses a blank line for spacing instead of a separator line.
  */
 export function renderWatchFooter(options?: WatchFooterOptions): void {
   const shortcuts = options?.shortcuts ?? DEFAULT_WATCH_SHORTCUTS;
+  const destination = options?.destination;
 
-  // Render separator line
-  console.log(SEPARATOR);
+  // Blank line for spacing (instead of separator)
+  console.log();
+
+  // Render destination if provided
+  if (destination) {
+    console.log(chalk.dim(`dest: ${destination}`));
+  }
 
   // Render shortcuts line (if any)
   if (shortcuts.length > 0) {

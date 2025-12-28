@@ -71,14 +71,22 @@ function stackUpdates(updates: TemplateUpdate[]): StackedUpdate[] {
 export interface RenderScreenOptions {
   templates: TemplateStatus[];
   recentUpdates: TemplateUpdate[];
+  historicActivity: Array<{
+    template: string;
+    action: 'built' | 'applied';
+    timestamp: Date;
+    target?: string;
+  }>;
   errors: Map<string, string>;
   config: { templateDir: string; migrationDir: string };
   showHistory: boolean;
+  pendingBuild: Set<string>;
 }
 
 /** Renders the full watch mode screen with header, history, errors, and instructions */
 export function renderScreen(options: RenderScreenOptions): void {
-  const { templates, recentUpdates, errors, config, showHistory } = options;
+  const { templates, recentUpdates, historicActivity, errors, config, showHistory, pendingBuild } =
+    options;
   console.clear();
 
   // Render header
@@ -89,17 +97,20 @@ export function renderScreen(options: RenderScreenOptions): void {
     t => !t.buildState.lastBuildDate || t.currentHash !== t.buildState.lastBuildHash
   ).length;
 
-  // Show status line
+  // Show status line (no src/dest here - dest moved to footer)
   const statusParts: string[] = [`${templates.length} templates`];
   if (needsBuild > 0) statusParts.push(chalk.yellow(`${needsBuild} need build`));
   if (errors.size > 0) statusParts.push(chalk.red(`${errors.size} errors`));
   console.log(chalk.dim(statusParts.join('  •  ')));
-  console.log(chalk.dim(`src: ${config.templateDir}  \u2192  dest: ${config.migrationDir}`));
   console.log();
 
   // History section (if toggled on)
-  if (showHistory && recentUpdates.length > 0) {
+  // Combine recent updates with historic activity
+  const hasRecentActivity = recentUpdates.length > 0 || historicActivity.length > 0;
+  if (showHistory && hasRecentActivity) {
     console.log(chalk.bold('Recent activity:'));
+
+    // First show stacked recent updates
     const stacked = stackUpdates(recentUpdates);
     for (const update of stacked) {
       // Determine primary type (error > applied > changed)
@@ -110,10 +121,8 @@ export function renderScreen(options: RenderScreenOptions): void {
           : 'changed';
 
       // For stacked events, show comma-separated states instead of primary type
-      // e.g., "changed, applied" instead of "applied (changed)"
       let displayType: string | undefined;
       if (update.types.length > 1) {
-        // Show all types comma-separated, with "changed" muted
         const typeLabels = update.types.map(t => (t === 'changed' ? chalk.dim(t) : t));
         displayType = typeLabels.join(', ');
       }
@@ -127,6 +136,33 @@ export function renderScreen(options: RenderScreenOptions): void {
       };
       renderWatchLogEntry(entry);
     }
+
+    // Then show historic activity (if we have room)
+    const remainingSlots = MAX_HISTORY - stacked.length;
+    if (remainingSlots > 0) {
+      const historicToShow = historicActivity.slice(0, remainingSlots);
+      for (const entry of historicToShow) {
+        // Skip if this template is already shown in recent updates
+        const alreadyShown = stacked.some(s => s.template.path === entry.template);
+        if (alreadyShown) continue;
+
+        const logEntry: WatchLogEntry = {
+          type: 'applied', // Historic entries are all successful
+          template: entry.template,
+          timestamp: entry.timestamp,
+        };
+        renderWatchLogEntry(logEntry);
+      }
+    }
+    console.log();
+  }
+
+  // Pending build section
+  if (pendingBuild.size > 0) {
+    console.log(chalk.yellow.bold('Pending build:'));
+    for (const templatePath of pendingBuild) {
+      console.log(chalk.yellow(`  ⚡ ${formatPath.truncatePath(templatePath)}`));
+    }
     console.log();
   }
 
@@ -139,10 +175,12 @@ export function renderScreen(options: RenderScreenOptions): void {
     console.log();
   }
 
-  // Footer with keyboard shortcuts
+  // Footer with keyboard shortcuts and destination
   renderWatchFooter({
+    destination: config.migrationDir,
     shortcuts: [
       { key: 'q', label: 'quit' },
+      { key: 'b', label: 'build' },
       { key: 'u', label: showHistory ? 'hide history' : 'show history' },
     ],
   });
@@ -173,6 +211,9 @@ export const watchCommand = new Command('watch')
       // Display validation warnings
       displayValidationWarnings(orchestrator.getValidationWarnings());
 
+      // Load historic activity for initial display
+      const historicActivity = orchestrator.getRecentActivity(MAX_HISTORY);
+
       // Load initial templates
       const templatePaths = await orchestrator.findTemplates();
       const templates: TemplateStatus[] = [];
@@ -193,20 +234,56 @@ export const watchCommand = new Command('watch')
       const recentUpdates: TemplateUpdate[] = [];
       let showHistory = true;
 
+      // Track templates that need building (applied but not built)
+      const pendingBuild = new Set<string>();
+
       // Initial render
-      renderScreen({ templates, recentUpdates, errors, config, showHistory });
+      renderScreen({
+        templates,
+        recentUpdates,
+        historicActivity,
+        errors,
+        config,
+        showHistory,
+        pendingBuild,
+      });
+
+      // Helper to call renderScreen with all current state
+      const doRender = () => {
+        renderScreen({
+          templates,
+          recentUpdates,
+          historicActivity,
+          errors,
+          config,
+          showHistory,
+          pendingBuild,
+        });
+      };
 
       // Set up orchestrator event listeners
       orchestrator.on('templateChanged', (template: TemplateStatus) => {
         recentUpdates.unshift({ type: 'changed', template, timestamp: new Date().toISOString() });
         if (recentUpdates.length > MAX_HISTORY) recentUpdates.pop();
-        renderScreen({ templates, recentUpdates, errors, config, showHistory });
+        doRender();
       });
 
       orchestrator.on('templateApplied', (template: TemplateStatus) => {
         recentUpdates.unshift({ type: 'applied', template, timestamp: new Date().toISOString() });
         if (recentUpdates.length > MAX_HISTORY) recentUpdates.pop();
-        renderScreen({ templates, recentUpdates, errors, config, showHistory });
+
+        // Track as needing build if not already built with current hash
+        if (
+          !template.buildState.lastBuildDate ||
+          template.currentHash !== template.buildState.lastBuildHash
+        ) {
+          pendingBuild.add(template.path);
+        }
+
+        // Clear any previous error for this template
+        errors.delete(template.path);
+
+        doRender();
       });
 
       orchestrator.on(
@@ -220,7 +297,7 @@ export const watchCommand = new Command('watch')
           });
           if (recentUpdates.length > MAX_HISTORY) recentUpdates.pop();
           errors.set(template.path, error);
-          renderScreen({ templates, recentUpdates, errors, config, showHistory });
+          doRender();
         }
       );
 
@@ -241,7 +318,60 @@ export const watchCommand = new Command('watch')
         process.exit(exitCode);
       };
 
-      // Set up keyboard input handling for quit and toggle
+      // Build action handler for 'b' key
+      const triggerBuild = async () => {
+        if (pendingBuild.size === 0 || !orchestrator) {
+          // Nothing to build or orchestrator not ready
+          return;
+        }
+
+        // Show building indicator
+        console.log();
+        console.log(chalk.dim('Building templates...'));
+
+        try {
+          const result = await orchestrator.build({ silent: true });
+
+          // Clear pending builds for successfully built templates
+          for (const builtFile of result.built) {
+            // Find matching templates and remove from pending
+            for (const templatePath of [...pendingBuild]) {
+              const templateBasename = templatePath.split('/').pop()?.replace('.sql', '');
+              if (templateBasename && builtFile.includes(templateBasename)) {
+                pendingBuild.delete(templatePath);
+              }
+            }
+          }
+
+          // Add build results to recent updates
+          for (const builtFile of result.built) {
+            recentUpdates.unshift({
+              type: 'applied', // Use 'applied' for green checkmark
+              template: {
+                path: builtFile,
+                buildState: {},
+                currentHash: '',
+              } as TemplateStatus,
+              timestamp: new Date().toISOString(),
+            });
+          }
+
+          if (recentUpdates.length > MAX_HISTORY) {
+            recentUpdates.splice(MAX_HISTORY);
+          }
+
+          // Show any build errors
+          for (const err of result.errors) {
+            errors.set(err.file, err.error);
+          }
+        } catch (error) {
+          console.log(chalk.red(`Build failed: ${getErrorMessage(error)}`));
+        }
+
+        doRender();
+      };
+
+      // Set up keyboard input handling for quit, toggle, and build
       if (process.stdin.isTTY) {
         // Reset stdin state in case it was modified by previous prompts
         process.stdin.setRawMode(false);
@@ -260,7 +390,10 @@ export const watchCommand = new Command('watch')
           }
           if (key && key.name === 'u') {
             showHistory = !showHistory;
-            renderScreen({ templates, recentUpdates, errors, config, showHistory });
+            doRender();
+          }
+          if (key && key.name === 'b') {
+            void triggerBuild();
           }
         });
       }

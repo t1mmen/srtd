@@ -17,12 +17,11 @@ describe('renderWatchFooter', () => {
     consoleLogSpy.mockRestore();
   });
 
-  it('renders separator line', () => {
+  it('renders blank line for spacing', () => {
     renderWatchFooter();
 
-    const output = consoleLogSpy.mock.calls.flat().join('\n');
-    // Should contain separator character (box drawing horizontal line)
-    expect(output).toContain('\u2500');
+    // First call should be blank line for spacing
+    expect(consoleLogSpy.mock.calls[0]).toEqual([]);
   });
 
   it('renders default shortcuts when no options provided', () => {
@@ -91,10 +90,50 @@ describe('renderWatchFooter', () => {
     renderWatchFooter({ shortcuts: [] });
 
     const output = consoleLogSpy.mock.calls.flat().join('\n');
-    // Should still render separator
-    expect(output).toContain('\u2500');
     // Should not have any shortcut text (no keys/labels)
     expect(output).not.toContain('q');
     expect(output).not.toContain('quit');
+  });
+
+  describe('destination display', () => {
+    it('renders destination path when provided', () => {
+      renderWatchFooter({
+        destination: '/path/to/migrations',
+        shortcuts: [{ key: 'q', label: 'quit' }],
+      });
+
+      const output = consoleLogSpy.mock.calls.flat().join('\n');
+      expect(output).toContain('dest:');
+      expect(output).toContain('migrations');
+    });
+
+    it('omits destination line when not provided', () => {
+      renderWatchFooter({
+        shortcuts: [{ key: 'q', label: 'quit' }],
+      });
+
+      const output = consoleLogSpy.mock.calls.flat().join('\n');
+      expect(output).not.toContain('dest:');
+    });
+
+    it('renders destination before shortcuts', () => {
+      renderWatchFooter({
+        destination: 'supabase/migrations',
+        shortcuts: [{ key: 'q', label: 'quit' }],
+      });
+
+      // Get the calls in order (excluding empty blank line)
+      const nonEmptyCalls = consoleLogSpy.mock.calls.filter(call => call.length > 0);
+      expect(nonEmptyCalls.length).toBe(2);
+
+      // First non-empty call should be destination
+      const destCall = nonEmptyCalls[0][0] as string;
+      expect(destCall).toContain('dest:');
+      expect(destCall).toContain('supabase/migrations');
+
+      // Second call should be shortcuts
+      const shortcutsCall = nonEmptyCalls[1][0] as string;
+      expect(shortcutsCall).toContain('quit');
+    });
   });
 });
