@@ -9,9 +9,9 @@ import { displayValidationWarnings } from '../ui/displayWarnings.js';
 import {
   createSpinner,
   renderBranding,
+  renderResultRow,
   renderWatchFooter,
-  renderWatchLogEntry,
-  type WatchLogEntry,
+  type TemplateResult,
 } from '../ui/index.js';
 import { getConfig } from '../utils/config.js';
 import { findProjectRoot } from '../utils/findProjectRoot.js';
@@ -20,57 +20,82 @@ import { getErrorMessage } from '../utils/getErrorMessage.js';
 
 const MAX_HISTORY = 10;
 
-interface TemplateUpdate {
-  type: 'applied' | 'changed' | 'error';
-  template: TemplateStatus;
-  timestamp: string;
-  error?: string;
-}
+/**
+ * Map internal event type to TemplateResult status.
+ */
+type WatchEventType = 'changed' | 'applied' | 'error';
 
-interface StackedUpdate {
-  types: Array<'applied' | 'changed' | 'error'>;
-  template: TemplateStatus;
-  timestamp: string;
-  error?: string;
+function eventTypeToStatus(type: WatchEventType): TemplateResult['status'] {
+  switch (type) {
+    case 'applied':
+      return 'success';
+    case 'changed':
+      return 'changed';
+    case 'error':
+      return 'error';
+  }
 }
 
 /**
  * Stack consecutive events for the same template (unless error).
  * e.g., [changed, applied] for same file becomes one stacked entry.
  */
-function stackUpdates(updates: TemplateUpdate[]): StackedUpdate[] {
-  const stacked: StackedUpdate[] = [];
+function stackResults(results: TemplateResult[]): TemplateResult[] {
+  const stacked: Array<{ result: TemplateResult; types: WatchEventType[] }> = [];
 
-  for (const update of updates) {
+  for (const result of results) {
     const last = stacked[stacked.length - 1];
+    const type = statusToEventType(result.status);
 
     // Stack if same template and neither is error
     if (
       last &&
-      last.template.path === update.template.path &&
-      update.type !== 'error' &&
+      last.result.template === result.template &&
+      type !== 'error' &&
       !last.types.includes('error')
     ) {
       // Add type if not already present
-      if (!last.types.includes(update.type)) {
-        last.types.push(update.type);
+      if (!last.types.includes(type)) {
+        last.types.push(type);
       }
     } else {
       stacked.push({
-        types: [update.type],
-        template: update.template,
-        timestamp: update.timestamp,
-        error: update.error,
+        result: { ...result },
+        types: [type],
       });
     }
   }
 
-  return stacked;
+  // Convert back to TemplateResult with displayOverride for stacked events
+  return stacked.map(({ result, types }) => {
+    if (types.length > 1) {
+      // For stacked events, show comma-separated states
+      const typeLabels = types.map(t => (t === 'changed' ? chalk.dim(t) : t));
+      return { ...result, displayOverride: typeLabels.join(', ') };
+    }
+    return result;
+  });
 }
+
+function statusToEventType(status: TemplateResult['status']): WatchEventType {
+  switch (status) {
+    case 'success':
+      return 'applied';
+    case 'changed':
+      return 'changed';
+    case 'error':
+      return 'error';
+    default:
+      return 'changed';
+  }
+}
+
+/** Reason why a template needs building */
+export type NeedsBuildReason = 'never-built' | 'outdated';
 
 export interface RenderScreenOptions {
   templates: TemplateStatus[];
-  recentUpdates: TemplateUpdate[];
+  recentUpdates: TemplateResult[];
   historicActivity: Array<{
     template: string;
     action: 'built' | 'applied';
@@ -80,26 +105,21 @@ export interface RenderScreenOptions {
   errors: Map<string, string>;
   config: { templateDir: string; migrationDir: string };
   showHistory: boolean;
-  pendingBuild: Set<string>;
+  needsBuild: Map<string, NeedsBuildReason>;
 }
 
 /** Renders the full watch mode screen with header, history, errors, and instructions */
 export function renderScreen(options: RenderScreenOptions): void {
-  const { templates, recentUpdates, historicActivity, errors, config, showHistory, pendingBuild } =
+  const { templates, recentUpdates, historicActivity, errors, config, showHistory, needsBuild } =
     options;
   console.clear();
 
   // Render header
   renderBranding({ subtitle: 'Watch' });
 
-  // Calculate and show stats
-  const needsBuild = templates.filter(
-    t => !t.buildState.lastBuildDate || t.currentHash !== t.buildState.lastBuildHash
-  ).length;
-
   // Show status line (no src/dest here - dest moved to footer)
   const statusParts: string[] = [`${templates.length} templates`];
-  if (needsBuild > 0) statusParts.push(chalk.yellow(`${needsBuild} need build`));
+  if (needsBuild.size > 0) statusParts.push(chalk.yellow(`${needsBuild.size} need build`));
   if (errors.size > 0) statusParts.push(chalk.red(`${errors.size} errors`));
   console.log(chalk.dim(statusParts.join('  •  ')));
   console.log();
@@ -110,31 +130,10 @@ export function renderScreen(options: RenderScreenOptions): void {
   if (showHistory && hasRecentActivity) {
     console.log(chalk.bold('Recent activity:'));
 
-    // First show stacked recent updates
-    const stacked = stackUpdates(recentUpdates);
-    for (const update of stacked) {
-      // Determine primary type (error > applied > changed)
-      const primaryType = update.types.includes('error')
-        ? 'error'
-        : update.types.includes('applied')
-          ? 'applied'
-          : 'changed';
-
-      // For stacked events, show comma-separated states instead of primary type
-      let displayType: string | undefined;
-      if (update.types.length > 1) {
-        const typeLabels = update.types.map(t => (t === 'changed' ? chalk.dim(t) : t));
-        displayType = typeLabels.join(', ');
-      }
-
-      const entry: WatchLogEntry = {
-        type: primaryType,
-        template: update.template.path,
-        timestamp: new Date(update.timestamp),
-        message: update.error,
-        displayType,
-      };
-      renderWatchLogEntry(entry);
+    // First show stacked recent updates using unified renderer
+    const stacked = stackResults(recentUpdates);
+    for (const result of stacked) {
+      renderResultRow(result, { command: 'watch' });
     }
 
     // Then show historic activity (if we have room)
@@ -143,25 +142,27 @@ export function renderScreen(options: RenderScreenOptions): void {
       const historicToShow = historicActivity.slice(0, remainingSlots);
       for (const entry of historicToShow) {
         // Skip if this template is already shown in recent updates
-        const alreadyShown = stacked.some(s => s.template.path === entry.template);
+        const alreadyShown = stacked.some(s => s.template === entry.template);
         if (alreadyShown) continue;
 
-        const logEntry: WatchLogEntry = {
-          type: 'applied', // Historic entries are all successful
+        // Convert historic entry to TemplateResult
+        const result: TemplateResult = {
           template: entry.template,
+          status: 'success',
           timestamp: entry.timestamp,
         };
-        renderWatchLogEntry(logEntry);
+        renderResultRow(result, { command: 'watch' });
       }
     }
     console.log();
   }
 
-  // Pending build section
-  if (pendingBuild.size > 0) {
+  // Pending build section with reasons
+  if (needsBuild.size > 0) {
     console.log(chalk.yellow.bold('Pending build:'));
-    for (const templatePath of pendingBuild) {
-      console.log(chalk.yellow(`  ⚡ ${formatPath.truncatePath(templatePath)}`));
+    for (const [templatePath, reason] of needsBuild) {
+      const label = reason === 'never-built' ? 'never built' : 'changed since build';
+      console.log(chalk.yellow(`  ⚡ ${formatPath.truncatePath(templatePath)} (${label})`));
     }
     console.log();
   }
@@ -230,12 +231,21 @@ export const watchCommand = new Command('watch')
 
       spinner.succeed(`Watching ${templates.length} template(s)`);
 
-      // State for history tracking
-      const recentUpdates: TemplateUpdate[] = [];
+      // State for history tracking - now uses unified TemplateResult
+      const recentUpdates: TemplateResult[] = [];
       let showHistory = true;
 
-      // Track templates that need building (applied but not built)
-      const pendingBuild = new Set<string>();
+      // Track templates that need building with reason
+      const needsBuild = new Map<string, NeedsBuildReason>();
+
+      // Populate needsBuild from initial template state
+      for (const template of templates) {
+        if (!template.buildState.lastBuildHash) {
+          needsBuild.set(template.path, 'never-built');
+        } else if (template.currentHash !== template.buildState.lastBuildHash) {
+          needsBuild.set(template.path, 'outdated');
+        }
+      }
 
       // Initial render
       renderScreen({
@@ -245,7 +255,7 @@ export const watchCommand = new Command('watch')
         errors,
         config,
         showHistory,
-        pendingBuild,
+        needsBuild,
       });
 
       // Helper to call renderScreen with all current state
@@ -257,27 +267,34 @@ export const watchCommand = new Command('watch')
           errors,
           config,
           showHistory,
-          pendingBuild,
+          needsBuild,
         });
       };
 
       // Set up orchestrator event listeners
       orchestrator.on('templateChanged', (template: TemplateStatus) => {
-        recentUpdates.unshift({ type: 'changed', template, timestamp: new Date().toISOString() });
+        recentUpdates.unshift({
+          template: template.path,
+          status: eventTypeToStatus('changed'),
+          timestamp: new Date(),
+        });
         if (recentUpdates.length > MAX_HISTORY) recentUpdates.pop();
         doRender();
       });
 
       orchestrator.on('templateApplied', (template: TemplateStatus) => {
-        recentUpdates.unshift({ type: 'applied', template, timestamp: new Date().toISOString() });
+        recentUpdates.unshift({
+          template: template.path,
+          status: eventTypeToStatus('applied'),
+          timestamp: new Date(),
+        });
         if (recentUpdates.length > MAX_HISTORY) recentUpdates.pop();
 
         // Track as needing build if not already built with current hash
-        if (
-          !template.buildState.lastBuildDate ||
-          template.currentHash !== template.buildState.lastBuildHash
-        ) {
-          pendingBuild.add(template.path);
+        if (!template.buildState.lastBuildHash) {
+          needsBuild.set(template.path, 'never-built');
+        } else if (template.currentHash !== template.buildState.lastBuildHash) {
+          needsBuild.set(template.path, 'outdated');
         }
 
         // Clear any previous error for this template
@@ -290,10 +307,10 @@ export const watchCommand = new Command('watch')
         'templateError',
         ({ template, error }: { template: TemplateStatus; error: string }) => {
           recentUpdates.unshift({
-            type: 'error',
-            template,
-            timestamp: new Date().toISOString(),
-            error,
+            template: template.path,
+            status: eventTypeToStatus('error'),
+            timestamp: new Date(),
+            errorMessage: error,
           });
           if (recentUpdates.length > MAX_HISTORY) recentUpdates.pop();
           errors.set(template.path, error);
@@ -320,7 +337,7 @@ export const watchCommand = new Command('watch')
 
       // Build action handler for 'b' key
       const triggerBuild = async () => {
-        if (pendingBuild.size === 0 || !orchestrator) {
+        if (needsBuild.size === 0 || !orchestrator) {
           // Nothing to build or orchestrator not ready
           return;
         }
@@ -332,13 +349,13 @@ export const watchCommand = new Command('watch')
         try {
           const result = await orchestrator.build({ silent: true });
 
-          // Clear pending builds for successfully built templates
+          // Clear built templates from needsBuild
           for (const builtFile of result.built) {
-            // Find matching templates and remove from pending
-            for (const templatePath of [...pendingBuild]) {
+            // Find matching templates and remove from needsBuild
+            for (const templatePath of [...needsBuild.keys()]) {
               const templateBasename = templatePath.split('/').pop()?.replace('.sql', '');
               if (templateBasename && builtFile.includes(templateBasename)) {
-                pendingBuild.delete(templatePath);
+                needsBuild.delete(templatePath);
               }
             }
           }
@@ -346,13 +363,9 @@ export const watchCommand = new Command('watch')
           // Add build results to recent updates
           for (const builtFile of result.built) {
             recentUpdates.unshift({
-              type: 'applied', // Use 'applied' for green checkmark
-              template: {
-                path: builtFile,
-                buildState: {},
-                currentHash: '',
-              } as TemplateStatus,
-              timestamp: new Date().toISOString(),
+              template: builtFile,
+              status: 'success',
+              timestamp: new Date(),
             });
           }
 
