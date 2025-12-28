@@ -6,6 +6,12 @@ export { renderResults } from './results.js';
 export { renderResultsTable } from './resultsTable.js';
 export { createSpinner } from './spinner.js';
 export {
+  DEFAULT_WATCH_SHORTCUTS,
+  renderWatchFooter,
+  type WatchFooterOptions,
+  type WatchFooterShortcut,
+} from './watchFooter.js';
+export {
   renderWatchLogEntry,
   type WatchEventType,
   type WatchLogEntry,
