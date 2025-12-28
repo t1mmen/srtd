@@ -159,3 +159,93 @@ describe('renderResultsTable', () => {
     expect(output).toContain('migration.sql');
   });
 });
+
+describe('renderResultRow with built status', () => {
+  let consoleLogSpy: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.resetModules();
+    consoleLogSpy = mockConsoleLog();
+  });
+
+  afterEach(() => {
+    consoleLogSpy.mockRestore();
+  });
+
+  it('shows built with arrow and target in watch mode', async () => {
+    const { renderResultRow } = await import('./resultsTable.js');
+
+    renderResultRow(
+      {
+        template: 'audit.sql',
+        status: 'built',
+        target: '20241228_srtd-audit.sql',
+        timestamp: new Date('2024-12-28T16:45:30'),
+      },
+      { command: 'watch' }
+    );
+
+    const output = consoleLogSpy.mock.calls[0][0];
+    expect(output).toContain('audit.sql');
+    expect(output).toContain('built');
+    expect(output).toContain('→');
+    expect(output).toContain('20241228_srtd-audit.sql');
+  });
+
+  it('shows build outdated annotation on changed status', async () => {
+    const { renderResultRow } = await import('./resultsTable.js');
+
+    renderResultRow(
+      {
+        template: 'audit.sql',
+        status: 'changed',
+        timestamp: new Date(),
+        buildOutdated: true,
+      },
+      { command: 'watch' }
+    );
+
+    const output = consoleLogSpy.mock.calls[0][0];
+    expect(output).toContain('changed');
+    expect(output).toContain('build outdated');
+  });
+
+  it('does not show build outdated when buildOutdated is false', async () => {
+    const { renderResultRow } = await import('./resultsTable.js');
+
+    renderResultRow(
+      {
+        template: 'audit.sql',
+        status: 'changed',
+        timestamp: new Date(),
+        buildOutdated: false,
+      },
+      { command: 'watch' }
+    );
+
+    const output = consoleLogSpy.mock.calls[0][0];
+    expect(output).toContain('changed');
+    expect(output).not.toContain('build outdated');
+  });
+
+  it('sorts built status after success in table mode', async () => {
+    const { renderResultsTable } = await import('./resultsTable.js');
+    renderResultsTable({
+      results: [
+        { template: 'built.sql', status: 'built', target: 'migration.sql' },
+        { template: 'success.sql', status: 'success', target: 'local db' },
+        { template: 'error.sql', status: 'error' },
+      ],
+      context: { command: 'build' },
+    });
+
+    const output = consoleLogSpy.mock.calls.flat().join('\n');
+    const successIdx = output.indexOf('success.sql');
+    const builtIdx = output.indexOf('built.sql');
+    const errorIdx = output.indexOf('error.sql');
+    // success and built should both come before error
+    expect(successIdx).toBeLessThan(errorIdx);
+    expect(builtIdx).toBeLessThan(errorIdx);
+  });
+});
