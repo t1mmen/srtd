@@ -1,40 +1,14 @@
 import chalk from 'chalk';
 import figures from 'figures';
 import { formatPath } from '../utils/formatPath.js';
+import { formatTime } from '../utils/formatTime.js';
+import type { RenderContext, RenderResultsOptions, TemplateResult } from './types.js';
 
-export interface ResultRow {
-  template: string;
-  status: 'built' | 'applied' | 'error';
-  target?: string; // Migration file for 'built', ignored for 'applied' (shows "local db")
-}
-
-export interface UnchangedRow {
-  template: string;
-  target?: string; // Last migration file (for context)
-  lastDate?: string; // ISO date of last build/apply
-  lastAction?: 'built' | 'applied'; // What was the last action taken
-}
-
-export interface ResultsTableOptions {
-  rows: ResultRow[];
-  unchanged: UnchangedRow[];
-  errorCount?: number;
-}
+// Re-export types for consumers
+export type { RenderContext, RenderResultsOptions, TemplateResult };
 
 const COL_TEMPLATE = 22;
 const COL_TARGET = 32;
-
-/**
- * Format a date string to a compact display format (e.g., "12/25 14:30")
- */
-function formatCompactDate(dateString: string): string {
-  const date = new Date(dateString);
-  const month = date.getMonth() + 1;
-  const day = date.getDate();
-  const hours = date.getHours().toString().padStart(2, '0');
-  const minutes = date.getMinutes().toString().padStart(2, '0');
-  return `${month}/${day} ${hours}:${minutes}`;
-}
 
 /**
  * Ensure template name has .sql extension
@@ -45,73 +19,122 @@ function ensureSqlExtension(name: string): string {
 }
 
 /**
- * Render results as an aligned table with arrow format showing targets.
- *
- * Format (build):
- * ✓ audit.sql           → 20241227_srtd-audit.sql
- *
- * Format (apply):
- * ✓ audit.sql           → local db
- *
- * Format (unchanged):
- * ● users.sql           → 20241225_srtd-users.sql        12/25 10:15
+ * Get icon for a template result status.
  */
-export function renderResultsTable(options: ResultsTableOptions): void {
-  const { rows, unchanged, errorCount = 0 } = options;
+function getStatusIcon(status: TemplateResult['status'], context: RenderContext): string {
+  switch (status) {
+    case 'success':
+      return context.command === 'build' ? chalk.green(figures.tick) : chalk.cyan(figures.tick);
+    case 'unchanged':
+      return chalk.dim(figures.bullet);
+    case 'error':
+      return chalk.red(figures.cross);
+    case 'needs-build':
+      return chalk.yellow(figures.warning);
+  }
+}
 
-  // Active rows with icons
-  for (const row of rows) {
-    const icon =
-      row.status === 'built'
-        ? chalk.green(figures.tick)
-        : row.status === 'applied'
-          ? chalk.cyan(figures.tick)
-          : chalk.red(figures.cross);
+/**
+ * Get target display text for a result.
+ * - Build: migration filename
+ * - Apply: "local db"
+ */
+function getTargetDisplay(result: TemplateResult, context: RenderContext): string {
+  if (result.status === 'error') return '';
+  if (context.command === 'apply') return 'local db';
+  return result.target || '';
+}
 
-    const templateName = ensureSqlExtension(row.template);
-    const templateDisplay = templateName.padEnd(COL_TEMPLATE);
+/**
+ * Render a single result row.
+ */
+function renderResultRow(result: TemplateResult, context: RenderContext): void {
+  const icon = getStatusIcon(result.status, context);
+  const templateName = ensureSqlExtension(result.template);
+  const isUnchanged = result.status === 'unchanged';
 
-    // For errors, don't show arrow (nothing was created/applied)
-    if (row.status === 'error') {
-      console.log(`${icon} ${templateDisplay}`);
-    } else {
-      const arrow = chalk.dim('→');
-      // For 'applied', target is always "local db"; for 'built', show migration file
-      const targetDisplay = row.status === 'applied' ? 'local db' : row.target || '';
-      console.log(`${icon} ${templateDisplay} ${arrow} ${targetDisplay}`);
-    }
+  const templateDisplay = isUnchanged
+    ? chalk.dim(templateName.padEnd(COL_TEMPLATE))
+    : templateName.padEnd(COL_TEMPLATE);
+
+  // For errors, don't show arrow (nothing was created/applied)
+  if (result.status === 'error') {
+    console.log(`${icon} ${templateDisplay}`);
+    return;
   }
 
-  // Unchanged rows (muted)
-  for (const item of unchanged) {
-    const icon = chalk.dim(figures.bullet);
-    const templateName = ensureSqlExtension(item.template);
-    const templateDisplay = chalk.dim(templateName.padEnd(COL_TEMPLATE));
-    const arrow = chalk.dim('→');
+  const arrow = chalk.dim('→');
+  const targetText = getTargetDisplay(result, context);
 
-    // Show last action context: migration file for build, "local db" for apply
-    const targetText = item.lastAction === 'applied' ? 'local db' : item.target || 'local db';
+  if (isUnchanged) {
+    // Unchanged: show target and relative time
     const targetDisplay = chalk.dim(targetText.padEnd(COL_TARGET));
-    const dateDisplay = item.lastDate ? chalk.dim(formatCompactDate(item.lastDate)) : '';
-
-    console.log(`${icon} ${templateDisplay} ${arrow} ${targetDisplay} ${dateDisplay}`);
+    const timeDisplay = result.timestamp ? chalk.dim(formatTime.relative(result.timestamp)) : '';
+    console.log(`${icon} ${templateDisplay} ${arrow} ${targetDisplay} ${timeDisplay}`);
+  } else {
+    // Success: just show target
+    console.log(`${icon} ${templateDisplay} ${arrow} ${targetText}`);
   }
+}
 
-  // Summary footer
-  console.log();
+/**
+ * Render summary footer.
+ * Only shows what happened this run. "Unchanged" count omitted - dim rows ARE the unchanged ones.
+ */
+function renderSummary(results: TemplateResult[], context: RenderContext): void {
+  const successCount = results.filter(r => r.status === 'success').length;
+  const errorCount = results.filter(r => r.status === 'error').length;
+  const unchangedCount = results.filter(r => r.status === 'unchanged').length;
 
-  const builtCount = rows.filter(r => r.status === 'built').length;
-  const appliedCount = rows.filter(r => r.status === 'applied').length;
   const parts: string[] = [];
 
-  if (builtCount > 0) parts.push(`Built: ${builtCount}`);
-  if (appliedCount > 0) parts.push(`Applied: ${appliedCount}`);
-  if (unchanged.length > 0) parts.push(chalk.dim(`Unchanged: ${unchanged.length}`));
-  if (errorCount > 0) parts.push(chalk.red(`Errors: ${errorCount}`));
+  if (successCount > 0) {
+    const verb = context.command === 'build' ? 'Built' : 'Applied';
+    parts.push(`${verb}: ${successCount}`);
+  }
 
+  if (errorCount > 0) {
+    parts.push(chalk.red(`Errors: ${errorCount}`));
+  }
+
+  // If nothing happened (only unchanged), show "No changes"
+  if (successCount === 0 && errorCount === 0 && unchangedCount > 0) {
+    parts.push(chalk.dim('No changes'));
+  }
+
+  console.log();
   if (parts.length > 0) {
     console.log(parts.join('  '));
   }
+}
 
-  console.log();
+/**
+ * Render results as an aligned table with arrow format showing targets.
+ *
+ * Format (build success):
+ * ✔ audit.sql           → 20241227_srtd-audit.sql
+ *
+ * Format (apply success):
+ * ✔ audit.sql           → local db
+ *
+ * Format (unchanged):
+ * ● users.sql           → 20241225_srtd-users.sql        2 days ago
+ *
+ * Format (error):
+ * ✘ broken.sql
+ */
+export function renderResultsTable(options: RenderResultsOptions): void {
+  const { results, context } = options;
+
+  // Sort: success first, then unchanged, then errors
+  const sorted = [...results].sort((a, b) => {
+    const order = { success: 0, 'needs-build': 1, unchanged: 2, error: 3 };
+    return order[a.status] - order[b.status];
+  });
+
+  for (const result of sorted) {
+    renderResultRow(result, context);
+  }
+
+  renderSummary(results, context);
 }

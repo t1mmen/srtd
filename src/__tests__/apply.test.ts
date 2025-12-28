@@ -170,12 +170,12 @@ describe('Apply Command', () => {
 
       spies.assertNoStderr();
       expect(uiModule.renderResultsTable).toHaveBeenCalledWith({
-        rows: [
-          { template: 'migration1.sql', status: 'applied' },
-          { template: 'migration2.sql', status: 'applied' },
+        results: [
+          { template: 'migration1.sql', status: 'success' },
+          { template: 'migration2.sql', status: 'success' },
+          { template: 'unchanged.sql', status: 'unchanged', timestamp: undefined },
         ],
-        unchanged: [{ template: 'unchanged.sql', lastDate: undefined, lastAction: 'applied' }],
-        errorCount: 0,
+        context: { command: 'apply', forced: undefined },
       });
       expect(uiModule.renderResults).not.toHaveBeenCalled();
     });

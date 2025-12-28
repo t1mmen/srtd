@@ -6,13 +6,11 @@ import { Orchestrator } from '../services/Orchestrator.js';
 import type { ProcessedTemplateResult } from '../types.js';
 import { displayValidationWarnings } from '../ui/displayWarnings.js';
 import {
-  createSpinner,
   type ErrorItem,
-  type ResultRow,
   renderBranding,
   renderErrorDisplay,
   renderResultsTable,
-  type UnchangedRow,
+  type TemplateResult,
 } from '../ui/index.js';
 import { getConfig } from '../utils/config.js';
 import { findProjectRoot } from '../utils/findProjectRoot.js';
@@ -32,8 +30,6 @@ export const applyCommand = new Command('apply')
         renderBranding({ subtitle: parts.join(' ') });
       }
 
-      const spinner = createSpinner('Applying templates...').start();
-
       // Initialize Orchestrator
       const projectRoot = await findProjectRoot();
       const { config, warnings: configWarnings } = await getConfig(projectRoot);
@@ -51,37 +47,34 @@ export const applyCommand = new Command('apply')
         silent: true,
       });
 
-      spinner.stop();
-
-      // Transform results to new format
-      const rows: ResultRow[] = [
-        // Applied templates
+      // Transform results to unified TemplateResult format
+      const results: TemplateResult[] = [
+        // Applied templates (success)
         ...result.applied.map(name => ({
           template: name,
-          status: 'applied' as const,
+          status: 'success' as const,
         })),
+        // Skipped templates (unchanged)
+        ...result.skipped.map(name => {
+          const info = orchestrator.getTemplateInfo(name);
+          return {
+            template: name,
+            status: 'unchanged' as const,
+            timestamp: info.lastDate ? new Date(info.lastDate) : undefined,
+          };
+        }),
         // Error templates
         ...result.errors.map(err => ({
           template: err.file,
           status: 'error' as const,
+          errorMessage: err.error,
         })),
       ];
 
-      // Transform skipped to UnchangedRow - for apply, show "local db" context
-      const unchanged: UnchangedRow[] = result.skipped.map(name => {
-        const info = orchestrator.getTemplateInfo(name);
-        return {
-          template: name,
-          lastDate: info.lastDate,
-          lastAction: 'applied' as const,
-        };
-      });
-
-      // Render results table with summary footer
+      // Render results table with unified format
       renderResultsTable({
-        rows,
-        unchanged,
-        errorCount: result.errors.length,
+        results,
+        context: { command: 'apply', forced: options.force },
       });
 
       // Render errors if any

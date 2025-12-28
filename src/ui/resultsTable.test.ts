@@ -14,111 +14,144 @@ describe('renderResultsTable', () => {
     consoleLogSpy.mockRestore();
   });
 
-  it('renders built rows with arrow format', async () => {
+  it('renders build success rows with arrow format', async () => {
     const { renderResultsTable } = await import('./resultsTable.js');
     renderResultsTable({
-      rows: [
+      results: [
         {
           template: 'supabase/templates/functions/audit.sql',
-          status: 'built',
+          status: 'success',
           target: '20241227_srtd-audit.sql',
         },
       ],
-      unchanged: [],
+      context: { command: 'build' },
     });
 
     const output = consoleLogSpy.mock.calls.flat().join('\n');
     expect(output).toContain('audit.sql');
     expect(output).toContain('→');
     expect(output).toContain('20241227_srtd-audit.sql');
+    expect(output).toContain('Built: 1');
   });
 
-  it('renders applied rows with cyan tick', async () => {
+  it('renders apply success rows showing local db', async () => {
     const { renderResultsTable } = await import('./resultsTable.js');
     renderResultsTable({
-      rows: [{ template: 'templates/func.sql', status: 'applied', target: 'migration.sql' }],
-      unchanged: [],
+      results: [{ template: 'templates/func.sql', status: 'success' }],
+      context: { command: 'apply' },
     });
 
     const output = consoleLogSpy.mock.calls.flat().join('\n');
     expect(output).toContain('func.sql');
     expect(output).toContain('→');
+    expect(output).toContain('local db');
+    expect(output).toContain('Applied: 1');
   });
 
-  it('renders error rows with cross icon', async () => {
+  it('renders error rows with cross icon and no arrow', async () => {
     const { renderResultsTable } = await import('./resultsTable.js');
     renderResultsTable({
-      rows: [{ template: 'src/views/broken.sql', status: 'error' }],
-      unchanged: [],
+      results: [{ template: 'src/views/broken.sql', status: 'error' }],
+      context: { command: 'build' },
     });
     const output = consoleLogSpy.mock.calls.flat().join('\n');
     expect(output).toContain('broken.sql');
+    expect(output).toContain('Errors: 1');
+    // Error rows should not have arrow
+    const lines = output.split('\n');
+    const errorLine = lines.find(l => l.includes('broken.sql'));
+    expect(errorLine).not.toContain('→');
   });
 
-  it('renders unchanged rows muted with date', async () => {
+  it('renders unchanged rows muted with relative time', async () => {
     const { renderResultsTable } = await import('./resultsTable.js');
+    const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000);
     renderResultsTable({
-      rows: [],
-      unchanged: [
+      results: [
         {
           template: 'path/a.sql',
+          status: 'unchanged',
           target: '20241225_srtd-a.sql',
-          lastDate: '2024-12-25T14:30:00.000Z',
+          timestamp: threeDaysAgo,
         },
       ],
+      context: { command: 'build' },
     });
 
     const output = consoleLogSpy.mock.calls.flat().join('\n');
     expect(output).toContain('a.sql');
     expect(output).toContain('20241225_srtd-a.sql');
-    expect(output).toContain('12/25'); // Compact date format
+    expect(output).toContain('3d ago');
   });
 
-  it('renders summary counts', async () => {
+  it('shows "No changes" when only unchanged results', async () => {
     const { renderResultsTable } = await import('./resultsTable.js');
     renderResultsTable({
-      rows: [
-        { template: 'a.sql', status: 'built', target: 'out.sql' },
-        { template: 'b.sql', status: 'built', target: 'out2.sql' },
+      results: [
+        { template: 'a.sql', status: 'unchanged', target: 'out.sql' },
+        { template: 'b.sql', status: 'unchanged', target: 'out2.sql' },
       ],
-      unchanged: [{ template: 'c.sql' }, { template: 'd.sql' }],
-      errorCount: 1,
+      context: { command: 'build' },
+    });
+
+    const output = consoleLogSpy.mock.calls.flat().join('\n');
+    expect(output).toContain('No changes');
+    expect(output).not.toContain('Built:');
+  });
+
+  it('shows summary with success and error counts', async () => {
+    const { renderResultsTable } = await import('./resultsTable.js');
+    renderResultsTable({
+      results: [
+        { template: 'a.sql', status: 'success', target: 'out.sql' },
+        { template: 'b.sql', status: 'success', target: 'out2.sql' },
+        { template: 'c.sql', status: 'error' },
+      ],
+      context: { command: 'build' },
     });
 
     const output = consoleLogSpy.mock.calls.flat().join('\n');
     expect(output).toContain('Built: 2');
-    expect(output).toContain('Unchanged: 2');
     expect(output).toContain('Errors: 1');
   });
 
-  it('hides unchanged count when empty', async () => {
+  it('apply command shows local db for success', async () => {
     const { renderResultsTable } = await import('./resultsTable.js');
     renderResultsTable({
-      rows: [{ template: 'a.sql', status: 'built', target: 'out.sql' }],
-      unchanged: [],
-    });
-
-    const output = consoleLogSpy.mock.calls.flat().join('\n');
-    expect(output).not.toContain('Unchanged');
-  });
-
-  it('handles rows without target', async () => {
-    const { renderResultsTable } = await import('./resultsTable.js');
-    renderResultsTable({
-      rows: [{ template: 'a.sql', status: 'applied' }],
-      unchanged: [],
+      results: [{ template: 'a.sql', status: 'success' }],
+      context: { command: 'apply' },
     });
 
     const output = consoleLogSpy.mock.calls.flat().join('\n');
     expect(output).toContain('a.sql');
     expect(output).toContain('→');
+    expect(output).toContain('local db');
   });
 
-  it('handles unchanged rows without date', async () => {
+  it('sorts results: success first, then unchanged, then errors', async () => {
     const { renderResultsTable } = await import('./resultsTable.js');
     renderResultsTable({
-      rows: [],
-      unchanged: [{ template: 'test.sql', target: 'migration.sql' }],
+      results: [
+        { template: 'error.sql', status: 'error' },
+        { template: 'unchanged.sql', status: 'unchanged' },
+        { template: 'success.sql', status: 'success', target: 'out.sql' },
+      ],
+      context: { command: 'build' },
+    });
+
+    const output = consoleLogSpy.mock.calls.flat().join('\n');
+    const successIdx = output.indexOf('success.sql');
+    const unchangedIdx = output.indexOf('unchanged.sql');
+    const errorIdx = output.indexOf('error.sql');
+    expect(successIdx).toBeLessThan(unchangedIdx);
+    expect(unchangedIdx).toBeLessThan(errorIdx);
+  });
+
+  it('handles unchanged rows without timestamp', async () => {
+    const { renderResultsTable } = await import('./resultsTable.js');
+    renderResultsTable({
+      results: [{ template: 'test.sql', status: 'unchanged', target: 'migration.sql' }],
+      context: { command: 'build' },
     });
 
     const output = consoleLogSpy.mock.calls.flat().join('\n');

@@ -403,6 +403,52 @@ export class StateService extends EventEmitter {
   }
 
   /**
+   * Get recent activity for watch mode history display.
+   * Returns the most recent builds and applies sorted by date.
+   */
+  getRecentActivity(limit = 10): Array<{
+    template: string;
+    action: 'built' | 'applied';
+    timestamp: Date;
+    target?: string;
+  }> {
+    const entries: Array<{
+      template: string;
+      action: 'built' | 'applied';
+      timestamp: Date;
+      target?: string;
+    }> = [];
+
+    // Collect builds from buildLog
+    for (const [template, state] of Object.entries(this.buildLog.templates)) {
+      if (state.lastBuildDate) {
+        entries.push({
+          template,
+          action: 'built',
+          timestamp: new Date(state.lastBuildDate),
+          target: state.lastMigrationFile,
+        });
+      }
+    }
+
+    // Collect applies from localBuildLog
+    for (const [template, state] of Object.entries(this.localBuildLog.templates)) {
+      if (state.lastAppliedDate) {
+        entries.push({
+          template,
+          action: 'applied',
+          timestamp: new Date(state.lastAppliedDate),
+        });
+      }
+    }
+
+    // Sort by timestamp descending (most recent first)
+    entries.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+
+    return entries.slice(0, limit);
+  }
+
+  /**
    * Get template info including migration file and last date
    * Used for displaying arrow format: template.sql → migration_file.sql
    * Accepts either a full path, relative path, or just the template name

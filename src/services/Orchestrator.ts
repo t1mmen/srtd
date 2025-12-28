@@ -805,6 +805,19 @@ export class Orchestrator extends EventEmitter implements Disposable {
   }
 
   /**
+   * Get recent activity for watch mode history display.
+   * Returns the most recent builds and applies sorted by date.
+   */
+  getRecentActivity(limit = 10): Array<{
+    template: string;
+    action: 'built' | 'applied';
+    timestamp: Date;
+    target?: string;
+  }> {
+    return this.stateService.getRecentActivity(limit);
+  }
+
+  /**
    * Logging utility
    */
   private log(

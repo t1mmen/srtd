@@ -248,19 +248,17 @@ describe('Build Command', () => {
 
       spies.assertNoStderr();
       expect(uiModule.renderResultsTable).toHaveBeenCalledWith({
-        rows: [
-          { template: 'migration1.sql', status: 'built', target: undefined },
-          { template: 'migration2.sql', status: 'built', target: undefined },
-        ],
-        unchanged: [
+        results: [
+          { template: 'migration1.sql', status: 'success', target: undefined },
+          { template: 'migration2.sql', status: 'success', target: undefined },
           {
             template: 'unchanged.sql',
+            status: 'unchanged',
             target: undefined,
-            lastDate: undefined,
-            lastAction: 'built',
+            timestamp: undefined,
           },
         ],
-        errorCount: 0,
+        context: { command: 'build', forced: undefined },
       });
       expect(uiModule.renderResults).not.toHaveBeenCalled();
     });
@@ -287,19 +285,16 @@ describe('Build Command', () => {
 
       spies.assertNoStderr();
       expect(uiModule.renderResultsTable).toHaveBeenCalledWith({
-        rows: [
-          { template: 'migration1.sql', status: 'built', target: undefined },
-          { template: 'migration1.sql', status: 'applied' },
-        ],
-        unchanged: [
+        results: [
+          { template: 'migration1.sql', status: 'success', target: undefined },
           {
             template: 'unchanged.sql',
+            status: 'unchanged',
             target: undefined,
-            lastDate: undefined,
-            lastAction: 'built',
+            timestamp: undefined,
           },
         ],
-        errorCount: 0,
+        context: { command: 'build', forced: undefined },
       });
     });
 

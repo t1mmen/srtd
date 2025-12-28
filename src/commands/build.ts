@@ -6,13 +6,11 @@ import { Orchestrator } from '../services/Orchestrator.js';
 import type { ProcessedTemplateResult } from '../types.js';
 import { displayValidationWarnings } from '../ui/displayWarnings.js';
 import {
-  createSpinner,
   type ErrorItem,
-  type ResultRow,
   renderBranding,
   renderErrorDisplay,
   renderResultsTable,
-  type UnchangedRow,
+  type TemplateResult,
 } from '../ui/index.js';
 import { getConfig } from '../utils/config.js';
 import { findProjectRoot } from '../utils/findProjectRoot.js';
@@ -41,8 +39,6 @@ export const buildCommand = new Command('build')
         renderBranding({ subtitle: parts.join(' ') });
       }
 
-      const spinner = createSpinner('Building templates...').start();
-
       // Initialize Orchestrator
       const projectRoot = await findProjectRoot();
       const { config, warnings: configWarnings } = await getConfig(projectRoot);
@@ -65,8 +61,6 @@ export const buildCommand = new Command('build')
 
       // If apply flag is set, also apply the templates
       if (options.apply) {
-        spinner.text = 'Applying templates...';
-
         const applyResult: ProcessedTemplateResult = await orchestrator.apply({
           force: options.force,
           silent: true,
@@ -81,52 +75,39 @@ export const buildCommand = new Command('build')
         };
       }
 
-      spinner.stop();
-
-      // Transform results to new format with migration file info
-      const rows: ResultRow[] = [
-        // Built templates
+      // Transform results to unified TemplateResult format
+      const results: TemplateResult[] = [
+        // Built templates (success)
         ...result.built.map(name => {
           const info = orchestrator.getTemplateInfo(name);
           return {
             template: name,
-            status: 'built' as const,
+            status: 'success' as const,
             target: info.migrationFile,
+          };
+        }),
+        // Skipped templates (unchanged)
+        ...result.skipped.map(name => {
+          const info = orchestrator.getTemplateInfo(name);
+          return {
+            template: name,
+            status: 'unchanged' as const,
+            target: info.migrationFile,
+            timestamp: info.lastDate ? new Date(info.lastDate) : undefined,
           };
         }),
         // Error templates
         ...result.errors.map(err => ({
           template: err.file,
           status: 'error' as const,
+          errorMessage: err.error,
         })),
       ];
 
-      if (options.apply) {
-        // Applied rows show "local db" as target (handled by renderResultsTable)
-        rows.push(
-          ...result.applied.map(name => ({
-            template: name,
-            status: 'applied' as const,
-          }))
-        );
-      }
-
-      // Transform skipped to UnchangedRow - show migration file for build context
-      const unchanged: UnchangedRow[] = result.skipped.map(name => {
-        const info = orchestrator.getTemplateInfo(name);
-        return {
-          template: name,
-          target: info.migrationFile,
-          lastDate: info.lastDate,
-          lastAction: 'built' as const,
-        };
-      });
-
-      // Render results table with summary footer
+      // Render results table with unified format
       renderResultsTable({
-        rows,
-        unchanged,
-        errorCount: result.errors.length,
+        results,
+        context: { command: 'build', forced: options.force },
       });
 
       // Render errors if any

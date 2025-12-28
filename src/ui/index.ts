@@ -3,12 +3,14 @@ export { renderBranding } from './branding.js';
 export { type ErrorDisplayOptions, type ErrorItem, renderErrorDisplay } from './errorDisplay.js';
 export { renderResults } from './results.js';
 export {
-  type ResultRow,
-  type ResultsTableOptions,
+  type RenderContext,
+  type RenderResultsOptions,
   renderResultsTable,
-  type UnchangedRow,
+  type TemplateResult,
 } from './resultsTable.js';
 export { createSpinner } from './spinner.js';
+// Export unified types from types.ts
+export type { TemplateStatus } from './types.js';
 export {
   DEFAULT_WATCH_SHORTCUTS,
   renderWatchFooter,

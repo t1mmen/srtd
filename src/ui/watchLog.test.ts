@@ -62,17 +62,20 @@ describe('renderWatchLogEntry', () => {
   });
 
   it('includes timestamp in HH:MM:SS format', () => {
+    // Create a date with known local time
+    const date = new Date();
+    date.setHours(14, 30, 45);
     const entry: WatchLogEntry = {
       type: 'applied',
       template: '/path/to/file.sql',
-      timestamp: new Date('2024-01-15T16:45:02Z'),
+      timestamp: date,
     };
 
     renderWatchLogEntry(entry);
 
     const output = consoleLogSpy.mock.calls.flat().join('\n');
-    // formatTime.timestamp uses UTC, so should be 16:45:02
-    expect(output).toContain('16:45:02');
+    // formatTime.time uses local time
+    expect(output).toContain('14:30:45');
   });
 
   it('uses truncated path', () => {
