@@ -10,6 +10,7 @@
  * - Bail on first failure (fail fast)
  * - Only includes database.test.ts
  * - Coverage outputs to separate directory for merging
+ * - Verbose reporter to show individual test names
  */
 import { defineConfig } from 'vitest/config';
 
@@ -17,6 +18,8 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'node',
+    // Use verbose reporter to show individual test names in CI
+    reporters: ['verbose'],
     setupFiles: ['./src/__tests__/vitest.setup.ts'],
     // Only run DB E2E tests
     include: ['src/__tests__/e2e/database.test.ts'],

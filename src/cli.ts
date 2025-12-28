@@ -31,6 +31,18 @@ program
   .version(packageJson.version)
   .option('--non-interactive', 'Disable interactive prompts and menus');
 
+// In test mode, suppress Commander output to avoid polluting test logs
+if (isTestMode) {
+  program.configureOutput({
+    writeOut: () => {
+      /* suppress output in tests */
+    },
+    writeErr: () => {
+      /* suppress output in tests */
+    },
+  });
+}
+
 // Register all commands
 program.addCommand(initCommand);
 program.addCommand(applyCommand);

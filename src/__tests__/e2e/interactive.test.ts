@@ -39,6 +39,8 @@ describe('CLI Help Test', () => {
       output = execSync(cmd, {
         encoding: 'utf-8',
         stdio: ['ignore', 'pipe', 'pipe'],
+        // Override SRTD_TEST_MODE to get real CLI output
+        env: { ...process.env, SRTD_TEST_MODE: undefined },
       });
     } catch (error) {
       // Commander exits with code 0 for --help but execSync may still throw

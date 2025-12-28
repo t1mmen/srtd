@@ -42,6 +42,26 @@ export function mockProcessExit() {
 }
 
 /**
+ * Create a mock for process.stdout.write to suppress Commander help output
+ * Commander uses process.stdout.write directly, not console.log
+ * @returns Spy that can be restored in afterEach
+ */
+export function mockStdout() {
+  // Handle all overloads of process.stdout.write
+  return vi
+    .spyOn(process.stdout, 'write')
+    .mockImplementation((_chunk: unknown, _encoding?: unknown, _callback?: unknown) => {
+      // Call callback if provided (for async writes)
+      if (typeof _encoding === 'function') {
+        _encoding();
+      } else if (typeof _callback === 'function') {
+        _callback();
+      }
+      return true;
+    });
+}
+
+/**
  * Create an Error with a code property (like pg errors)
  * Avoids `as any` casts in tests
  */

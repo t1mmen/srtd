@@ -4,6 +4,9 @@ import { join } from 'node:path';
 import { afterAll, beforeAll, vi } from 'vitest';
 import { DEFAULT_PG_CONNECTION } from '../constants.js';
 
+// Set test mode early to suppress CLI output in Commander
+process.env.SRTD_TEST_MODE = 'true';
+
 export const TEST_FN_PREFIX = 'srtd_scoped_test_func_';
 export const TEST_ROOT_BASE = join(tmpdir(), 'srtd-test');
 export const TEST_ROOT = join(TEST_ROOT_BASE, `srtd-tests-${Date.now()}`);
