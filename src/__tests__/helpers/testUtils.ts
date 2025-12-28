@@ -75,7 +75,14 @@ export function createErrorWithCode(message: string, code: string): Error & { co
  */
 export function createMockUiModule() {
   return {
+    // Legacy UI (still used by some commands)
     renderBranding: vi.fn().mockResolvedValue(undefined),
+    renderResults: vi.fn(),
+    // New UI components
+    renderHeader: vi.fn(),
+    renderResultsTable: vi.fn(),
+    renderErrorDisplay: vi.fn(),
+    // Spinner
     createSpinner: vi.fn(() => ({
       start: vi.fn().mockReturnThis(),
       stop: vi.fn(),
@@ -84,7 +91,6 @@ export function createMockUiModule() {
       warn: vi.fn(),
       text: '',
     })),
-    renderResults: vi.fn(),
   };
 }
 

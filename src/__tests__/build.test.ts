@@ -178,7 +178,7 @@ describe('Build Command', () => {
       applied: [],
       built: [],
       skipped: [],
-      errors: [{ templateName: 'bad.sql', error: 'Template parse error' }],
+      errors: [{ file: 'bad.sql', templateName: 'bad.sql', error: 'Template parse error' }],
     });
 
     await buildCommand.parseAsync(['node', 'test']);
@@ -210,5 +210,116 @@ describe('Build Command', () => {
 
     // Verify async dispose was called (await using triggers Symbol.asyncDispose)
     expect(mockOrchestrator[Symbol.asyncDispose]).toHaveBeenCalled();
+  });
+
+  describe('new UI components', () => {
+    it('uses renderHeader instead of renderBranding', async () => {
+      const uiModule = await import('../ui/index.js');
+      const { buildCommand } = await import('../commands/build.js');
+
+      mockOrchestrator.build.mockResolvedValue({
+        applied: [],
+        built: ['migration1.sql'],
+        skipped: [],
+        errors: [],
+      });
+
+      await buildCommand.parseAsync(['node', 'test']);
+
+      spies.assertNoStderr();
+      expect(uiModule.renderHeader).toHaveBeenCalled();
+      expect(uiModule.renderBranding).not.toHaveBeenCalled();
+    });
+
+    it('uses renderResultsTable for displaying results', async () => {
+      const uiModule = await import('../ui/index.js');
+      const { buildCommand } = await import('../commands/build.js');
+
+      mockOrchestrator.build.mockResolvedValue({
+        applied: [],
+        built: ['migration1.sql', 'migration2.sql'],
+        skipped: ['unchanged.sql'],
+        errors: [],
+      });
+
+      await buildCommand.parseAsync(['node', 'test']);
+
+      spies.assertNoStderr();
+      expect(uiModule.renderResultsTable).toHaveBeenCalledWith({
+        rows: [
+          { template: 'migration1.sql', status: 'built' },
+          { template: 'migration2.sql', status: 'built' },
+        ],
+        unchanged: ['unchanged.sql'],
+        errorCount: 0,
+      });
+      expect(uiModule.renderResults).not.toHaveBeenCalled();
+    });
+
+    it('includes applied templates in results when --apply flag is used', async () => {
+      const uiModule = await import('../ui/index.js');
+      const { buildCommand } = await import('../commands/build.js');
+
+      mockOrchestrator.build.mockResolvedValue({
+        applied: [],
+        built: ['migration1.sql'],
+        skipped: [],
+        errors: [],
+      });
+
+      mockOrchestrator.apply.mockResolvedValue({
+        applied: ['migration1.sql'],
+        built: [],
+        skipped: ['unchanged.sql'],
+        errors: [],
+      });
+
+      await buildCommand.parseAsync(['node', 'test', '--apply']);
+
+      spies.assertNoStderr();
+      expect(uiModule.renderResultsTable).toHaveBeenCalledWith({
+        rows: [
+          { template: 'migration1.sql', status: 'built' },
+          { template: 'migration1.sql', status: 'applied' },
+        ],
+        unchanged: ['unchanged.sql'],
+        errorCount: 0,
+      });
+    });
+
+    it('uses renderErrorDisplay for errors', async () => {
+      const uiModule = await import('../ui/index.js');
+      const { buildCommand } = await import('../commands/build.js');
+
+      mockOrchestrator.build.mockResolvedValue({
+        applied: [],
+        built: [],
+        skipped: [],
+        errors: [{ file: 'bad.sql', templateName: 'bad.sql', error: 'syntax error at line 5' }],
+      });
+
+      await buildCommand.parseAsync(['node', 'test']);
+
+      expect(uiModule.renderErrorDisplay).toHaveBeenCalledWith({
+        errors: [{ template: 'bad.sql', message: 'syntax error at line 5' }],
+      });
+    });
+
+    it('does not call renderErrorDisplay when there are no errors', async () => {
+      const uiModule = await import('../ui/index.js');
+      const { buildCommand } = await import('../commands/build.js');
+
+      mockOrchestrator.build.mockResolvedValue({
+        applied: [],
+        built: ['migration1.sql'],
+        skipped: [],
+        errors: [],
+      });
+
+      await buildCommand.parseAsync(['node', 'test']);
+
+      spies.assertNoStderr();
+      expect(uiModule.renderErrorDisplay).not.toHaveBeenCalled();
+    });
   });
 });
