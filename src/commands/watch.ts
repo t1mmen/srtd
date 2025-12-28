@@ -335,36 +335,57 @@ export const watchCommand = new Command('watch')
         process.exit(exitCode);
       };
 
+      /**
+       * Extract template name from migration filename.
+       * Format: {timestamp}_{prefix}-{templateName}.sql
+       * e.g., 20241228_srtd-audit.sql -> audit.sql
+       */
+      const extractTemplateName = (migrationFile: string): string => {
+        const match = migrationFile.match(/_[^-]+-(.+)\.sql$/);
+        return match ? `${match[1]}.sql` : migrationFile;
+      };
+
       // Build action handler for 'b' key
       const triggerBuild = async () => {
-        if (needsBuild.size === 0 || !orchestrator) {
-          // Nothing to build or orchestrator not ready
-          return;
+        if (!orchestrator) return;
+
+        // Refresh template state before building to ensure needsBuild is current
+        const templatePaths = await orchestrator.findTemplates();
+        needsBuild.clear();
+        for (const templatePath of templatePaths) {
+          try {
+            const template = await orchestrator.getTemplateStatusExternal(templatePath);
+            const reason = getBuildReason(template);
+            if (reason) needsBuild.set(template.path, reason);
+          } catch {
+            // Template may have been deleted during refresh
+          }
         }
 
-        // Show building indicator
-        console.log();
-        console.log(chalk.dim('Building templates...'));
+        // Check if anything needs building
+        if (needsBuild.size === 0) {
+          // Show "all up to date" feedback in activity log
+          recentUpdates.unshift({
+            template: 'all templates',
+            status: 'unchanged',
+            timestamp: new Date(),
+            displayOverride: 'all up to date',
+          });
+          if (recentUpdates.length > MAX_HISTORY) recentUpdates.pop();
+          doRender();
+          return;
+        }
 
         try {
           const result = await orchestrator.build({ silent: true });
 
-          // Clear built templates from needsBuild
-          for (const builtFile of result.built) {
-            // Find matching templates and remove from needsBuild
-            for (const templatePath of [...needsBuild.keys()]) {
-              const templateBasename = templatePath.split('/').pop()?.replace('.sql', '');
-              if (templateBasename && builtFile.includes(templateBasename)) {
-                needsBuild.delete(templatePath);
-              }
-            }
-          }
-
-          // Add build results to recent updates
-          for (const builtFile of result.built) {
+          // Add build results to recent updates with 'built' status
+          for (const migrationFile of result.built) {
+            const templateName = extractTemplateName(migrationFile);
             recentUpdates.unshift({
-              template: builtFile,
-              status: 'success',
+              template: templateName,
+              status: 'built',
+              target: migrationFile,
               timestamp: new Date(),
             });
           }
@@ -376,6 +397,21 @@ export const watchCommand = new Command('watch')
           // Show any build errors
           for (const err of result.errors) {
             errors.set(err.file, err.error);
+          }
+
+          // Refresh needsBuild after building
+          for (const templatePath of templatePaths) {
+            try {
+              const template = await orchestrator.getTemplateStatusExternal(templatePath);
+              const reason = getBuildReason(template);
+              if (reason) {
+                needsBuild.set(template.path, reason);
+              } else {
+                needsBuild.delete(template.path);
+              }
+            } catch {
+              needsBuild.delete(templatePath);
+            }
           }
         } catch (error) {
           console.log(chalk.red(`Build failed: ${getErrorMessage(error)}`));
