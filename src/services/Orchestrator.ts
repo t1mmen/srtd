@@ -434,15 +434,7 @@ export class Orchestrator extends EventEmitter implements Disposable {
 
     for (const templatePath of templates) {
       try {
-        // Skip WIP templates
-        const isWip = isWipTemplate(templatePath, this.config.cliConfig.wipIndicator);
-        if (isWip) {
-          const templateName = path.basename(templatePath, '.sql');
-          this.log(`Skipping WIP template: ${templateName}`, 'skip');
-          result.skipped.push(templateName);
-          continue;
-        }
-
+        // WIP templates ARE applied to local DB (only build skips them)
         const processResult = await this.processTemplate(templatePath, options.force);
         result.errors.push(...(processResult.errors || []));
         result.applied.push(...(processResult.applied || []));
