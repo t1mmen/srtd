@@ -35,15 +35,13 @@ function getStatusLabel(status: TemplateResult['status']): string {
       return 'error';
     case 'unchanged':
       return 'unchanged';
-    case 'needs-build':
-      return 'needs build';
   }
 }
 
 /**
  * Get icon for a template result status.
  */
-function getStatusIcon(status: TemplateResult['status'], _context: RenderContext): string {
+function getStatusIcon(status: TemplateResult['status']): string {
   switch (status) {
     case 'success':
     case 'built':
@@ -54,8 +52,6 @@ function getStatusIcon(status: TemplateResult['status'], _context: RenderContext
       return chalk.dim(figures.bullet);
     case 'error':
       return chalk.red(figures.cross);
-    case 'needs-build':
-      return chalk.yellow(figures.warning);
   }
 }
 
@@ -73,8 +69,6 @@ function getStatusColor(status: TemplateResult['status']): (text: string) => str
       return chalk.dim;
     case 'error':
       return chalk.red;
-    case 'needs-build':
-      return chalk.yellow;
   }
 }
 
@@ -95,7 +89,7 @@ function getTargetDisplay(result: TemplateResult, context: RenderContext): strin
  */
 function renderWatchRow(result: TemplateResult): void {
   const time = result.timestamp ? formatTime.time(result.timestamp) : '';
-  const icon = getStatusIcon(result.status, { command: 'watch' });
+  const icon = getStatusIcon(result.status);
   const color = getStatusColor(result.status);
   const truncatedPath = formatPath.truncatePath(result.template);
 
@@ -133,7 +127,7 @@ function renderWatchRow(result: TemplateResult): void {
  * Format: ✔ template.sql → target
  */
 function renderTableRow(result: TemplateResult, context: RenderContext): void {
-  const icon = getStatusIcon(result.status, context);
+  const icon = getStatusIcon(result.status);
   const templateName = ensureSqlExtension(result.template);
   const isUnchanged = result.status === 'unchanged';
 
@@ -233,7 +227,7 @@ export function renderResultsTable(options: RenderResultsOptions): void {
 
   // For build/apply, sort: success/built first, then unchanged, then errors
   const sorted = [...results].sort((a, b) => {
-    const order = { success: 0, built: 1, changed: 2, 'needs-build': 3, unchanged: 4, error: 5 };
+    const order = { success: 0, built: 1, changed: 2, unchanged: 3, error: 4 };
     return order[a.status] - order[b.status];
   });
 

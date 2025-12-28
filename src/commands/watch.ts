@@ -78,7 +78,7 @@ function statusToEventType(status: TemplateResult['status']): WatchEventType {
 }
 
 /** Reason why a template needs building */
-export type NeedsBuildReason = 'never-built' | 'outdated';
+type NeedsBuildReason = 'never-built' | 'outdated';
 
 /**
  * Determine if a template needs building and why.
@@ -270,13 +270,13 @@ export const watchCommand = new Command('watch')
         // Check if this change invalidates a previous build
         const hadBuild = !!template.buildState.lastBuildHash;
 
-        recentUpdates.unshift({
+        recentUpdates.push({
           template: template.path,
           status: 'changed',
           timestamp: new Date(),
           buildOutdated: hadBuild,
         });
-        if (recentUpdates.length > MAX_HISTORY) recentUpdates.pop();
+        if (recentUpdates.length > MAX_HISTORY) recentUpdates.shift();
 
         // Update needsBuild tracking
         const reason = getBuildReason(template);
@@ -286,12 +286,12 @@ export const watchCommand = new Command('watch')
       });
 
       orchestrator.on('templateApplied', (template: TemplateStatus) => {
-        recentUpdates.unshift({
+        recentUpdates.push({
           template: template.path,
           status: 'success',
           timestamp: new Date(),
         });
-        if (recentUpdates.length > MAX_HISTORY) recentUpdates.pop();
+        if (recentUpdates.length > MAX_HISTORY) recentUpdates.shift();
 
         // Track as needing build if not already built with current hash
         const reason = getBuildReason(template);
@@ -306,13 +306,13 @@ export const watchCommand = new Command('watch')
       orchestrator.on(
         'templateError',
         ({ template, error }: { template: TemplateStatus; error: string }) => {
-          recentUpdates.unshift({
+          recentUpdates.push({
             template: template.path,
             status: 'error',
             timestamp: new Date(),
             errorMessage: error,
           });
-          if (recentUpdates.length > MAX_HISTORY) recentUpdates.pop();
+          if (recentUpdates.length > MAX_HISTORY) recentUpdates.shift();
           errors.set(template.path, error);
           doRender();
         }
@@ -376,13 +376,13 @@ export const watchCommand = new Command('watch')
         // Check if anything needs building
         if (needsBuild.size === 0) {
           // Show "all up to date" feedback in activity log
-          recentUpdates.unshift({
+          recentUpdates.push({
             template: 'all templates',
             status: 'unchanged',
             timestamp: new Date(),
             displayOverride: 'all up to date',
           });
-          if (recentUpdates.length > MAX_HISTORY) recentUpdates.pop();
+          if (recentUpdates.length > MAX_HISTORY) recentUpdates.shift();
           doRender();
           return;
         }
@@ -393,7 +393,7 @@ export const watchCommand = new Command('watch')
           // Add build results to recent updates with 'built' status
           for (const migrationFile of result.built) {
             const templateName = extractTemplateName(migrationFile);
-            recentUpdates.unshift({
+            recentUpdates.push({
               template: templateName,
               status: 'built',
               target: migrationFile,
@@ -402,7 +402,7 @@ export const watchCommand = new Command('watch')
           }
 
           if (recentUpdates.length > MAX_HISTORY) {
-            recentUpdates.splice(MAX_HISTORY);
+            recentUpdates.splice(0, recentUpdates.length - MAX_HISTORY);
           }
 
           // Show any build errors

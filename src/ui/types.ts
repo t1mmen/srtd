@@ -5,21 +5,14 @@
  */
 
 /**
- * Status of a template operation.
+ * Status of a template result in the UI.
  * - 'success': Template was successfully applied to local DB
  * - 'built': Template was successfully built to migration file
  * - 'unchanged': Template has not changed since last operation
  * - 'error': Operation failed
  * - 'changed': Template file modified, pending apply (watch mode)
- * - 'needs-build': Template applied but not yet built to migration (watch mode)
  */
-export type TemplateStatus =
-  | 'success'
-  | 'built'
-  | 'unchanged'
-  | 'error'
-  | 'changed'
-  | 'needs-build';
+export type TemplateResultStatus = 'success' | 'built' | 'unchanged' | 'error' | 'changed';
 
 /**
  * Unified result for a template operation.
@@ -30,7 +23,7 @@ export interface TemplateResult {
   template: string;
 
   /** Status of the operation */
-  status: TemplateStatus;
+  status: TemplateResultStatus;
 
   /** Target of the operation: migration filename for build, "local db" for apply */
   target?: string;
