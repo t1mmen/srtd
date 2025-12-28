@@ -31,7 +31,7 @@ describe('renderResultsTable', () => {
     expect(output).toContain('audit.sql');
     expect(output).toContain('→');
     expect(output).toContain('20241227_srtd-audit.sql');
-    expect(output).toContain('Built: 1');
+    expect(output).toContain('Built 1 template');
   });
 
   it('renders apply success rows showing local db', async () => {
@@ -45,7 +45,7 @@ describe('renderResultsTable', () => {
     expect(output).toContain('func.sql');
     expect(output).toContain('→');
     expect(output).toContain('local db');
-    expect(output).toContain('Applied: 1');
+    expect(output).toContain('Applied 1 template');
   });
 
   it('renders error rows with cross icon and no arrow', async () => {
@@ -56,7 +56,7 @@ describe('renderResultsTable', () => {
     });
     const output = consoleLogSpy.mock.calls.flat().join('\n');
     expect(output).toContain('broken.sql');
-    expect(output).toContain('Errors: 1');
+    expect(output).toContain('1 error');
     // Error rows should not have arrow
     const lines = output.split('\n');
     const errorLine = lines.find(l => l.includes('broken.sql'));
@@ -111,8 +111,8 @@ describe('renderResultsTable', () => {
     });
 
     const output = consoleLogSpy.mock.calls.flat().join('\n');
-    expect(output).toContain('Built: 2');
-    expect(output).toContain('Errors: 1');
+    expect(output).toContain('Built 2 templates');
+    expect(output).toContain('1 error');
   });
 
   it('apply command shows local db for success', async () => {

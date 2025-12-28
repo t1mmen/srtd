@@ -122,21 +122,18 @@ export function renderScreen(options: RenderScreenOptions): void {
   console.log();
 
   // History section (if toggled on)
-  // Combine recent updates with historic activity
+  // Combine historic activity with recent updates (oldest at top, newest at bottom)
   const hasRecentActivity = recentUpdates.length > 0 || historicActivity.length > 0;
   if (showHistory && hasRecentActivity) {
     console.log(chalk.bold('Recent activity:'));
 
-    // First show stacked recent updates using unified renderer
     const stacked = stackResults(recentUpdates);
-    for (const result of stacked) {
-      renderResultRow(result, { command: 'watch' });
-    }
 
-    // Then show historic activity (if we have room)
+    // First show historic activity (older entries at top)
+    // historicActivity comes newest-first, so reverse to get oldest-first
     const remainingSlots = MAX_HISTORY - stacked.length;
     if (remainingSlots > 0) {
-      const historicToShow = historicActivity.slice(0, remainingSlots);
+      const historicToShow = historicActivity.slice(0, remainingSlots).reverse();
       for (const entry of historicToShow) {
         // Skip if this template is already shown in recent updates
         const alreadyShown = stacked.some(s => s.template === entry.template);
@@ -150,6 +147,11 @@ export function renderScreen(options: RenderScreenOptions): void {
         };
         renderResultRow(result, { command: 'watch' });
       }
+    }
+
+    // Then show stacked recent updates (newer entries at bottom)
+    for (const result of stacked) {
+      renderResultRow(result, { command: 'watch' });
     }
     console.log();
   }
@@ -196,7 +198,7 @@ export const watchCommand = new Command('watch')
         renderBranding({ subtitle: 'Watch' });
       }
 
-      const spinner = createSpinner('Starting watch mode...').start();
+      const spinner = createSpinner('').start();
 
       // Initialize Orchestrator
       const projectRoot = await findProjectRoot();

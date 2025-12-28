@@ -167,8 +167,8 @@ export function renderResultRow(result: TemplateResult, context: RenderContext):
 }
 
 /**
- * Render summary footer.
- * Only shows what happened this run. "Unchanged" count omitted - dim rows ARE the unchanged ones.
+ * Render summary footer with consistent icon format.
+ * Pattern: [icon] [message]
  */
 function renderSummary(results: TemplateResult[], context: RenderContext): void {
   // No summary for watch mode - it's streaming
@@ -178,25 +178,26 @@ function renderSummary(results: TemplateResult[], context: RenderContext): void 
   const errorCount = results.filter(r => r.status === 'error').length;
   const unchangedCount = results.filter(r => r.status === 'unchanged').length;
 
-  const parts: string[] = [];
+  console.log();
 
+  // Show success count if any
   if (successCount > 0) {
     const verb = context.command === 'build' ? 'Built' : 'Applied';
-    parts.push(`${verb}: ${successCount}`);
+    console.log(
+      chalk.green(
+        `${figures.tick} ${verb} ${successCount} template${successCount !== 1 ? 's' : ''}`
+      )
+    );
   }
 
+  // Show error count if any
   if (errorCount > 0) {
-    parts.push(chalk.red(`Errors: ${errorCount}`));
+    console.log(chalk.red(`${figures.cross} ${errorCount} error${errorCount !== 1 ? 's' : ''}`));
   }
 
   // If nothing happened (only unchanged), show "No changes"
   if (successCount === 0 && errorCount === 0 && unchangedCount > 0) {
-    parts.push(chalk.dim('No changes'));
-  }
-
-  console.log();
-  if (parts.length > 0) {
-    console.log(parts.join('  '));
+    console.log(chalk.dim(`${figures.bullet} No changes`));
   }
 }
 

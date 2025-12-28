@@ -3,11 +3,11 @@ import {
   createSpinner,
   DEFAULT_WATCH_SHORTCUTS,
   renderBranding,
+  renderResultRow,
   renderResults,
   renderStatBadge,
   renderStatBadges,
   renderWatchFooter,
-  renderWatchLogEntry,
 } from './index.js';
 
 describe('ui index exports', () => {
@@ -31,8 +31,8 @@ describe('ui index exports', () => {
     expect(renderStatBadges).toBeTypeOf('function');
   });
 
-  it('should export renderWatchLogEntry', () => {
-    expect(renderWatchLogEntry).toBeTypeOf('function');
+  it('should export renderResultRow', () => {
+    expect(renderResultRow).toBeTypeOf('function');
   });
 
   it('should export renderWatchFooter', () => {

@@ -5,7 +5,7 @@ import chalk from 'chalk';
 import { Command } from 'commander';
 import figures from 'figures';
 import { CONFIG_FILE } from '../constants.js';
-import { createSpinner, renderBranding } from '../ui/index.js';
+import { renderBranding } from '../ui/index.js';
 import { getConfig, saveConfig } from '../utils/config.js';
 import { createEmptyBuildLog } from '../utils/createEmptyBuildLog.js';
 import { ensureDirectories } from '../utils/ensureDirectories.js';
@@ -19,13 +19,9 @@ export const initCommand = new Command('init')
     try {
       await renderBranding({ subtitle: 'Initialize Project' });
 
-      const spinner = createSpinner('Initializing srtd...').start();
-
       const baseDir = await findProjectRoot();
       const { config } = await getConfig(baseDir);
       const configPath = path.join(baseDir, CONFIG_FILE);
-
-      spinner.stop();
 
       // Check and create config file
       if (await fileExists(configPath)) {

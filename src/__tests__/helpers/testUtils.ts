@@ -79,8 +79,8 @@ export function createMockUiModule() {
     renderBranding: vi.fn(),
     renderResults: vi.fn(),
     renderResultsTable: vi.fn(),
+    renderResultRow: vi.fn(),
     renderErrorDisplay: vi.fn(),
-    renderWatchLogEntry: vi.fn(),
     renderWatchFooter: vi.fn(),
     DEFAULT_WATCH_SHORTCUTS: [
       { key: 'q', label: 'quit' },

@@ -4,12 +4,12 @@ export interface ErrorContextOptions {
   message?: string;
   sqlSnippet?: string;
   column?: number;
-  indentPrefix?: string; // '' for errorDisplay, timestamp-width for watchLog
+  indentPrefix?: string; // '' for errorDisplay, timestamp-width for watch mode
 }
 
 /**
  * Renders error context with gutter lines.
- * Shared between errorDisplay and watchLog.
+ * Shared between errorDisplay and resultsTable (watch mode).
  *
  * Format:
  *   | error message
