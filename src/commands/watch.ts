@@ -93,6 +93,16 @@ function statusToEventType(status: TemplateResult['status']): WatchEventType {
 /** Reason why a template needs building */
 export type NeedsBuildReason = 'never-built' | 'outdated';
 
+/**
+ * Determine if a template needs building and why.
+ * Returns null if template is up-to-date with current build.
+ */
+function getBuildReason(template: TemplateStatus): NeedsBuildReason | null {
+  if (!template.buildState.lastBuildHash) return 'never-built';
+  if (template.currentHash !== template.buildState.lastBuildHash) return 'outdated';
+  return null;
+}
+
 export interface RenderScreenOptions {
   templates: TemplateStatus[];
   recentUpdates: TemplateResult[];
@@ -240,11 +250,8 @@ export const watchCommand = new Command('watch')
 
       // Populate needsBuild from initial template state
       for (const template of templates) {
-        if (!template.buildState.lastBuildHash) {
-          needsBuild.set(template.path, 'never-built');
-        } else if (template.currentHash !== template.buildState.lastBuildHash) {
-          needsBuild.set(template.path, 'outdated');
-        }
+        const reason = getBuildReason(template);
+        if (reason) needsBuild.set(template.path, reason);
       }
 
       // Initial render
@@ -273,29 +280,35 @@ export const watchCommand = new Command('watch')
 
       // Set up orchestrator event listeners
       orchestrator.on('templateChanged', (template: TemplateStatus) => {
+        // Check if this change invalidates a previous build
+        const hadBuild = !!template.buildState.lastBuildHash;
+
         recentUpdates.unshift({
           template: template.path,
-          status: eventTypeToStatus('changed'),
+          status: 'changed',
           timestamp: new Date(),
+          buildOutdated: hadBuild,
         });
         if (recentUpdates.length > MAX_HISTORY) recentUpdates.pop();
+
+        // Update needsBuild tracking
+        const reason = getBuildReason(template);
+        if (reason) needsBuild.set(template.path, reason);
+
         doRender();
       });
 
       orchestrator.on('templateApplied', (template: TemplateStatus) => {
         recentUpdates.unshift({
           template: template.path,
-          status: eventTypeToStatus('applied'),
+          status: 'success',
           timestamp: new Date(),
         });
         if (recentUpdates.length > MAX_HISTORY) recentUpdates.pop();
 
         // Track as needing build if not already built with current hash
-        if (!template.buildState.lastBuildHash) {
-          needsBuild.set(template.path, 'never-built');
-        } else if (template.currentHash !== template.buildState.lastBuildHash) {
-          needsBuild.set(template.path, 'outdated');
-        }
+        const reason = getBuildReason(template);
+        if (reason) needsBuild.set(template.path, reason);
 
         // Clear any previous error for this template
         errors.delete(template.path);
