@@ -20,21 +20,8 @@ import { getErrorMessage } from '../utils/getErrorMessage.js';
 
 const MAX_HISTORY = 10;
 
-/**
- * Map internal event type to TemplateResult status.
- */
+/** Internal event type for stacking logic */
 type WatchEventType = 'changed' | 'applied' | 'error';
-
-function eventTypeToStatus(type: WatchEventType): TemplateResult['status'] {
-  switch (type) {
-    case 'applied':
-      return 'success';
-    case 'changed':
-      return 'changed';
-    case 'error':
-      return 'error';
-  }
-}
 
 /**
  * Stack consecutive events for the same template (unless error).
@@ -321,7 +308,7 @@ export const watchCommand = new Command('watch')
         ({ template, error }: { template: TemplateStatus; error: string }) => {
           recentUpdates.unshift({
             template: template.path,
-            status: eventTypeToStatus('error'),
+            status: 'error',
             timestamp: new Date(),
             errorMessage: error,
           });
