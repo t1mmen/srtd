@@ -2,6 +2,7 @@ import chalk from 'chalk';
 import figures from 'figures';
 import { formatPath } from '../utils/formatPath.js';
 import { SEPARATOR } from './constants.js';
+import { renderErrorContext } from './errorContext.js';
 
 export interface ErrorItem {
   template: string; // Path to template file
@@ -53,24 +54,15 @@ export function renderErrorDisplay(options: ErrorDisplayOptions): void {
  */
 function renderError(error: ErrorItem): void {
   const truncatedPath = formatPath.truncatePath(error.template);
-  const gutter = chalk.dim('│');
 
   // Error header: X .../path/to/file.sql
   console.log(chalk.red(`${figures.cross} ${truncatedPath}`));
 
-  // Error message
-  console.log(`  ${gutter} ${chalk.red(error.message)}`);
-
-  // SQL snippet (if available)
-  if (error.sqlSnippet) {
-    console.log(`  ${gutter} ${error.sqlSnippet}`);
-
-    // Caret pointer (if column is available)
-    if (error.column !== undefined) {
-      // Position caret: account for gutter prefix ("  | ")
-      const caretPosition = error.column - 1; // columns are 1-based
-      const caretLine = ' '.repeat(caretPosition) + chalk.yellow('^');
-      console.log(`  ${gutter} ${caretLine}`);
-    }
-  }
+  // Error context: message, SQL snippet, caret
+  renderErrorContext({
+    message: error.message,
+    sqlSnippet: error.sqlSnippet,
+    column: error.column,
+    indentPrefix: '  ', // 2 spaces for errorDisplay
+  });
 }

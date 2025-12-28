@@ -5,6 +5,7 @@ import {
   renderResults,
   renderStatBadge,
   renderStatBadges,
+  renderWatchLogEntry,
 } from './index.js';
 
 describe('ui index exports', () => {
@@ -26,5 +27,9 @@ describe('ui index exports', () => {
 
   it('should export renderStatBadges', () => {
     expect(renderStatBadges).toBeTypeOf('function');
+  });
+
+  it('should export renderWatchLogEntry', () => {
+    expect(renderWatchLogEntry).toBeTypeOf('function');
   });
 });

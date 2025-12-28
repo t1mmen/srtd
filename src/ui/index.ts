@@ -5,3 +5,8 @@ export { renderHeader } from './header.js';
 export { renderResults } from './results.js';
 export { renderResultsTable } from './resultsTable.js';
 export { createSpinner } from './spinner.js';
+export {
+  renderWatchLogEntry,
+  type WatchEventType,
+  type WatchLogEntry,
+} from './watchLog.js';
