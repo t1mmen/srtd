@@ -11,6 +11,3 @@ When SRTD loads corrupted or malformed JSON files, it now validates the schema u
 - Graceful degradation: use defaults when validation fails
 - Unified ValidationWarning interface across codebase
 - Types derived from Zod schemas (single source of truth)
-- Security: redact database credentials from E2E test error messages
-- Improve E2E test reliability with null guards for cleanup race conditions
-- Add typed event method tests (once/off) for full coverage
