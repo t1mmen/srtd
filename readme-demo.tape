@@ -40,23 +40,11 @@ Sleep 1s
 Ctrl+C
 Show
 
-# Make a change to a template
+# Make a change to a template (add a simple comment to trigger change detection)
 Type "echo '' >> supabase/migrations-templates/srtd_demo_greet.sql"
 Enter
 Sleep 50ms
-Type "echo '-- Add a farewell function' >> supabase/migrations-templates/srtd_demo_greet.sql"
-Enter
-Sleep 50ms
-Type "echo 'CREATE OR REPLACE FUNCTION public.farewell(name text)' >> supabase/migrations-templates/srtd_demo_greet.sql"
-Enter
-Sleep 50ms
-Type "echo 'RETURNS text LANGUAGE sql AS $$' >> supabase/migrations-templates/srtd_demo_greet.sql"
-Enter
-Sleep 50ms
-Type "echo \"  SELECT 'Goodbye, ' || name || '!';\" >> supabase/migrations-templates/srtd_demo_greet.sql"
-Enter
-Sleep 50ms
-Type "echo '$$;' >> supabase/migrations-templates/srtd_demo_greet.sql"
+Type "echo '-- Updated: added logging' >> supabase/migrations-templates/srtd_demo_greet.sql"
 Enter
 Sleep 1s
 
