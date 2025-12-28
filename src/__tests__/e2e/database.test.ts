@@ -426,8 +426,9 @@ describe.sequential('Database E2E Tests', () => {
   describe.sequential('WIP Template Handling', () => {
     let resources: TestResource | undefined;
 
-    it('should skip templates with WIP indicator', async () => {
-      resources = await createTestResource({ prefix: 'wip' });
+    it('should apply WIP templates to local database', async () => {
+      // WIP templates ARE applied locally - that's their purpose (local development)
+      resources = await createTestResource({ prefix: 'wip-apply' });
 
       try {
         // Create WIP template (with .wip in the name)
@@ -445,17 +446,47 @@ describe.sequential('Database E2E Tests', () => {
             templatePaths: [wipPath, regularPath],
           });
 
-          // WIP should be skipped, regular should be applied
-          expect(result.applied.length).toBe(1);
-          expect(result.skipped.length).toBe(1);
+          // Both should be applied - WIP templates are applied to local DB
+          expect(result.applied.length).toBe(2);
+          expect(result.skipped.length).toBe(0);
 
-          // Verify WIP function does NOT exist
+          // Verify both functions exist
           const wipExists = await resources.verifyFunctionExists('_wip');
-          expect(wipExists).toBe(false);
+          expect(wipExists).toBe(true);
 
-          // Verify regular function DOES exist
           const regularExists = await resources.verifyFunctionExists('_regular');
           expect(regularExists).toBe(true);
+        } finally {
+          await orchestrator.dispose();
+        }
+      } finally {
+        if (resources) await resources.cleanup();
+      }
+    });
+
+    it('should skip WIP templates during build', async () => {
+      // WIP templates are NOT built to migrations - they're not ready for deployment
+      resources = await createTestResource({ prefix: 'wip-build' });
+
+      try {
+        // Create WIP template
+        const wipPath = await resources.createTemplate(
+          'work-in-progress.wip.sql',
+          `CREATE OR REPLACE FUNCTION ${resources.testFunctionName}_wip() RETURNS void AS $$ BEGIN NULL; END; $$ LANGUAGE plpgsql;`
+        );
+
+        // Create regular template
+        const regularPath = await resources.createTemplateWithFunc('regular', '_regular');
+
+        const orchestrator = await createTestOrchestrator(resources.testDir);
+        try {
+          const result = await orchestrator.build({
+            templatePaths: [wipPath, regularPath],
+          });
+
+          // WIP should be skipped, regular should be built
+          expect(result.built.length).toBe(1);
+          expect(result.skipped.length).toBe(1);
         } finally {
           await orchestrator.dispose();
         }
