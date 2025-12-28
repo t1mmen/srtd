@@ -1,5 +1,6 @@
 import chalk from 'chalk';
 import { formatTime } from '../utils/formatTime.js';
+import { SEPARATOR } from './constants.js';
 
 export interface HeaderOptions {
   subtitle: string;
@@ -12,9 +13,6 @@ export interface HeaderOptions {
   wipCount?: number;
   needsBuildCount?: number;
 }
-
-const SEPARATOR =
-  '\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500';
 
 /**
  * Render the srtd header with grouped sections.
