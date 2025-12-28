@@ -45,6 +45,10 @@ rm -f srtd.config.json
 rm -f .gitignore
 rm -rf supabase/migrations-templates
 rm -rf supabase/migrations
+
+# Explicitly remove any buildlog files that might be elsewhere
+find . -name ".srtd.buildlog*.json" -type f -delete 2>/dev/null || true
+
 mkdir -p supabase/migrations
 mkdir -p supabase/migrations-templates
 

@@ -3,6 +3,9 @@
 
 Output readme-demo.gif
 
+# Uncomment to generate PNG frames for review:
+# Output demo-frames/
+
 Require npx
 
 # Setup the terminal
