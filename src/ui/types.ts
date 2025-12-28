@@ -1,18 +1,25 @@
 /**
  * Unified UI types for SRTD.
  *
- * These types REPLACE the old ResultRow, UnchangedRow, and WatchLogEntry
- * with a single, consistent data model used across all views.
+ * Single, consistent data model used across build, apply, and watch views.
  */
 
 /**
  * Status of a template operation.
- * - 'success': Template was successfully built or applied
+ * - 'success': Template was successfully applied to local DB
+ * - 'built': Template was successfully built to migration file
  * - 'unchanged': Template has not changed since last operation
  * - 'error': Operation failed
+ * - 'changed': Template file modified, pending apply (watch mode)
  * - 'needs-build': Template applied but not yet built to migration (watch mode)
  */
-export type TemplateStatus = 'success' | 'unchanged' | 'error' | 'needs-build';
+export type TemplateStatus =
+  | 'success'
+  | 'built'
+  | 'unchanged'
+  | 'error'
+  | 'changed'
+  | 'needs-build';
 
 /**
  * Unified result for a template operation.
@@ -45,6 +52,12 @@ export interface TemplateResult {
    * Used in watch mode when multiple events occur on the same template.
    */
   displayOverride?: string;
+
+  /**
+   * True if this change invalidates a previous build.
+   * Used to show "(build outdated)" annotation in watch mode.
+   */
+  buildOutdated?: boolean;
 }
 
 /**
