@@ -46,6 +46,11 @@ rm -f .gitignore
 rm -rf supabase/migrations-templates
 rm -rf supabase/migrations
 mkdir -p supabase/migrations
+mkdir -p supabase/migrations-templates
+
+# Copy demo templates
+echo "📝 Copying demo templates..."
+cp demo-templates/*.sql supabase/migrations-templates/
 
 # Debugging
 echo "🔍 State of files and folders..."

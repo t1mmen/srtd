@@ -14,7 +14,6 @@ Set Theme "Catppuccin Mocha"
 Set WindowBar Colorful
 
 # Initialize SRTD
-# Type "clear" Enter
 Type "srtd init"
 Enter
 Sleep 1s
@@ -24,23 +23,14 @@ Ctrl+C
 Show
 Sleep 250ms
 
-# Create our first templates
-Type "echo '-- SQL for hello..' >> supabase/migrations-templates/hello.sql"
+# Show the templates we have
+Type "ls supabase/migrations-templates/"
 Enter
-Sleep 50ms
-Type "echo '-- More fake SQL..' >> supabase/migrations-templates/test.sql"
-Enter
-Sleep 50ms
-Type "echo '-- Another one...' >> supabase/migrations-templates/another_test.sql"
-Enter
-Sleep 50ms
-Type "echo '-- WIP SQL here..' >> supabase/migrations-templates/experiment.wip.sql"
-Enter
-Sleep 50ms
-Enter
+Sleep 1s
 
-# Apply changes directly
-Type "srtd apply" Enter
+# Apply templates to local database
+Type "srtd apply"
+Enter
 Hide
 Sleep 2
 Show
@@ -50,10 +40,24 @@ Sleep 1s
 Ctrl+C
 Show
 
-# More templates
-Type "echo '-- Changes to existing template' >> supabase/migrations-templates/hello.sql" Enter
+# Make a change to a template
+Type "echo '' >> supabase/migrations-templates/srtd_demo_greet.sql"
+Enter
 Sleep 50ms
-Type "echo '-- New template' >> supabase/migrations-templates/new.sql" Enter
+Type "echo '-- Add a farewell function' >> supabase/migrations-templates/srtd_demo_greet.sql"
+Enter
+Sleep 50ms
+Type "echo 'CREATE OR REPLACE FUNCTION public.farewell(name text)' >> supabase/migrations-templates/srtd_demo_greet.sql"
+Enter
+Sleep 50ms
+Type "echo 'RETURNS text LANGUAGE sql AS $$' >> supabase/migrations-templates/srtd_demo_greet.sql"
+Enter
+Sleep 50ms
+Type "echo \"  SELECT 'Goodbye, ' || name || '!';\" >> supabase/migrations-templates/srtd_demo_greet.sql"
+Enter
+Sleep 50ms
+Type "echo '$$;' >> supabase/migrations-templates/srtd_demo_greet.sql"
+Enter
 Sleep 1s
 
 # Start watching for changes
@@ -80,34 +84,36 @@ Enter
 Show
 Sleep 3s
 
-# Make a change to hello.sql
-Type "echo '-- Another update to hello' >> supabase/migrations-templates/hello.sql" Enter
+# Create a WIP template
+Type "echo '-- Work in progress feature' > supabase/migrations-templates/srtd_demo_feature.wip.sql"
 Enter
 Sleep 1s
 
-# Build migration files
-Type "srtd build" Enter
+# Build again to show WIP is skipped
+Type "srtd build"
+Enter
 Sleep 3s
 Hide
 Ctrl+C
 Show
 
 # Promote the WIP template
-Type "srtd promote experiment.wip.sql"
+Type "srtd promote srtd_demo_feature.wip.sql"
 Enter
 Hide
 Sleep 1s
 Show
 Sleep 2s
 
-# Build migration files
-Type "srtd build" Enter
+# Build after promotion
+Type "srtd build"
+Enter
 Sleep 3s
 Hide
 Ctrl+C
 Show
 
-# Show the resulting files
+# Show the resulting migration files
 Type "ls -1p supabase/migrations/"
 Enter
 Hide
@@ -117,5 +123,5 @@ Sleep 1s
 
 # Success message
 Enter
-Type "✨ Thanks for watching! Check out github.com/t1mmen/srtd for more info"
+Type "# Thanks for watching! github.com/t1mmen/srtd"
 Sleep 5s
