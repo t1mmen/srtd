@@ -82,6 +82,13 @@ export function createMockUiModule() {
     renderHeader: vi.fn(),
     renderResultsTable: vi.fn(),
     renderErrorDisplay: vi.fn(),
+    renderWatchLogEntry: vi.fn(),
+    renderWatchFooter: vi.fn(),
+    DEFAULT_WATCH_SHORTCUTS: [
+      { key: 'q', label: 'quit' },
+      { key: 'u', label: 'toggle unchanged' },
+      { key: 'b', label: 'build all' },
+    ],
     // Spinner
     createSpinner: vi.fn(() => ({
       start: vi.fn().mockReturnThis(),

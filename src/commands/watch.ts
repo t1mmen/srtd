@@ -1,18 +1,24 @@
 // src/commands/watch.ts
-import path from 'node:path';
 import readline from 'node:readline';
 import chalk from 'chalk';
 import { Command } from 'commander';
 import figures from 'figures';
+import packageJson from '../../package.json' with { type: 'json' };
 import { Orchestrator } from '../services/Orchestrator.js';
 import type { TemplateStatus } from '../types.js';
 import { displayValidationWarnings } from '../ui/displayWarnings.js';
-import { createSpinner, renderBranding } from '../ui/index.js';
+import {
+  createSpinner,
+  renderHeader,
+  renderWatchFooter,
+  renderWatchLogEntry,
+  type WatchLogEntry,
+} from '../ui/index.js';
 import { getConfig } from '../utils/config.js';
 import { findProjectRoot } from '../utils/findProjectRoot.js';
+import { formatPath } from '../utils/formatPath.js';
 import { getErrorMessage } from '../utils/getErrorMessage.js';
 
-const PATH_DISPLAY_LENGTH = 15;
 const MAX_HISTORY = 10;
 
 interface TemplateUpdate {
@@ -22,56 +28,42 @@ interface TemplateUpdate {
   error?: string;
 }
 
-/** Formats an ISO date string as a relative time (e.g., "5m ago") */
-export function formatRelativeTime(isoDate: string): string {
-  const seconds = Math.floor((Date.now() - new Date(isoDate).getTime()) / 1000);
-  if (seconds < 5) return 'just now';
-  if (seconds < 60) return `${seconds}s ago`;
-  if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
-  if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
-  return `${Math.floor(seconds / 86400)}d ago`;
-}
-
 /** Renders the full watch mode screen with header, history, errors, and instructions */
 export function renderScreen(
   templates: TemplateStatus[],
   recentUpdates: TemplateUpdate[],
   errors: Map<string, string>,
-  templateDir: string,
+  config: { templateDir: string; migrationDir: string },
   showHistory: boolean
 ): void {
   console.clear();
 
-  // Header with stats
+  // Calculate stats
   const needsBuild = templates.filter(
     t => !t.buildState.lastBuildDate || t.currentHash !== t.buildState.lastBuildHash
   ).length;
-  console.log(`${chalk.bold('srtd')}${chalk.dim(' - Watch Mode')}`);
-  console.log();
-  const needsBuildStr = needsBuild > 0 ? chalk.yellow(`[Needs Build: ${needsBuild}]`) : '';
-  const errorsStr = errors.size > 0 ? chalk.red(`[Errors: ${errors.size}]`) : '';
-  console.log(`${chalk.green(`[Total: ${templates.length}]`)} ${needsBuildStr} ${errorsStr}`);
-  console.log();
+
+  // Render header using new UI component
+  renderHeader({
+    subtitle: 'watch',
+    version: packageJson.version,
+    templateDir: config.templateDir,
+    migrationDir: config.migrationDir,
+    templateCount: templates.length,
+    needsBuildCount: needsBuild,
+  });
 
   // History section (if toggled on)
   if (showHistory && recentUpdates.length > 0) {
     console.log(chalk.bold('Recent activity:'));
     for (const update of recentUpdates) {
-      const displayName = formatTemplateDisplay(update.template.path, templateDir);
-      const time = formatRelativeTime(update.timestamp);
-      const icon =
-        update.type === 'applied'
-          ? figures.play
-          : update.type === 'error'
-            ? figures.cross
-            : figures.info;
-      const color =
-        update.type === 'applied' ? chalk.green : update.type === 'error' ? chalk.red : chalk.cyan;
-      console.log(
-        color(
-          `  ${icon} ${displayName}: ${update.type === 'error' ? update.error : update.type} (${time})`
-        )
-      );
+      const entry: WatchLogEntry = {
+        type: update.type === 'applied' ? 'applied' : update.type === 'error' ? 'error' : 'changed',
+        template: update.template.path,
+        timestamp: new Date(update.timestamp),
+        message: update.error,
+      };
+      renderWatchLogEntry(entry);
     }
     console.log();
   }
@@ -80,32 +72,18 @@ export function renderScreen(
   if (errors.size > 0) {
     console.log(chalk.red.bold('Errors:'));
     for (const [templatePath, error] of errors) {
-      console.log(chalk.red(`  ${formatTemplateDisplay(templatePath, templateDir)}: ${error}`));
+      console.log(chalk.red(`  ${formatPath.truncatePath(templatePath)}: ${error}`));
     }
     console.log();
   }
 
-  // Instructions
-  console.log(
-    chalk.dim(
-      `Watching for changes... Press ${showHistory ? 'u to hide' : 'u to show'} history, q to quit`
-    )
-  );
-}
-
-function formatTemplateDisplay(templatePath: string, templateDir: string): string {
-  const parts = templatePath.split(path.sep);
-  const filename = parts.pop() || '';
-  const dirPath = parts.join(path.sep);
-
-  if (dirPath && templateDir && dirPath.includes(templateDir)) {
-    const relativePath = dirPath.substring(dirPath.indexOf(templateDir) + templateDir.length + 1);
-    if (relativePath) {
-      const truncatedPath = relativePath.slice(-PATH_DISPLAY_LENGTH);
-      return `${truncatedPath}/${filename}`;
-    }
-  }
-  return filename;
+  // Footer with keyboard shortcuts
+  renderWatchFooter({
+    shortcuts: [
+      { key: 'q', label: 'quit' },
+      { key: 'u', label: showHistory ? 'hide history' : 'show history' },
+    ],
+  });
 }
 
 export const watchCommand = new Command('watch')
@@ -115,8 +93,6 @@ export const watchCommand = new Command('watch')
     let orchestrator: Orchestrator | null = null;
 
     try {
-      await renderBranding({ subtitle: 'Watch Mode' });
-
       const spinner = createSpinner('Starting watch mode...').start();
 
       // Initialize Orchestrator
@@ -151,19 +127,19 @@ export const watchCommand = new Command('watch')
       let showHistory = true;
 
       // Initial render
-      renderScreen(templates, recentUpdates, errors, config.templateDir, showHistory);
+      renderScreen(templates, recentUpdates, errors, config, showHistory);
 
       // Set up orchestrator event listeners
       orchestrator.on('templateChanged', (template: TemplateStatus) => {
         recentUpdates.unshift({ type: 'changed', template, timestamp: new Date().toISOString() });
         if (recentUpdates.length > MAX_HISTORY) recentUpdates.pop();
-        renderScreen(templates, recentUpdates, errors, config.templateDir, showHistory);
+        renderScreen(templates, recentUpdates, errors, config, showHistory);
       });
 
       orchestrator.on('templateApplied', (template: TemplateStatus) => {
         recentUpdates.unshift({ type: 'applied', template, timestamp: new Date().toISOString() });
         if (recentUpdates.length > MAX_HISTORY) recentUpdates.pop();
-        renderScreen(templates, recentUpdates, errors, config.templateDir, showHistory);
+        renderScreen(templates, recentUpdates, errors, config, showHistory);
       });
 
       orchestrator.on(
@@ -177,7 +153,7 @@ export const watchCommand = new Command('watch')
           });
           if (recentUpdates.length > MAX_HISTORY) recentUpdates.pop();
           errors.set(template.path, error);
-          renderScreen(templates, recentUpdates, errors, config.templateDir, showHistory);
+          renderScreen(templates, recentUpdates, errors, config, showHistory);
         }
       );
 
@@ -217,7 +193,7 @@ export const watchCommand = new Command('watch')
           }
           if (key && key.name === 'u') {
             showHistory = !showHistory;
-            renderScreen(templates, recentUpdates, errors, config.templateDir, showHistory);
+            renderScreen(templates, recentUpdates, errors, config, showHistory);
           }
         });
       }

@@ -109,53 +109,23 @@ describe('Watch Command', () => {
   });
 });
 
-describe('Watch Command Utilities', () => {
-  it('formatTemplateDisplay handles paths correctly', async () => {
-    // The utility is private, but we test its behavior through the command
-    const { watchCommand } = await import('../commands/watch.js');
-    expect(watchCommand).toBeDefined();
-  });
-});
-
-describe('formatRelativeTime', () => {
-  it('returns "just now" for times less than 5 seconds ago', async () => {
-    const { formatRelativeTime } = await import('../commands/watch.js');
-    const now = new Date().toISOString();
-    expect(formatRelativeTime(now)).toBe('just now');
-  });
-
-  it('returns seconds ago for times between 5 and 60 seconds', async () => {
-    const { formatRelativeTime } = await import('../commands/watch.js');
-    const thirtySecondsAgo = new Date(Date.now() - 30 * 1000).toISOString();
-    expect(formatRelativeTime(thirtySecondsAgo)).toBe('30s ago');
-  });
-
-  it('returns minutes ago for times between 1 and 60 minutes', async () => {
-    const { formatRelativeTime } = await import('../commands/watch.js');
-    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
-    expect(formatRelativeTime(fiveMinutesAgo)).toBe('5m ago');
-  });
-
-  it('returns hours ago for times between 1 and 24 hours', async () => {
-    const { formatRelativeTime } = await import('../commands/watch.js');
-    const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
-    expect(formatRelativeTime(twoHoursAgo)).toBe('2h ago');
-  });
-
-  it('returns days ago for times more than 24 hours', async () => {
-    const { formatRelativeTime } = await import('../commands/watch.js');
-    const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
-    expect(formatRelativeTime(threeDaysAgo)).toBe('3d ago');
-  });
-});
+// Note: formatRelativeTime was removed - use formatTime.relative from ../utils/formatTime.js
+// Tests for relative time formatting are in ../utils/formatTime.test.ts
 
 describe('renderScreen', () => {
   let consoleClearSpy: ReturnType<typeof vi.spyOn>;
   let consoleLogSpy: ReturnType<typeof vi.spyOn>;
+  const mockConfig = { templateDir: 'templates', migrationDir: 'migrations' };
 
-  beforeEach(() => {
+  beforeEach(async () => {
+    vi.resetModules();
     consoleClearSpy = mockConsoleClear();
     consoleLogSpy = mockConsoleLog();
+    // Clear UI mocks for isolated tests
+    const ui = await import('../ui/index.js');
+    vi.mocked(ui.renderHeader).mockClear();
+    vi.mocked(ui.renderWatchLogEntry).mockClear();
+    vi.mocked(ui.renderWatchFooter).mockClear();
   });
 
   afterEach(() => {
@@ -166,13 +136,14 @@ describe('renderScreen', () => {
   it('clears the screen before rendering', async () => {
     const { renderScreen } = await import('../commands/watch.js');
 
-    renderScreen([], [], new Map(), 'templates', true);
+    renderScreen([], [], new Map(), mockConfig, true);
 
     expect(consoleClearSpy).toHaveBeenCalled();
   });
 
-  it('shows header with stats', async () => {
+  it('calls renderHeader with correct options', async () => {
     const { renderScreen } = await import('../commands/watch.js');
+    const ui = await import('../ui/index.js');
     const templates = [
       {
         name: 'test',
@@ -182,11 +153,17 @@ describe('renderScreen', () => {
       },
     ];
 
-    renderScreen(templates, [], new Map(), 'templates', true);
+    renderScreen(templates, [], new Map(), mockConfig, true);
 
-    const allOutput = consoleLogSpy.mock.calls.flat().join(' ');
-    expect(allOutput).toContain('Total: 1');
-    expect(allOutput).toContain('Needs Build: 1');
+    expect(ui.renderHeader).toHaveBeenCalledWith(
+      expect.objectContaining({
+        subtitle: 'watch',
+        templateDir: 'templates',
+        migrationDir: 'migrations',
+        templateCount: 1,
+        needsBuildCount: 1,
+      })
+    );
   });
 
   it('shows recent activity when showHistory is true and there are updates', async () => {
@@ -204,14 +181,15 @@ describe('renderScreen', () => {
       },
     ];
 
-    renderScreen([], recentUpdates, new Map(), 'templates', true);
+    renderScreen([], recentUpdates, new Map(), mockConfig, true);
 
     const allOutput = consoleLogSpy.mock.calls.flat().join(' ');
     expect(allOutput).toContain('Recent activity');
   });
 
-  it('hides recent activity when showHistory is false', async () => {
+  it('calls renderWatchLogEntry for each history item', async () => {
     const { renderScreen } = await import('../commands/watch.js');
+    const ui = await import('../ui/index.js');
     const recentUpdates = [
       {
         type: 'applied' as const,
@@ -225,34 +203,70 @@ describe('renderScreen', () => {
       },
     ];
 
-    renderScreen([], recentUpdates, new Map(), 'templates', false);
+    renderScreen([], recentUpdates, new Map(), mockConfig, true);
+
+    expect(ui.renderWatchLogEntry).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'applied',
+        template: '/templates/test.sql',
+      })
+    );
+  });
+
+  it('hides recent activity when showHistory is false', async () => {
+    const { renderScreen } = await import('../commands/watch.js');
+    const ui = await import('../ui/index.js');
+    const recentUpdates = [
+      {
+        type: 'applied' as const,
+        template: {
+          name: 'test',
+          path: '/templates/test.sql',
+          currentHash: 'abc123',
+          buildState: { lastBuildDate: null, lastBuildHash: null },
+        },
+        timestamp: new Date().toISOString(),
+      },
+    ];
+
+    renderScreen([], recentUpdates, new Map(), mockConfig, false);
 
     const allOutput = consoleLogSpy.mock.calls.flat().join(' ');
     expect(allOutput).not.toContain('Recent activity');
+    expect(ui.renderWatchLogEntry).not.toHaveBeenCalled();
   });
 
   it('shows errors section when there are errors', async () => {
     const { renderScreen } = await import('../commands/watch.js');
     const errors = new Map([['test.sql', 'Failed to apply']]);
 
-    renderScreen([], [], errors, 'templates', true);
+    renderScreen([], [], errors, mockConfig, true);
 
     const allOutput = consoleLogSpy.mock.calls.flat().join(' ');
     expect(allOutput).toContain('Errors');
     expect(allOutput).toContain('Failed to apply');
   });
 
-  it('shows toggle instruction with correct state', async () => {
+  it('calls renderWatchFooter with correct shortcuts based on showHistory state', async () => {
     const { renderScreen } = await import('../commands/watch.js');
+    const ui = await import('../ui/index.js');
 
-    renderScreen([], [], new Map(), 'templates', true);
-    let allOutput = consoleLogSpy.mock.calls.flat().join(' ');
-    expect(allOutput).toContain('u to hide');
+    renderScreen([], [], new Map(), mockConfig, true);
+    expect(ui.renderWatchFooter).toHaveBeenCalledWith({
+      shortcuts: [
+        { key: 'q', label: 'quit' },
+        { key: 'u', label: 'hide history' },
+      ],
+    });
 
-    consoleLogSpy.mockClear();
+    vi.mocked(ui.renderWatchFooter).mockClear();
 
-    renderScreen([], [], new Map(), 'templates', false);
-    allOutput = consoleLogSpy.mock.calls.flat().join(' ');
-    expect(allOutput).toContain('u to show');
+    renderScreen([], [], new Map(), mockConfig, false);
+    expect(ui.renderWatchFooter).toHaveBeenCalledWith({
+      shortcuts: [
+        { key: 'q', label: 'quit' },
+        { key: 'u', label: 'show history' },
+      ],
+    });
   });
 });
