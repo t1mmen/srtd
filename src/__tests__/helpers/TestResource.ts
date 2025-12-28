@@ -83,8 +83,11 @@ export class TestResource {
   async setup(): Promise<void> {
     if (this.isSetup) return;
 
-    // Create test directory
-    await ensureDirectories(this.testDir);
+    // Create test directories (using test-specific paths, not config)
+    await ensureDirectories(this.testDir, {
+      templateDir: 'test-templates',
+      migrationDir: 'test-migrations',
+    });
 
     // Setup database (create transaction to ensure atomicity)
     const dbService = await getTestDatabaseService();
@@ -198,8 +201,6 @@ export class TestResource {
     } catch (e) {
       console.error('Failed to clean up test directory:', e);
     }
-
-    this.isCleanedUp = true;
   }
 
   /**

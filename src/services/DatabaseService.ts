@@ -19,12 +19,6 @@ export interface DatabaseServiceConfig {
   wrapInTransaction?: boolean;
 }
 
-export interface DatabaseConnection {
-  isConnected: boolean;
-  isChecking: boolean;
-  error?: string;
-}
-
 export interface ConnectionStats {
   total: number;
   idle: number;

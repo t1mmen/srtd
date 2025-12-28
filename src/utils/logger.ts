@@ -10,5 +10,3 @@ export const logger = {
   debug: (msg: string) =>
     process.env.DEBUG && process.env.DEBUG === 'true' && console.log(`  🔍 ${chalk.white(msg)}`),
 };
-
-export type LogLevel = keyof typeof logger;

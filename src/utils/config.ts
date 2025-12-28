@@ -1,6 +1,6 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { CONFIG_FILE } from '../constants.js';
+import { CONFIG_FILE, DEFAULT_PG_CONNECTION } from '../constants.js';
 import type { CLIConfig } from '../types.js';
 import { logger } from './logger.js';
 import { CLIConfigSchema, formatZodErrors, type ValidationWarning } from './schemas.js';
@@ -25,7 +25,7 @@ const defaultConfig: CLIConfig = {
   migrationDir: 'supabase/migrations',
   buildLog: 'supabase/migrations-templates/.srtd.buildlog.json',
   localBuildLog: 'supabase/migrations-templates/.srtd.buildlog.local.json',
-  pgConnection: 'postgresql://postgres:postgres@localhost:54322/postgres',
+  pgConnection: DEFAULT_PG_CONNECTION,
 };
 
 /**

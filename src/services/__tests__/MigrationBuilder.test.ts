@@ -5,7 +5,6 @@
  */
 
 import fs from 'node:fs/promises';
-// import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { BuildLog } from '../../types.js';
 import {
@@ -66,7 +65,10 @@ describe('MigrationBuilder', () => {
     vi.mocked(fs.access).mockRejectedValue(new Error('ENOENT'));
 
     // Mock timestamp generation
-    vi.mocked(getNextTimestamp).mockResolvedValue('20240101123456');
+    vi.mocked(getNextTimestamp).mockReturnValue({
+      timestamp: '20240101123456',
+      newLastTimestamp: '20240101123456',
+    });
   });
 
   afterEach(() => {
@@ -144,8 +146,8 @@ describe('MigrationBuilder', () => {
   });
 
   describe('migration content generation', () => {
-    it('should generate migration with all components', async () => {
-      const result = await builder.generateMigration(templateMetadata, mockBuildLog);
+    it('should generate migration with all components', () => {
+      const result = builder.generateMigration(templateMetadata, mockBuildLog);
 
       expect(result.fileName).toBe('20240101123456_test-create_users.sql');
       expect(result.filePath).toBe('migrations/20240101123456_test-create_users.sql');
@@ -162,8 +164,8 @@ describe('MigrationBuilder', () => {
       expect(content).toContain('-- Built with https://github.com/t1mmen/srtd');
     });
 
-    it('should generate migration without transaction wrapping', async () => {
-      const result = await builder.generateMigration(templateMetadata, mockBuildLog, {
+    it('should generate migration without transaction wrapping', () => {
+      const result = builder.generateMigration(templateMetadata, mockBuildLog, {
         wrapInTransaction: false,
       });
 
@@ -173,26 +175,26 @@ describe('MigrationBuilder', () => {
       expect(content).toContain('CREATE TABLE users (id SERIAL PRIMARY KEY, name TEXT);');
     });
 
-    it('should generate migration without prefix', async () => {
+    it('should generate migration without prefix', () => {
       const noPrefixBuilder = new MigrationBuilder({
         ...config,
         migrationPrefix: undefined,
       });
 
-      const result = await noPrefixBuilder.generateMigration(templateMetadata, mockBuildLog);
+      const result = noPrefixBuilder.generateMigration(templateMetadata, mockBuildLog);
 
       expect(result.fileName).toBe('20240101123456_create_users.sql');
       expect(result.filePath).toBe('migrations/20240101123456_create_users.sql');
     });
 
-    it('should generate migration without banner and footer', async () => {
+    it('should generate migration without banner and footer', () => {
       const minimalBuilder = new MigrationBuilder({
         ...config,
         banner: '',
         footer: '',
       });
 
-      const result = await minimalBuilder.generateMigration(templateMetadata, mockBuildLog);
+      const result = minimalBuilder.generateMigration(templateMetadata, mockBuildLog);
 
       const content = result.content;
       expect(content).not.toContain('-- Auto-generated migration');
@@ -201,25 +203,25 @@ describe('MigrationBuilder', () => {
       expect(content).toContain('-- Built with https://github.com/t1mmen/srtd');
     });
 
-    it('should handle template without lastBuildAt', async () => {
+    it('should handle template without lastBuildAt', () => {
       const templateWithoutBuild = {
         ...templateMetadata,
         lastBuildAt: undefined,
       };
 
-      const result = await builder.generateMigration(templateWithoutBuild, mockBuildLog);
+      const result = builder.generateMigration(templateWithoutBuild, mockBuildLog);
 
       const content = result.content;
       expect(content).toContain('-- Last built: Never');
     });
 
-    it('should generate unique timestamps', async () => {
+    it('should generate unique timestamps', () => {
       vi.mocked(getNextTimestamp)
-        .mockResolvedValueOnce('20240101123456')
-        .mockResolvedValueOnce('20240101123457');
+        .mockReturnValueOnce({ timestamp: '20240101123456', newLastTimestamp: '20240101123456' })
+        .mockReturnValueOnce({ timestamp: '20240101123457', newLastTimestamp: '20240101123457' });
 
-      const result1 = await builder.generateMigration(templateMetadata, mockBuildLog);
-      const result2 = await builder.generateMigration(templateMetadata, mockBuildLog);
+      const result1 = builder.generateMigration(templateMetadata, mockBuildLog);
+      const result2 = builder.generateMigration(templateMetadata, mockBuildLog);
 
       expect(result1.timestamp).toBe('20240101123456');
       expect(result2.timestamp).toBe('20240101123457');
@@ -241,9 +243,9 @@ describe('MigrationBuilder', () => {
       };
     });
 
-    it('should generate bundled migration with multiple templates', async () => {
+    it('should generate bundled migration with multiple templates', () => {
       const templates = [templateMetadata, template2];
-      const result = await builder.generateBundledMigration(templates, mockBuildLog);
+      const result = builder.generateBundledMigration(templates, mockBuildLog);
 
       expect(result.fileName).toBe('20240101123456_test-bundle.sql');
       expect(result.filePath).toBe('migrations/20240101123456_test-bundle.sql');
@@ -257,9 +259,9 @@ describe('MigrationBuilder', () => {
       expect(content).toContain('CREATE TABLE posts');
     });
 
-    it('should generate bundled migration without transaction wrapping', async () => {
+    it('should generate bundled migration without transaction wrapping', () => {
       const templates = [templateMetadata, template2];
-      const result = await builder.generateBundledMigration(templates, mockBuildLog, {
+      const result = builder.generateBundledMigration(templates, mockBuildLog, {
         wrapInTransaction: false,
       });
 
@@ -268,8 +270,8 @@ describe('MigrationBuilder', () => {
       expect(content).not.toContain('COMMIT;');
     });
 
-    it('should handle empty template list for bundle', async () => {
-      const result = await builder.generateBundledMigration([], mockBuildLog);
+    it('should handle empty template list for bundle', () => {
+      const result = builder.generateBundledMigration([], mockBuildLog);
 
       expect(result.includedTemplates).toHaveLength(0);
       expect(result.content.trim()).toBe('');
@@ -393,51 +395,51 @@ describe('MigrationBuilder', () => {
   });
 
   describe('edge cases and error scenarios', () => {
-    it('should handle empty template content', async () => {
+    it('should handle empty template content', () => {
       const emptyTemplate = {
         ...templateMetadata,
         content: '',
       };
 
-      const result = await builder.generateMigration(emptyTemplate, mockBuildLog);
+      const result = builder.generateMigration(emptyTemplate, mockBuildLog);
 
       expect(result.content).toContain('BEGIN;');
       expect(result.content).toContain('COMMIT;');
       expect(result.content).not.toContain('CREATE TABLE');
     });
 
-    it('should handle template with special characters in name', async () => {
+    it('should handle template with special characters in name', () => {
       const specialTemplate = {
         ...templateMetadata,
         name: 'create-users_v2.final',
       };
 
-      const result = await builder.generateMigration(specialTemplate, mockBuildLog);
+      const result = builder.generateMigration(specialTemplate, mockBuildLog);
 
       expect(result.fileName).toBe('20240101123456_test-create-users_v2.final.sql');
     });
 
-    it('should handle very long template content', async () => {
+    it('should handle very long template content', () => {
       const longContent = `CREATE TABLE test (${'col TEXT, '.repeat(1000)}id SERIAL);`;
       const longTemplate = {
         ...templateMetadata,
         content: longContent,
       };
 
-      const result = await builder.generateMigration(longTemplate, mockBuildLog);
+      const result = builder.generateMigration(longTemplate, mockBuildLog);
 
       expect(result.content).toContain(longContent);
       expect(result.content.length).toBeGreaterThan(longContent.length);
     });
 
-    it('should handle template with multiline SQL', async () => {
+    it('should handle template with multiline SQL', () => {
       const multilineContent = `
         CREATE TABLE users (
           id SERIAL PRIMARY KEY,
           name TEXT NOT NULL,
           email TEXT UNIQUE
         );
-        
+
         CREATE INDEX idx_users_email ON users(email);
       `;
 
@@ -446,19 +448,17 @@ describe('MigrationBuilder', () => {
         content: multilineContent,
       };
 
-      const result = await builder.generateMigration(multilineTemplate, mockBuildLog);
+      const result = builder.generateMigration(multilineTemplate, mockBuildLog);
 
       expect(result.content).toContain('CREATE TABLE users');
       expect(result.content).toContain('CREATE INDEX idx_users_email');
     });
 
-    it('should handle BuildLog updates correctly', async () => {
-      // const _initialTimestamp = mockBuildLog.lastTimestamp;
+    it('should call getNextTimestamp with lastTimestamp', () => {
+      builder.generateMigration(templateMetadata, mockBuildLog);
 
-      await builder.generateMigration(templateMetadata, mockBuildLog);
-
-      expect(getNextTimestamp).toHaveBeenCalledWith(mockBuildLog);
-      // BuildLog should be modified by getNextTimestamp
+      // Now getNextTimestamp is pure and receives only the lastTimestamp string
+      expect(getNextTimestamp).toHaveBeenCalledWith(mockBuildLog.lastTimestamp);
     });
 
     it('should maintain configuration immutability', () => {
@@ -472,18 +472,16 @@ describe('MigrationBuilder', () => {
   });
 
   describe('concurrent operations', () => {
-    it('should handle concurrent migration generation', async () => {
+    it('should handle multiple migration generation', () => {
       vi.mocked(getNextTimestamp)
-        .mockResolvedValueOnce('20240101123456')
-        .mockResolvedValueOnce('20240101123457')
-        .mockResolvedValueOnce('20240101123458');
+        .mockReturnValueOnce({ timestamp: '20240101123456', newLastTimestamp: '20240101123456' })
+        .mockReturnValueOnce({ timestamp: '20240101123457', newLastTimestamp: '20240101123457' })
+        .mockReturnValueOnce({ timestamp: '20240101123458', newLastTimestamp: '20240101123458' });
 
       const templates = [templateMetadata, templateMetadata, templateMetadata];
-      const promises = templates.map((template, i) =>
+      const results = templates.map((template, i) =>
         builder.generateMigration({ ...template, name: `template_${i}` }, mockBuildLog)
       );
-
-      const results = await Promise.all(promises);
 
       expect(results).toHaveLength(3);
       expect(results[0]?.timestamp).toBe('20240101123456');
@@ -498,33 +496,33 @@ describe('MigrationBuilder', () => {
   });
 
   describe('custom migration filename templates', () => {
-    it('should use default template when migrationFilename not specified', async () => {
-      const result = await builder.generateMigration(templateMetadata, mockBuildLog);
+    it('should use default template when migrationFilename not specified', () => {
+      const result = builder.generateMigration(templateMetadata, mockBuildLog);
 
       // Default behavior: $timestamp_$prefix$migrationName.sql
       expect(result.fileName).toBe('20240101123456_test-create_users.sql');
       expect(result.filePath).toBe('migrations/20240101123456_test-create_users.sql');
     });
 
-    it('should use custom template from config', async () => {
+    it('should use custom template from config', () => {
       const customBuilder = new MigrationBuilder({
         ...config,
         migrationFilename: '$migrationName/migrate.sql',
       });
 
-      const result = await customBuilder.generateMigration(templateMetadata, mockBuildLog);
+      const result = customBuilder.generateMigration(templateMetadata, mockBuildLog);
 
       expect(result.fileName).toBe('create_users/migrate.sql');
       expect(result.filePath).toBe('migrations/create_users/migrate.sql');
     });
 
-    it('should handle custom template without prefix variable', async () => {
+    it('should handle custom template without prefix variable', () => {
       const customBuilder = new MigrationBuilder({
         ...config,
         migrationFilename: '$timestamp/$migrationName.sql',
       });
 
-      const result = await customBuilder.generateMigration(templateMetadata, mockBuildLog);
+      const result = customBuilder.generateMigration(templateMetadata, mockBuildLog);
 
       expect(result.fileName).toBe('20240101123456/create_users.sql');
       expect(result.filePath).toBe('migrations/20240101123456/create_users.sql');
@@ -536,7 +534,7 @@ describe('MigrationBuilder', () => {
         migrationFilename: '$migrationName/migrate.sql',
       });
 
-      const migrationResult = await customBuilder.generateMigration(templateMetadata, mockBuildLog);
+      const migrationResult = customBuilder.generateMigration(templateMetadata, mockBuildLog);
       await customBuilder.writeMigration(migrationResult);
 
       // Should create the nested directory
@@ -550,26 +548,26 @@ describe('MigrationBuilder', () => {
       );
     });
 
-    it('should apply custom template to bundled migrations', async () => {
+    it('should apply custom template to bundled migrations', () => {
       const customBuilder = new MigrationBuilder({
         ...config,
         migrationFilename: '$timestamp_$prefix$migrationName.sql',
       });
 
       const templates = [templateMetadata];
-      const result = await customBuilder.generateBundledMigration(templates, mockBuildLog);
+      const result = customBuilder.generateBundledMigration(templates, mockBuildLog);
 
       expect(result.fileName).toBe('20240101123456_test-bundle.sql');
     });
 
-    it('should apply directory template to bundled migrations', async () => {
+    it('should apply directory template to bundled migrations', () => {
       const customBuilder = new MigrationBuilder({
         ...config,
         migrationFilename: '$migrationName/migrate.sql',
       });
 
       const templates = [templateMetadata];
-      const result = await customBuilder.generateBundledMigration(templates, mockBuildLog);
+      const result = customBuilder.generateBundledMigration(templates, mockBuildLog);
 
       expect(result.fileName).toBe('bundle/migrate.sql');
       expect(result.filePath).toBe('migrations/bundle/migrate.sql');
@@ -586,26 +584,26 @@ describe('MigrationBuilder', () => {
       expect(migrationPath).toBe('migrations/create_users/migrate.sql');
     });
 
-    it('should reject path traversal attempts in template', async () => {
+    it('should reject path traversal attempts in template', () => {
       const maliciousBuilder = new MigrationBuilder({
         ...config,
         migrationFilename: '../../../etc/$migrationName.sql',
       });
 
-      await expect(
-        maliciousBuilder.generateMigration(templateMetadata, mockBuildLog)
-      ).rejects.toThrow('would write outside migration directory');
+      expect(() => maliciousBuilder.generateMigration(templateMetadata, mockBuildLog)).toThrow(
+        'would write outside migration directory'
+      );
     });
 
-    it('should reject path traversal in bundled migrations', async () => {
+    it('should reject path traversal in bundled migrations', () => {
       const maliciousBuilder = new MigrationBuilder({
         ...config,
         migrationFilename: '../$migrationName.sql',
       });
 
-      await expect(
+      expect(() =>
         maliciousBuilder.generateBundledMigration([templateMetadata], mockBuildLog)
-      ).rejects.toThrow('would write outside migration directory');
+      ).toThrow('would write outside migration directory');
     });
   });
 });

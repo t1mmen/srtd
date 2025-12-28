@@ -1,6 +1,9 @@
+// Set test mode before any imports to suppress CLI output
+process.env.SRTD_TEST_MODE = 'true';
+
 import { Command } from 'commander';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { mockConsoleLog, mockProcessExit } from './__tests__/helpers/testUtils.js';
+import { mockConsoleLog, mockProcessExit, mockStdout } from './__tests__/helpers/testUtils.js';
 
 // Mock dependencies before any imports
 vi.mock('update-notifier', () => ({
@@ -60,9 +63,18 @@ describe('cli', () => {
   it('should export a commander program', async () => {
     process.argv = ['node', 'srtd', '--help'];
 
-    // The CLI module defines the program
-    const module = await import('./cli.js');
-    expect(module).toBeDefined();
+    // Suppress Commander's help output during test (uses process.stdout.write)
+    const stdoutSpy = mockStdout();
+    const consoleLogSpy = mockConsoleLog();
+
+    try {
+      // The CLI module defines the program
+      const module = await import('./cli.js');
+      expect(module).toBeDefined();
+    } finally {
+      stdoutSpy.mockRestore();
+      consoleLogSpy.mockRestore();
+    }
   });
 
   it('should handle version flag', async () => {
@@ -94,9 +106,7 @@ describe('cli', () => {
   });
 
   it('should register all commands', async () => {
-    process.argv = ['node', 'srtd', '--help'];
-
-    // The commands should be registered
+    // Don't use --help here, just verify commands are importable
     const initCmd = await import('./commands/init.js');
     const applyCmd = await import('./commands/apply.js');
     const buildCmd = await import('./commands/build.js');

@@ -1,23 +1,23 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { BuildLog } from '../types.js';
 import { getNextTimestamp } from './getNextTimestamp.js';
 
 describe('getNextTimestamp', () => {
-  it('should generate a timestamp in the correct format', async () => {
-    // Create a mock BuildLog
-    const mockBuildLog: BuildLog = {
-      version: '1.0',
-      templates: {},
-      lastTimestamp: '',
-    };
+  it('should generate a timestamp in the correct format', () => {
+    const result = getNextTimestamp('');
 
-    const timestamp = await getNextTimestamp(mockBuildLog);
+    // Should return an object with timestamp and newLastTimestamp
+    expect(result).toHaveProperty('timestamp');
+    expect(result).toHaveProperty('newLastTimestamp');
 
     // Should be a string with 14 digits
-    expect(typeof timestamp).toBe('string');
-    expect(timestamp).toMatch(/^\d{14}$/);
+    expect(typeof result.timestamp).toBe('string');
+    expect(result.timestamp).toMatch(/^\d{14}$/);
+
+    // Both should be equal for a fresh timestamp
+    expect(result.timestamp).toBe(result.newLastTimestamp);
 
     // Should parse to a valid date when formatted as YYYYMMDDHHmmss
+    const { timestamp } = result;
     const year = Number.parseInt(timestamp.substring(0, 4), 10);
     const month = Number.parseInt(timestamp.substring(4, 6), 10);
     const day = Number.parseInt(timestamp.substring(6, 8), 10);
@@ -35,42 +35,60 @@ describe('getNextTimestamp', () => {
     expect(second).toBeLessThanOrEqual(59);
   });
 
-  it('should generate timestamps that increment correctly', async () => {
-    // Create a mock BuildLog
-    const mockBuildLog: BuildLog = {
-      version: '1.0',
-      templates: {},
-      lastTimestamp: '',
-    };
+  it('should increment when timestamp equals lastTimestamp', () => {
+    // Mock a fixed time using vi.useFakeTimers
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2023-01-01T12:00:00Z'));
 
-    // Mock Date.now to control the timestamp generation
-    const mockDate = new Date('2023-01-01T12:00:00Z');
-    vi.spyOn(Date, 'now').mockImplementation(() => mockDate.getTime());
+    // Generate first timestamp
+    const result1 = getNextTimestamp('');
+    expect(result1.timestamp).toBe('20230101120000');
 
-    const timestamp1 = await getNextTimestamp(mockBuildLog);
+    // Generate second timestamp with same lastTimestamp
+    // Since clock hasn't moved, should increment
+    const result2 = getNextTimestamp(result1.newLastTimestamp);
+    expect(result2.timestamp).toBe('20230101120001');
+    expect(result2.newLastTimestamp).toBe('20230101120001');
 
-    // Increment the mock date by 1 second
-    mockDate.setSeconds(mockDate.getSeconds() + 1);
-    const timestamp2 = await getNextTimestamp(mockBuildLog);
+    vi.useRealTimers();
+  });
 
-    // Timestamps should be different
-    expect(timestamp1).not.toBe(timestamp2);
+  it('should use current time when it is greater than lastTimestamp', () => {
+    // Use old timestamp
+    const oldTimestamp = '20200101000000';
 
-    // Second timestamp should be greater
-    expect(Number.parseInt(timestamp2, 10)).toBeGreaterThan(Number.parseInt(timestamp1, 10));
+    const result = getNextTimestamp(oldTimestamp);
 
-    // The difference should be exactly 1 second
-    const secondsDigits = -2; // Last 2 digits represent seconds
-    const timestamp1Seconds = timestamp1.slice(secondsDigits);
-    const timestamp2Seconds = timestamp2.slice(secondsDigits);
-    const timestamp1RestDigits = timestamp1.slice(0, secondsDigits);
-    const timestamp2RestDigits = timestamp2.slice(0, secondsDigits);
+    // Should use current time, not increment from old
+    expect(Number.parseInt(result.timestamp, 10)).toBeGreaterThan(
+      Number.parseInt(oldTimestamp, 10)
+    );
+  });
 
-    if (timestamp1RestDigits === timestamp2RestDigits) {
-      // If only seconds differ
-      expect(Number.parseInt(timestamp2Seconds, 10) - Number.parseInt(timestamp1Seconds, 10)).toBe(
-        1
-      );
-    }
+  it('should be a pure function - not mutate input', () => {
+    const lastTimestamp = '20230101120000';
+
+    // Call the function
+    getNextTimestamp(lastTimestamp);
+
+    // Original string should be unchanged (strings are immutable, but testing the contract)
+    expect(lastTimestamp).toBe('20230101120000');
+  });
+
+  it('should handle BigInt increment correctly for large timestamps', () => {
+    // Mock time to be before the large timestamp so increment is used
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2023-01-01T00:00:00Z'));
+
+    // Use max realistic timestamp
+    const largeTimestamp = '99991231235959';
+
+    const result = getNextTimestamp(largeTimestamp);
+
+    // Should increment by 1 since current time is less than largeTimestamp
+    expect(result.timestamp).toBe('99991231235960');
+    expect(result.newLastTimestamp).toBe('99991231235960');
+
+    vi.useRealTimers();
   });
 });

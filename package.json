@@ -23,8 +23,10 @@
     "dev": "tsc --watch",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage --reporter=junit --outputFile=test-report.junit.xml",
+    "test:coverage": "vitest run --coverage",
     "test:e2e": "vitest run src/__tests__/e2e/",
+    "test:e2e:db": "vitest run --config vitest.config.e2e.ts",
+    "test:e2e:db:coverage": "vitest run --config vitest.config.e2e.ts --coverage",
     "start": "tsx src/cli.ts",
     "start:link": "npm run build && npm link && chmod u+x ./dist/cli.js && srtd",
     "precommit:safe": "lefthook run pre-commit",
@@ -77,7 +79,6 @@
     "chalk": "^5.4.1",
     "chokidar": "^5.0.0",
     "commander": "^14.0.2",
-    "conf": "^13.1.0",
     "figures": "^6.1.0",
     "glob": "^13.0.0",
     "ora": "^9.0.0",
@@ -92,15 +93,14 @@
     "@biomejs/biome": "^2.3.10",
     "@changesets/cli": "^2.27.11",
     "@sindresorhus/tsconfig": "^7.0.0",
-    "@types/glob": "^8.1.0",
     "@types/node": "^20.17.10",
     "@types/pg": "^8.11.10",
     "@types/update-notifier": "^6.0.8",
-    "@vitest/coverage-v8": "^3.2.4",
+    "@vitest/coverage-v8": "^4.0.16",
     "lefthook": "^1.10.1",
     "task-master-ai": "^0.24.0",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2",
-    "vitest": "^3.2.4"
+    "vitest": "^4.0.16"
   }
 }

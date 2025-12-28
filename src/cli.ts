@@ -28,7 +28,20 @@ const program = new Command();
 program
   .name('srtd')
   .description('Supabase Repeatable Template Definitions - Live-reloading SQL templates')
-  .version(packageJson.version);
+  .version(packageJson.version)
+  .option('--non-interactive', 'Disable interactive prompts and menus');
+
+// In test mode, suppress Commander output to avoid polluting test logs
+if (isTestMode) {
+  program.configureOutput({
+    writeOut: () => {
+      /* suppress output in tests */
+    },
+    writeErr: () => {
+      /* suppress output in tests */
+    },
+  });
+}
 
 // Register all commands
 program.addCommand(initCommand);
@@ -52,6 +65,7 @@ if (!hasArgs && process.stdin.isTTY && !isTestMode && !nonInteractiveFlag) {
 }
 
 // For testing purposes, ensure process exits cleanly
-if (isTestMode || nonInteractiveFlag) {
+// Note: Only for test mode - non-interactive should exit normally to preserve exit codes
+if (isTestMode) {
   process.exit(0);
 }

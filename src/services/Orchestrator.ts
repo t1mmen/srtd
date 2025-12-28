@@ -16,11 +16,11 @@ import type { TemplateMetadata } from './MigrationBuilder.js';
 import { MigrationBuilder } from './MigrationBuilder.js';
 import { StateService } from './StateService.js';
 
-// Re-export ValidationWarning for consumers
-export type { ValidationWarning } from '../utils/schemas.js';
-
-// Event types for Orchestrator
-export interface OrchestratorEvent {
+/**
+ * Event types for Orchestrator - defines the payload for each event.
+ * Used for type-safe event emission and subscription.
+ */
+export interface OrchestratorEvents {
   templateChanged: TemplateStatus;
   templateApplied: TemplateStatus;
   templateBuilt: TemplateStatus;
@@ -73,6 +73,39 @@ export class Orchestrator extends EventEmitter implements Disposable {
     super();
     this.config = config;
     this.configWarnings = configWarnings;
+  }
+
+  // Type-safe event methods - overloads for compile-time validation
+  override emit<K extends keyof OrchestratorEvents>(
+    event: K,
+    payload: OrchestratorEvents[K]
+  ): boolean;
+  override emit(event: string | symbol, ...args: unknown[]): boolean {
+    return super.emit(event, ...args);
+  }
+
+  override on<K extends keyof OrchestratorEvents>(
+    event: K,
+    listener: (payload: OrchestratorEvents[K]) => void
+  ): this;
+  override on(event: string | symbol, listener: (...args: unknown[]) => void): this {
+    return super.on(event, listener);
+  }
+
+  override once<K extends keyof OrchestratorEvents>(
+    event: K,
+    listener: (payload: OrchestratorEvents[K]) => void
+  ): this;
+  override once(event: string | symbol, listener: (...args: unknown[]) => void): this {
+    return super.once(event, listener);
+  }
+
+  override off<K extends keyof OrchestratorEvents>(
+    event: K,
+    listener: (payload: OrchestratorEvents[K]) => void
+  ): this;
+  override off(event: string | symbol, listener: (...args: unknown[]) => void): this {
+    return super.off(event, listener);
   }
 
   /**
@@ -274,20 +307,22 @@ export class Orchestrator extends EventEmitter implements Disposable {
         await this.stateService.markAsChanged(templatePath, templateFile.hash);
       }
 
-      // Step 5: Get current template status for event emission
-      const template = await this.getTemplateStatus(templatePath);
+      // Step 5: Get current template status for event emission (reuse cached file)
+      const template = await this.getTemplateStatus(templatePath, templateFile);
       this.emit('templateChanged', template);
 
-      // Step 6: Action - Apply template to database
-      const result = await this.executeApplyTemplate(templatePath);
+      // Step 6: Action - Apply template to database (reuse cached file)
+      const result = await this.executeApplyTemplate(templatePath, templateFile);
 
       // Step 7: Handle result and emit events
       if (result.errors.length > 0) {
         const error = result.errors[0];
-        const formattedError = typeof error === 'string' ? error : error?.error;
+        const formattedError =
+          typeof error === 'string' ? error : (error?.error ?? 'Unknown error');
         this.emit('templateError', { template, error: formattedError });
       } else {
-        const updatedTemplate = await this.getTemplateStatus(templatePath);
+        // After apply, state has changed - re-read to get fresh status
+        const updatedTemplate = await this.getTemplateStatus(templatePath, templateFile);
         this.emit('templateApplied', updatedTemplate);
       }
 
@@ -328,10 +363,15 @@ export class Orchestrator extends EventEmitter implements Disposable {
   }
 
   /**
-   * Get template status by coordinating between services
+   * Get template status by coordinating between services.
+   * Accepts optional cached template file to avoid redundant disk reads.
    */
-  private async getTemplateStatus(templatePath: string): Promise<TemplateStatus> {
-    const templateFile = await this.fileSystemService.readTemplate(templatePath);
+  private async getTemplateStatus(
+    templatePath: string,
+    cachedTemplateFile?: Awaited<ReturnType<FileSystemService['readTemplate']>>
+  ): Promise<TemplateStatus> {
+    const templateFile =
+      cachedTemplateFile ?? (await this.fileSystemService.readTemplate(templatePath));
 
     // Get build state from StateService (single source of truth)
     const buildState = this.stateService.getTemplateBuildState(templatePath) || {};
@@ -342,16 +382,21 @@ export class Orchestrator extends EventEmitter implements Disposable {
       currentHash: templateFile.hash,
       migrationHash: null,
       buildState,
-      wip: await isWipTemplate(templatePath, this.config.baseDir),
+      wip: isWipTemplate(templatePath, this.config.cliConfig.wipIndicator),
     };
   }
 
   /**
-   * Execute apply operation for a template
+   * Execute apply operation for a template.
+   * Accepts optional cached template file to avoid redundant disk reads.
    */
-  private async executeApplyTemplate(templatePath: string): Promise<ProcessedTemplateResult> {
-    const template = await this.getTemplateStatus(templatePath);
-    const templateFile = await this.fileSystemService.readTemplate(templatePath);
+  private async executeApplyTemplate(
+    templatePath: string,
+    cachedTemplateFile?: Awaited<ReturnType<FileSystemService['readTemplate']>>
+  ): Promise<ProcessedTemplateResult> {
+    const templateFile =
+      cachedTemplateFile ?? (await this.fileSystemService.readTemplate(templatePath));
+    const template = await this.getTemplateStatus(templatePath, templateFile);
     const content = templateFile.content;
 
     try {
@@ -389,6 +434,7 @@ export class Orchestrator extends EventEmitter implements Disposable {
 
     for (const templatePath of templates) {
       try {
+        // WIP templates ARE applied to local DB (only build skips them)
         const processResult = await this.processTemplate(templatePath, options.force);
         result.errors.push(...(processResult.errors || []));
         result.applied.push(...(processResult.applied || []));
@@ -446,7 +492,7 @@ export class Orchestrator extends EventEmitter implements Disposable {
 
     // Collect templates for bundle
     for (const templatePath of templatePaths) {
-      const isWip = await isWipTemplate(templatePath, this.config.baseDir);
+      const isWip = isWipTemplate(templatePath, this.config.cliConfig.wipIndicator);
       if (isWip) {
         const template = await this.getTemplateStatus(templatePath);
         this.log(`Skipping WIP template: ${template.name}`, 'skip');
@@ -487,6 +533,9 @@ export class Orchestrator extends EventEmitter implements Disposable {
           wrapInTransaction: this.config.cliConfig.wrapInTransaction,
         });
 
+      // Update timestamp via StateService (single source of truth for mutations)
+      this.stateService.updateTimestamp(migrationResult.newLastTimestamp);
+
       // Update state for all included templates (StateService handles build log updates)
       for (const template of templates) {
         await this.stateService.markAsBuilt(
@@ -524,7 +573,7 @@ export class Orchestrator extends EventEmitter implements Disposable {
 
     for (const templatePath of templatePaths) {
       try {
-        const isWip = await isWipTemplate(templatePath, this.config.baseDir);
+        const isWip = isWipTemplate(templatePath, this.config.cliConfig.wipIndicator);
         if (isWip) {
           const template = await this.getTemplateStatus(templatePath);
           this.log(`Skipping WIP template: ${template.name}`, 'skip');
@@ -593,6 +642,9 @@ export class Orchestrator extends EventEmitter implements Disposable {
           wrapInTransaction: this.config.cliConfig.wrapInTransaction,
         }
       );
+
+      // Update timestamp via StateService (single source of truth for mutations)
+      this.stateService.updateTimestamp(migrationResult.newLastTimestamp);
 
       // Update StateService (single source of truth - handles build log updates)
       await this.stateService.markAsBuilt(
@@ -700,7 +752,7 @@ export class Orchestrator extends EventEmitter implements Disposable {
     }
 
     // Check if it's a WIP template
-    const isWip = await isWipTemplate(templatePath, this.config.baseDir);
+    const isWip = isWipTemplate(templatePath, this.config.cliConfig.wipIndicator);
     if (!isWip) {
       throw new Error(`Template is not a WIP template: ${path.basename(templatePath)}`);
     }
