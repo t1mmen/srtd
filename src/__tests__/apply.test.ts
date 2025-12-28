@@ -116,7 +116,7 @@ describe('Apply Command', () => {
       applied: [],
       built: [],
       skipped: [],
-      errors: [{ templateName: 'bad.sql', error: 'Syntax error' }],
+      errors: [{ file: 'bad.sql', templateName: 'bad.sql', error: 'Syntax error' }],
     });
 
     await applyCommand.parseAsync(['node', 'test']);
@@ -132,5 +132,85 @@ describe('Apply Command', () => {
     await applyCommand.parseAsync(['node', 'test']);
 
     expect(spies.exitSpy).toHaveBeenCalledWith(1);
+  });
+
+  describe('new UI components', () => {
+    it('uses renderHeader instead of renderBranding', async () => {
+      const uiModule = await import('../ui/index.js');
+      const { applyCommand } = await import('../commands/apply.js');
+
+      mockOrchestrator.apply.mockResolvedValue({
+        applied: ['migration1.sql'],
+        built: [],
+        skipped: [],
+        errors: [],
+      });
+
+      await applyCommand.parseAsync(['node', 'test']);
+
+      spies.assertNoStderr();
+      expect(uiModule.renderHeader).toHaveBeenCalled();
+      expect(uiModule.renderBranding).not.toHaveBeenCalled();
+    });
+
+    it('uses renderResultsTable for displaying results', async () => {
+      const uiModule = await import('../ui/index.js');
+      const { applyCommand } = await import('../commands/apply.js');
+
+      mockOrchestrator.apply.mockResolvedValue({
+        applied: ['migration1.sql', 'migration2.sql'],
+        built: [],
+        skipped: ['unchanged.sql'],
+        errors: [],
+      });
+
+      await applyCommand.parseAsync(['node', 'test']);
+
+      spies.assertNoStderr();
+      expect(uiModule.renderResultsTable).toHaveBeenCalledWith({
+        rows: [
+          { template: 'migration1.sql', status: 'applied' },
+          { template: 'migration2.sql', status: 'applied' },
+        ],
+        unchanged: ['unchanged.sql'],
+        errorCount: 0,
+      });
+      expect(uiModule.renderResults).not.toHaveBeenCalled();
+    });
+
+    it('uses renderErrorDisplay for errors', async () => {
+      const uiModule = await import('../ui/index.js');
+      const { applyCommand } = await import('../commands/apply.js');
+
+      mockOrchestrator.apply.mockResolvedValue({
+        applied: [],
+        built: [],
+        skipped: [],
+        errors: [{ file: 'bad.sql', templateName: 'bad.sql', error: 'syntax error at line 5' }],
+      });
+
+      await applyCommand.parseAsync(['node', 'test']);
+
+      expect(uiModule.renderErrorDisplay).toHaveBeenCalledWith({
+        errors: [{ template: 'bad.sql', message: 'syntax error at line 5' }],
+      });
+    });
+
+    it('does not call renderErrorDisplay when there are no errors', async () => {
+      const uiModule = await import('../ui/index.js');
+      const { applyCommand } = await import('../commands/apply.js');
+
+      mockOrchestrator.apply.mockResolvedValue({
+        applied: ['migration1.sql'],
+        built: [],
+        skipped: [],
+        errors: [],
+      });
+
+      await applyCommand.parseAsync(['node', 'test']);
+
+      spies.assertNoStderr();
+      expect(uiModule.renderErrorDisplay).not.toHaveBeenCalled();
+    });
   });
 });
