@@ -345,22 +345,33 @@ export const watchCommand = new Command('watch')
         return match ? `${match[1]}.sql` : migrationFile;
       };
 
+      /**
+       * Refresh needsBuild map from current template state.
+       * Clears the map and repopulates based on fresh template hashes.
+       */
+      const refreshNeedsBuild = async (
+        orch: Orchestrator,
+        templatePaths: string[]
+      ): Promise<void> => {
+        needsBuild.clear();
+        for (const templatePath of templatePaths) {
+          try {
+            const template = await orch.getTemplateStatusExternal(templatePath);
+            const reason = getBuildReason(template);
+            if (reason) needsBuild.set(template.path, reason);
+          } catch {
+            // Template may have been deleted, skip
+          }
+        }
+      };
+
       // Build action handler for 'b' key
       const triggerBuild = async () => {
         if (!orchestrator) return;
 
-        // Refresh template state before building to ensure needsBuild is current
+        // Refresh template state before building
         const templatePaths = await orchestrator.findTemplates();
-        needsBuild.clear();
-        for (const templatePath of templatePaths) {
-          try {
-            const template = await orchestrator.getTemplateStatusExternal(templatePath);
-            const reason = getBuildReason(template);
-            if (reason) needsBuild.set(template.path, reason);
-          } catch {
-            // Template may have been deleted during refresh
-          }
-        }
+        await refreshNeedsBuild(orchestrator, templatePaths);
 
         // Check if anything needs building
         if (needsBuild.size === 0) {
@@ -400,19 +411,7 @@ export const watchCommand = new Command('watch')
           }
 
           // Refresh needsBuild after building
-          for (const templatePath of templatePaths) {
-            try {
-              const template = await orchestrator.getTemplateStatusExternal(templatePath);
-              const reason = getBuildReason(template);
-              if (reason) {
-                needsBuild.set(template.path, reason);
-              } else {
-                needsBuild.delete(template.path);
-              }
-            } catch {
-              needsBuild.delete(templatePath);
-            }
-          }
+          await refreshNeedsBuild(orchestrator, templatePaths);
         } catch (error) {
           console.log(chalk.red(`Build failed: ${getErrorMessage(error)}`));
         }
