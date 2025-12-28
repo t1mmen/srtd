@@ -126,7 +126,7 @@ describe('renderScreen', () => {
     // Clear UI mocks for isolated tests
     const ui = await import('../ui/index.js');
     vi.mocked(ui.renderBranding).mockClear();
-    vi.mocked(ui.renderWatchLogEntry).mockClear();
+    vi.mocked(ui.renderResultRow).mockClear();
     vi.mocked(ui.renderWatchFooter).mockClear();
   });
 
@@ -145,7 +145,7 @@ describe('renderScreen', () => {
       errors: new Map(),
       config: mockConfig,
       showHistory: true,
-      pendingBuild: new Set(),
+      needsBuild: new Map(),
     });
 
     expect(consoleClearSpy).toHaveBeenCalled();
@@ -170,7 +170,7 @@ describe('renderScreen', () => {
       errors: new Map(),
       config: mockConfig,
       showHistory: true,
-      pendingBuild: new Set(),
+      needsBuild: new Map(),
     });
 
     expect(ui.renderBranding).toHaveBeenCalledWith({ subtitle: 'Watch' });
@@ -180,14 +180,9 @@ describe('renderScreen', () => {
     const { renderScreen } = await import('../commands/watch.js');
     const recentUpdates = [
       {
-        type: 'applied' as const,
-        template: {
-          name: 'test',
-          path: '/templates/test.sql',
-          currentHash: 'abc123',
-          buildState: { lastBuildDate: null, lastBuildHash: null },
-        },
-        timestamp: new Date().toISOString(),
+        template: '/templates/test.sql',
+        status: 'success' as const,
+        timestamp: new Date(),
       },
     ];
 
@@ -198,26 +193,21 @@ describe('renderScreen', () => {
       errors: new Map(),
       config: mockConfig,
       showHistory: true,
-      pendingBuild: new Set(),
+      needsBuild: new Map(),
     });
 
     const allOutput = consoleLogSpy.mock.calls.flat().join(' ');
     expect(allOutput).toContain('Recent activity');
   });
 
-  it('calls renderWatchLogEntry for each history item', async () => {
+  it('calls renderResultRow for each history item', async () => {
     const { renderScreen } = await import('../commands/watch.js');
     const ui = await import('../ui/index.js');
     const recentUpdates = [
       {
-        type: 'applied' as const,
-        template: {
-          name: 'test',
-          path: '/templates/test.sql',
-          currentHash: 'abc123',
-          buildState: { lastBuildDate: null, lastBuildHash: null },
-        },
-        timestamp: new Date().toISOString(),
+        template: '/templates/test.sql',
+        status: 'success' as const,
+        timestamp: new Date(),
       },
     ];
 
@@ -228,14 +218,15 @@ describe('renderScreen', () => {
       errors: new Map(),
       config: mockConfig,
       showHistory: true,
-      pendingBuild: new Set(),
+      needsBuild: new Map(),
     });
 
-    expect(ui.renderWatchLogEntry).toHaveBeenCalledWith(
+    expect(ui.renderResultRow).toHaveBeenCalledWith(
       expect.objectContaining({
-        type: 'applied',
         template: '/templates/test.sql',
-      })
+        status: 'success',
+      }),
+      { command: 'watch' }
     );
   });
 
@@ -244,14 +235,9 @@ describe('renderScreen', () => {
     const ui = await import('../ui/index.js');
     const recentUpdates = [
       {
-        type: 'applied' as const,
-        template: {
-          name: 'test',
-          path: '/templates/test.sql',
-          currentHash: 'abc123',
-          buildState: { lastBuildDate: null, lastBuildHash: null },
-        },
-        timestamp: new Date().toISOString(),
+        template: '/templates/test.sql',
+        status: 'success' as const,
+        timestamp: new Date(),
       },
     ];
 
@@ -262,12 +248,12 @@ describe('renderScreen', () => {
       errors: new Map(),
       config: mockConfig,
       showHistory: false,
-      pendingBuild: new Set(),
+      needsBuild: new Map(),
     });
 
     const allOutput = consoleLogSpy.mock.calls.flat().join(' ');
     expect(allOutput).not.toContain('Recent activity');
-    expect(ui.renderWatchLogEntry).not.toHaveBeenCalled();
+    expect(ui.renderResultRow).not.toHaveBeenCalled();
   });
 
   it('shows errors section when there are errors', async () => {
@@ -281,7 +267,7 @@ describe('renderScreen', () => {
       errors,
       config: mockConfig,
       showHistory: true,
-      pendingBuild: new Set(),
+      needsBuild: new Map(),
     });
 
     const allOutput = consoleLogSpy.mock.calls.flat().join(' ');
@@ -300,7 +286,7 @@ describe('renderScreen', () => {
       errors: new Map(),
       config: mockConfig,
       showHistory: true,
-      pendingBuild: new Set(),
+      needsBuild: new Map(),
     });
     expect(ui.renderWatchFooter).toHaveBeenCalledWith({
       destination: 'migrations',
@@ -320,7 +306,7 @@ describe('renderScreen', () => {
       errors: new Map(),
       config: mockConfig,
       showHistory: false,
-      pendingBuild: new Set(),
+      needsBuild: new Map(),
     });
     expect(ui.renderWatchFooter).toHaveBeenCalledWith({
       destination: 'migrations',
@@ -342,12 +328,13 @@ describe('renderScreen', () => {
       errors: new Map(),
       config: mockConfig,
       showHistory: true,
-      pendingBuild: new Set(['/templates/pending.sql']),
+      needsBuild: new Map([['/templates/pending.sql', 'never-built' as const]]),
     });
 
     const allOutput = consoleLogSpy.mock.calls.flat().join(' ');
     expect(allOutput).toContain('Pending build');
     expect(allOutput).toContain('⚡');
+    expect(allOutput).toContain('never built');
   });
 
   it('shows historic activity when no recent updates', async () => {
@@ -370,11 +357,11 @@ describe('renderScreen', () => {
       errors: new Map(),
       config: mockConfig,
       showHistory: true,
-      pendingBuild: new Set(),
+      needsBuild: new Map(),
     });
 
     const allOutput = consoleLogSpy.mock.calls.flat().join(' ');
     expect(allOutput).toContain('Recent activity');
-    expect(ui.renderWatchLogEntry).toHaveBeenCalled();
+    expect(ui.renderResultRow).toHaveBeenCalled();
   });
 });
