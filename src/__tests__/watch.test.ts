@@ -117,7 +117,6 @@ describe('Watch Command', () => {
 describe('renderScreen', () => {
   let consoleClearSpy: ReturnType<typeof vi.spyOn>;
   let consoleLogSpy: ReturnType<typeof vi.spyOn>;
-  const mockConfig = { templateDir: 'templates', migrationDir: 'migrations' };
 
   beforeEach(async () => {
     vi.resetModules();
@@ -143,7 +142,6 @@ describe('renderScreen', () => {
       recentUpdates: [],
       historicActivity: [],
       errors: new Map(),
-      config: mockConfig,
       showHistory: true,
       needsBuild: new Map(),
     });
@@ -168,7 +166,6 @@ describe('renderScreen', () => {
       recentUpdates: [],
       historicActivity: [],
       errors: new Map(),
-      config: mockConfig,
       showHistory: true,
       needsBuild: new Map(),
     });
@@ -191,7 +188,6 @@ describe('renderScreen', () => {
       recentUpdates,
       historicActivity: [],
       errors: new Map(),
-      config: mockConfig,
       showHistory: true,
       needsBuild: new Map(),
     });
@@ -216,7 +212,6 @@ describe('renderScreen', () => {
       recentUpdates,
       historicActivity: [],
       errors: new Map(),
-      config: mockConfig,
       showHistory: true,
       needsBuild: new Map(),
     });
@@ -246,7 +241,6 @@ describe('renderScreen', () => {
       recentUpdates,
       historicActivity: [],
       errors: new Map(),
-      config: mockConfig,
       showHistory: false,
       needsBuild: new Map(),
     });
@@ -265,7 +259,6 @@ describe('renderScreen', () => {
       recentUpdates: [],
       historicActivity: [],
       errors,
-      config: mockConfig,
       showHistory: true,
       needsBuild: new Map(),
     });
@@ -275,7 +268,7 @@ describe('renderScreen', () => {
     expect(allOutput).toContain('Failed to apply');
   });
 
-  it('calls renderWatchFooter with correct shortcuts and destination', async () => {
+  it('calls renderWatchFooter with correct shortcuts', async () => {
     const { renderScreen } = await import('../commands/watch.js');
     const ui = await import('../ui/index.js');
 
@@ -284,12 +277,10 @@ describe('renderScreen', () => {
       recentUpdates: [],
       historicActivity: [],
       errors: new Map(),
-      config: mockConfig,
       showHistory: true,
       needsBuild: new Map(),
     });
     expect(ui.renderWatchFooter).toHaveBeenCalledWith({
-      destination: 'migrations',
       shortcuts: [
         { key: 'q', label: 'quit' },
         { key: 'b', label: 'build' },
@@ -304,12 +295,10 @@ describe('renderScreen', () => {
       recentUpdates: [],
       historicActivity: [],
       errors: new Map(),
-      config: mockConfig,
       showHistory: false,
       needsBuild: new Map(),
     });
     expect(ui.renderWatchFooter).toHaveBeenCalledWith({
-      destination: 'migrations',
       shortcuts: [
         { key: 'q', label: 'quit' },
         { key: 'b', label: 'build' },
@@ -326,7 +315,6 @@ describe('renderScreen', () => {
       recentUpdates: [],
       historicActivity: [],
       errors: new Map(),
-      config: mockConfig,
       showHistory: true,
       needsBuild: new Map([['/templates/pending.sql', 'never-built' as const]]),
     });
@@ -355,7 +343,6 @@ describe('renderScreen', () => {
       recentUpdates: [],
       historicActivity,
       errors: new Map(),
-      config: mockConfig,
       showHistory: true,
       needsBuild: new Map(),
     });

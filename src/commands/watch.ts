@@ -100,22 +100,21 @@ export interface RenderScreenOptions {
     target?: string;
   }>;
   errors: Map<string, string>;
-  config: { templateDir: string; migrationDir: string };
   showHistory: boolean;
   needsBuild: Map<string, NeedsBuildReason>;
 }
 
 /** Renders the full watch mode screen with header, history, errors, and instructions */
 export function renderScreen(options: RenderScreenOptions): void {
-  const { templates, recentUpdates, historicActivity, errors, config, showHistory, needsBuild } =
-    options;
+  const { templates, recentUpdates, historicActivity, errors, showHistory, needsBuild } = options;
   console.clear();
 
   // Render header
   renderBranding({ subtitle: 'Watch' });
 
-  // Show status line (no src/dest here - dest moved to footer)
-  const statusParts: string[] = [`${templates.length} templates`];
+  // Show status line
+  const templateCount = templates.length;
+  const statusParts: string[] = [`${templateCount} template${templateCount !== 1 ? 's' : ''}`];
   if (needsBuild.size > 0) statusParts.push(chalk.yellow(`${needsBuild.size} need build`));
   if (errors.size > 0) statusParts.push(chalk.red(`${errors.size} errors`));
   console.log(chalk.dim(statusParts.join('  •  ')));
@@ -175,9 +174,8 @@ export function renderScreen(options: RenderScreenOptions): void {
     console.log();
   }
 
-  // Footer with keyboard shortcuts and destination
+  // Footer with keyboard shortcuts
   renderWatchFooter({
-    destination: config.migrationDir,
     shortcuts: [
       { key: 'q', label: 'quit' },
       { key: 'b', label: 'build' },
@@ -249,7 +247,6 @@ export const watchCommand = new Command('watch')
         recentUpdates,
         historicActivity,
         errors,
-        config,
         showHistory,
         needsBuild,
       });
@@ -261,7 +258,6 @@ export const watchCommand = new Command('watch')
           recentUpdates,
           historicActivity,
           errors,
-          config,
           showHistory,
           needsBuild,
         });
