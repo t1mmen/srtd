@@ -1,9 +1,13 @@
 export { renderStatBadge, renderStatBadges } from './badge.js';
 export { renderBranding } from './branding.js';
 export { type ErrorDisplayOptions, type ErrorItem, renderErrorDisplay } from './errorDisplay.js';
-export { renderHeader } from './header.js';
 export { renderResults } from './results.js';
-export { type ResultRow, type ResultsTableOptions, renderResultsTable } from './resultsTable.js';
+export {
+  type ResultRow,
+  type ResultsTableOptions,
+  renderResultsTable,
+  type UnchangedRow,
+} from './resultsTable.js';
 export { createSpinner } from './spinner.js';
 export {
   DEFAULT_WATCH_SHORTCUTS,

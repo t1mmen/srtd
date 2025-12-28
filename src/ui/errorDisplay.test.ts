@@ -34,7 +34,7 @@ describe('renderErrorDisplay', () => {
     expect(output).toMatch(/[─]+/); // Contains separator line
   });
 
-  it('renders error with truncated path and message', () => {
+  it('renders error with filename and message', () => {
     const errors: ErrorItem[] = [
       {
         template: '/long/path/to/views/broken.sql',
@@ -45,8 +45,8 @@ describe('renderErrorDisplay', () => {
     renderErrorDisplay({ errors });
 
     const output = consoleLogSpy.mock.calls.flat().join('\n');
-    // Should truncate path to .../views/broken.sql
-    expect(output).toContain('views/broken.sql');
+    // Should show filename with .sql extension
+    expect(output).toContain('broken.sql');
     // Should contain error message
     expect(output).toContain('relation "users" does not exist');
   });

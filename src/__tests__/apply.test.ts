@@ -29,6 +29,9 @@ vi.mock('../ui/displayWarnings.js', () => ({
 const mockOrchestrator = {
   apply: vi.fn(),
   getValidationWarnings: vi.fn().mockReturnValue([]),
+  getTemplateInfo: vi
+    .fn()
+    .mockReturnValue({ template: '', migrationFile: undefined, lastDate: undefined }),
   [Symbol.asyncDispose]: vi.fn().mockResolvedValue(undefined),
   [Symbol.dispose]: vi.fn(),
 };
@@ -135,7 +138,7 @@ describe('Apply Command', () => {
   });
 
   describe('new UI components', () => {
-    it('uses renderHeader instead of renderBranding', async () => {
+    it('uses renderBranding with subtitle', async () => {
       const uiModule = await import('../ui/index.js');
       const { applyCommand } = await import('../commands/apply.js');
 
@@ -149,8 +152,7 @@ describe('Apply Command', () => {
       await applyCommand.parseAsync(['node', 'test']);
 
       spies.assertNoStderr();
-      expect(uiModule.renderHeader).toHaveBeenCalled();
-      expect(uiModule.renderBranding).not.toHaveBeenCalled();
+      expect(uiModule.renderBranding).toHaveBeenCalledWith({ subtitle: 'Apply' });
     });
 
     it('uses renderResultsTable for displaying results', async () => {
@@ -172,7 +174,7 @@ describe('Apply Command', () => {
           { template: 'migration1.sql', status: 'applied' },
           { template: 'migration2.sql', status: 'applied' },
         ],
-        unchanged: ['unchanged.sql'],
+        unchanged: [{ template: 'unchanged.sql', lastDate: undefined, lastAction: 'applied' }],
         errorCount: 0,
       });
       expect(uiModule.renderResults).not.toHaveBeenCalled();

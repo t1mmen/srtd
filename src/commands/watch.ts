@@ -3,13 +3,12 @@ import readline from 'node:readline';
 import chalk from 'chalk';
 import { Command } from 'commander';
 import figures from 'figures';
-import packageJson from '../../package.json' with { type: 'json' };
 import { Orchestrator } from '../services/Orchestrator.js';
 import type { TemplateStatus } from '../types.js';
 import { displayValidationWarnings } from '../ui/displayWarnings.js';
 import {
   createSpinner,
-  renderHeader,
+  renderBranding,
   renderWatchFooter,
   renderWatchLogEntry,
   type WatchLogEntry,
@@ -28,40 +27,103 @@ interface TemplateUpdate {
   error?: string;
 }
 
+interface StackedUpdate {
+  types: Array<'applied' | 'changed' | 'error'>;
+  template: TemplateStatus;
+  timestamp: string;
+  error?: string;
+}
+
+/**
+ * Stack consecutive events for the same template (unless error).
+ * e.g., [changed, applied] for same file becomes one stacked entry.
+ */
+function stackUpdates(updates: TemplateUpdate[]): StackedUpdate[] {
+  const stacked: StackedUpdate[] = [];
+
+  for (const update of updates) {
+    const last = stacked[stacked.length - 1];
+
+    // Stack if same template and neither is error
+    if (
+      last &&
+      last.template.path === update.template.path &&
+      update.type !== 'error' &&
+      !last.types.includes('error')
+    ) {
+      // Add type if not already present
+      if (!last.types.includes(update.type)) {
+        last.types.push(update.type);
+      }
+    } else {
+      stacked.push({
+        types: [update.type],
+        template: update.template,
+        timestamp: update.timestamp,
+        error: update.error,
+      });
+    }
+  }
+
+  return stacked;
+}
+
+export interface RenderScreenOptions {
+  templates: TemplateStatus[];
+  recentUpdates: TemplateUpdate[];
+  errors: Map<string, string>;
+  config: { templateDir: string; migrationDir: string };
+  showHistory: boolean;
+}
+
 /** Renders the full watch mode screen with header, history, errors, and instructions */
-export function renderScreen(
-  templates: TemplateStatus[],
-  recentUpdates: TemplateUpdate[],
-  errors: Map<string, string>,
-  config: { templateDir: string; migrationDir: string },
-  showHistory: boolean
-): void {
+export function renderScreen(options: RenderScreenOptions): void {
+  const { templates, recentUpdates, errors, config, showHistory } = options;
   console.clear();
 
-  // Calculate stats
+  // Render header
+  renderBranding({ subtitle: 'Watch' });
+
+  // Calculate and show stats
   const needsBuild = templates.filter(
     t => !t.buildState.lastBuildDate || t.currentHash !== t.buildState.lastBuildHash
   ).length;
 
-  // Render header using new UI component
-  renderHeader({
-    subtitle: 'watch',
-    version: packageJson.version,
-    templateDir: config.templateDir,
-    migrationDir: config.migrationDir,
-    templateCount: templates.length,
-    needsBuildCount: needsBuild,
-  });
+  // Show status line
+  const statusParts: string[] = [`${templates.length} templates`];
+  if (needsBuild > 0) statusParts.push(chalk.yellow(`${needsBuild} need build`));
+  if (errors.size > 0) statusParts.push(chalk.red(`${errors.size} errors`));
+  console.log(chalk.dim(statusParts.join('  •  ')));
+  console.log(chalk.dim(`src: ${config.templateDir}  \u2192  dest: ${config.migrationDir}`));
+  console.log();
 
   // History section (if toggled on)
   if (showHistory && recentUpdates.length > 0) {
     console.log(chalk.bold('Recent activity:'));
-    for (const update of recentUpdates) {
+    const stacked = stackUpdates(recentUpdates);
+    for (const update of stacked) {
+      // Determine primary type (error > applied > changed)
+      const primaryType = update.types.includes('error')
+        ? 'error'
+        : update.types.includes('applied')
+          ? 'applied'
+          : 'changed';
+
+      // For stacked events, show comma-separated states instead of primary type
+      // e.g., "changed, applied" instead of "applied (changed)"
+      let displayType: string | undefined;
+      if (update.types.length > 1) {
+        // Show all types comma-separated, with "changed" muted
+        const typeLabels = update.types.map(t => (t === 'changed' ? chalk.dim(t) : t));
+        displayType = typeLabels.join(', ');
+      }
+
       const entry: WatchLogEntry = {
-        type: update.type === 'applied' ? 'applied' : update.type === 'error' ? 'error' : 'changed',
+        type: primaryType,
         template: update.template.path,
         timestamp: new Date(update.timestamp),
         message: update.error,
+        displayType,
       };
       renderWatchLogEntry(entry);
     }
@@ -93,6 +155,11 @@ export const watchCommand = new Command('watch')
     let orchestrator: Orchestrator | null = null;
 
     try {
+      // Render header only if not invoked from menu
+      if (!process.env.__SRTD_FROM_MENU__) {
+        renderBranding({ subtitle: 'Watch' });
+      }
+
       const spinner = createSpinner('Starting watch mode...').start();
 
       // Initialize Orchestrator
@@ -127,19 +194,19 @@ export const watchCommand = new Command('watch')
       let showHistory = true;
 
       // Initial render
-      renderScreen(templates, recentUpdates, errors, config, showHistory);
+      renderScreen({ templates, recentUpdates, errors, config, showHistory });
 
       // Set up orchestrator event listeners
       orchestrator.on('templateChanged', (template: TemplateStatus) => {
         recentUpdates.unshift({ type: 'changed', template, timestamp: new Date().toISOString() });
         if (recentUpdates.length > MAX_HISTORY) recentUpdates.pop();
-        renderScreen(templates, recentUpdates, errors, config, showHistory);
+        renderScreen({ templates, recentUpdates, errors, config, showHistory });
       });
 
       orchestrator.on('templateApplied', (template: TemplateStatus) => {
         recentUpdates.unshift({ type: 'applied', template, timestamp: new Date().toISOString() });
         if (recentUpdates.length > MAX_HISTORY) recentUpdates.pop();
-        renderScreen(templates, recentUpdates, errors, config, showHistory);
+        renderScreen({ templates, recentUpdates, errors, config, showHistory });
       });
 
       orchestrator.on(
@@ -153,7 +220,7 @@ export const watchCommand = new Command('watch')
           });
           if (recentUpdates.length > MAX_HISTORY) recentUpdates.pop();
           errors.set(template.path, error);
-          renderScreen(templates, recentUpdates, errors, config, showHistory);
+          renderScreen({ templates, recentUpdates, errors, config, showHistory });
         }
       );
 
@@ -193,7 +260,7 @@ export const watchCommand = new Command('watch')
           }
           if (key && key.name === 'u') {
             showHistory = !showHistory;
-            renderScreen(templates, recentUpdates, errors, config, showHistory);
+            renderScreen({ templates, recentUpdates, errors, config, showHistory });
           }
         });
       }

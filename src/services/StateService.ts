@@ -384,6 +384,85 @@ export class StateService extends EventEmitter {
   }
 
   /**
+   * Get recently applied templates sorted by date (most recent first)
+   * Returns templates from local build log that have lastAppliedDate
+   */
+  getRecentlyApplied(limit = 5): Array<{ template: string; appliedDate: string }> {
+    const entries: Array<{ template: string; appliedDate: string }> = [];
+
+    for (const [template, state] of Object.entries(this.localBuildLog.templates)) {
+      if (state.lastAppliedDate) {
+        entries.push({ template, appliedDate: state.lastAppliedDate });
+      }
+    }
+
+    // Sort by date descending (most recent first)
+    entries.sort((a, b) => new Date(b.appliedDate).getTime() - new Date(a.appliedDate).getTime());
+
+    return entries.slice(0, limit);
+  }
+
+  /**
+   * Get template info including migration file and last date
+   * Used for displaying arrow format: template.sql → migration_file.sql
+   * Accepts either a full path, relative path, or just the template name
+   */
+  getTemplateInfo(templatePath: string): {
+    template: string;
+    migrationFile?: string;
+    lastDate?: string;
+  } {
+    // Try direct lookup first (relative path from project root)
+    const relativePath = path.relative(this.config.baseDir, templatePath);
+    let buildState = this.buildLog.templates[relativePath];
+    let localState = this.localBuildLog.templates[relativePath];
+    let matchedPath = relativePath;
+
+    // If not found, search by template name (for when just "test" is passed)
+    if (!buildState && !localState) {
+      const searchName = templatePath.endsWith('.sql') ? templatePath : `${templatePath}.sql`;
+      for (const [storedPath, state] of Object.entries(this.buildLog.templates)) {
+        if (storedPath.endsWith(searchName) || storedPath.endsWith(`/${searchName}`)) {
+          buildState = state;
+          matchedPath = storedPath;
+          localState = this.localBuildLog.templates[storedPath];
+          break;
+        }
+      }
+      // Also check local build log if nothing found in main build log
+      if (!buildState && !localState) {
+        for (const [storedPath, state] of Object.entries(this.localBuildLog.templates)) {
+          if (storedPath.endsWith(searchName) || storedPath.endsWith(`/${searchName}`)) {
+            localState = state;
+            matchedPath = storedPath;
+            break;
+          }
+        }
+      }
+    }
+
+    // Prefer build state for migration file (that's where builds write it)
+    // Use either build or apply date, whichever is more recent
+    const migrationFile = buildState?.lastMigrationFile;
+    const buildDate = buildState?.lastBuildDate;
+    const applyDate = localState?.lastAppliedDate;
+
+    // Use the most recent date
+    let lastDate: string | undefined;
+    if (buildDate && applyDate) {
+      lastDate = new Date(buildDate) > new Date(applyDate) ? buildDate : applyDate;
+    } else {
+      lastDate = buildDate || applyDate;
+    }
+
+    return {
+      template: matchedPath,
+      migrationFile,
+      lastDate,
+    };
+  }
+
+  /**
    * Check if template has changed based on hash comparison
    */
   hasTemplateChanged(templatePath: string, currentHash: string): boolean {

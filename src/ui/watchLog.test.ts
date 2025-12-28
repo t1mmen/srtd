@@ -112,18 +112,18 @@ describe('renderWatchLogEntry', () => {
     expect(output).toContain('^');
   });
 
-  it('renders suffix like "(fixed)"', () => {
+  it('renders displayType for stacked events', () => {
     const entry: WatchLogEntry = {
       type: 'applied',
       template: '/path/to/broken.sql',
       timestamp: new Date('2024-01-15T16:47:22Z'),
-      suffix: '(fixed)',
+      displayType: 'changed, applied',
     };
 
     renderWatchLogEntry(entry);
 
     const output = consoleLogSpy.mock.calls.flat().join('\n');
-    expect(output).toContain('(fixed)');
+    expect(output).toContain('changed, applied');
   });
 
   it('handles error without SQL context', () => {

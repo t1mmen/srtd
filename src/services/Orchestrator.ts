@@ -786,6 +786,25 @@ export class Orchestrator extends EventEmitter implements Disposable {
   }
 
   /**
+   * Get recently applied templates (for history display)
+   */
+  getRecentlyApplied(limit = 5): Array<{ template: string; appliedDate: string }> {
+    return this.stateService.getRecentlyApplied(limit);
+  }
+
+  /**
+   * Get template info including migration file and last date
+   * Used for displaying arrow format: template.sql → migration_file.sql
+   */
+  getTemplateInfo(templatePath: string): {
+    template: string;
+    migrationFile?: string;
+    lastDate?: string;
+  } {
+    return this.stateService.getTemplateInfo(templatePath);
+  }
+
+  /**
    * Logging utility
    */
   private log(

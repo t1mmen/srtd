@@ -123,7 +123,7 @@ describe('renderScreen', () => {
     consoleLogSpy = mockConsoleLog();
     // Clear UI mocks for isolated tests
     const ui = await import('../ui/index.js');
-    vi.mocked(ui.renderHeader).mockClear();
+    vi.mocked(ui.renderBranding).mockClear();
     vi.mocked(ui.renderWatchLogEntry).mockClear();
     vi.mocked(ui.renderWatchFooter).mockClear();
   });
@@ -136,12 +136,18 @@ describe('renderScreen', () => {
   it('clears the screen before rendering', async () => {
     const { renderScreen } = await import('../commands/watch.js');
 
-    renderScreen([], [], new Map(), mockConfig, true);
+    renderScreen({
+      templates: [],
+      recentUpdates: [],
+      errors: new Map(),
+      config: mockConfig,
+      showHistory: true,
+    });
 
     expect(consoleClearSpy).toHaveBeenCalled();
   });
 
-  it('calls renderHeader with correct options', async () => {
+  it('calls renderBranding with Watch subtitle', async () => {
     const { renderScreen } = await import('../commands/watch.js');
     const ui = await import('../ui/index.js');
     const templates = [
@@ -153,17 +159,15 @@ describe('renderScreen', () => {
       },
     ];
 
-    renderScreen(templates, [], new Map(), mockConfig, true);
+    renderScreen({
+      templates,
+      recentUpdates: [],
+      errors: new Map(),
+      config: mockConfig,
+      showHistory: true,
+    });
 
-    expect(ui.renderHeader).toHaveBeenCalledWith(
-      expect.objectContaining({
-        subtitle: 'watch',
-        templateDir: 'templates',
-        migrationDir: 'migrations',
-        templateCount: 1,
-        needsBuildCount: 1,
-      })
-    );
+    expect(ui.renderBranding).toHaveBeenCalledWith({ subtitle: 'Watch' });
   });
 
   it('shows recent activity when showHistory is true and there are updates', async () => {
@@ -181,7 +185,13 @@ describe('renderScreen', () => {
       },
     ];
 
-    renderScreen([], recentUpdates, new Map(), mockConfig, true);
+    renderScreen({
+      templates: [],
+      recentUpdates,
+      errors: new Map(),
+      config: mockConfig,
+      showHistory: true,
+    });
 
     const allOutput = consoleLogSpy.mock.calls.flat().join(' ');
     expect(allOutput).toContain('Recent activity');
@@ -203,7 +213,13 @@ describe('renderScreen', () => {
       },
     ];
 
-    renderScreen([], recentUpdates, new Map(), mockConfig, true);
+    renderScreen({
+      templates: [],
+      recentUpdates,
+      errors: new Map(),
+      config: mockConfig,
+      showHistory: true,
+    });
 
     expect(ui.renderWatchLogEntry).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -229,7 +245,13 @@ describe('renderScreen', () => {
       },
     ];
 
-    renderScreen([], recentUpdates, new Map(), mockConfig, false);
+    renderScreen({
+      templates: [],
+      recentUpdates,
+      errors: new Map(),
+      config: mockConfig,
+      showHistory: false,
+    });
 
     const allOutput = consoleLogSpy.mock.calls.flat().join(' ');
     expect(allOutput).not.toContain('Recent activity');
@@ -240,7 +262,13 @@ describe('renderScreen', () => {
     const { renderScreen } = await import('../commands/watch.js');
     const errors = new Map([['test.sql', 'Failed to apply']]);
 
-    renderScreen([], [], errors, mockConfig, true);
+    renderScreen({
+      templates: [],
+      recentUpdates: [],
+      errors,
+      config: mockConfig,
+      showHistory: true,
+    });
 
     const allOutput = consoleLogSpy.mock.calls.flat().join(' ');
     expect(allOutput).toContain('Errors');
@@ -251,7 +279,13 @@ describe('renderScreen', () => {
     const { renderScreen } = await import('../commands/watch.js');
     const ui = await import('../ui/index.js');
 
-    renderScreen([], [], new Map(), mockConfig, true);
+    renderScreen({
+      templates: [],
+      recentUpdates: [],
+      errors: new Map(),
+      config: mockConfig,
+      showHistory: true,
+    });
     expect(ui.renderWatchFooter).toHaveBeenCalledWith({
       shortcuts: [
         { key: 'q', label: 'quit' },
@@ -261,7 +295,13 @@ describe('renderScreen', () => {
 
     vi.mocked(ui.renderWatchFooter).mockClear();
 
-    renderScreen([], [], new Map(), mockConfig, false);
+    renderScreen({
+      templates: [],
+      recentUpdates: [],
+      errors: new Map(),
+      config: mockConfig,
+      showHistory: false,
+    });
     expect(ui.renderWatchFooter).toHaveBeenCalledWith({
       shortcuts: [
         { key: 'q', label: 'quit' },

@@ -2,7 +2,6 @@ import chalk from 'chalk';
 // src/commands/apply.ts
 import { Command } from 'commander';
 import figures from 'figures';
-import packageJson from '../../package.json' with { type: 'json' };
 import { Orchestrator } from '../services/Orchestrator.js';
 import type { ProcessedTemplateResult } from '../types.js';
 import { displayValidationWarnings } from '../ui/displayWarnings.js';
@@ -10,9 +9,10 @@ import {
   createSpinner,
   type ErrorItem,
   type ResultRow,
+  renderBranding,
   renderErrorDisplay,
-  renderHeader,
   renderResultsTable,
+  type UnchangedRow,
 } from '../ui/index.js';
 import { getConfig } from '../utils/config.js';
 import { findProjectRoot } from '../utils/findProjectRoot.js';
@@ -25,28 +25,22 @@ export const applyCommand = new Command('apply')
     let exitCode = 0;
 
     try {
-      // Build subtitle with options
-      const parts: string[] = ['apply'];
-      if (options.force) parts.push('(forced)');
-      const subtitle = parts.join(' ');
+      // Render header only if not invoked from menu
+      if (!process.env.__SRTD_FROM_MENU__) {
+        const parts: string[] = ['Apply'];
+        if (options.force) parts.push('(forced)');
+        renderBranding({ subtitle: parts.join(' ') });
+      }
 
-      // Initialize Orchestrator first to get config for header
+      const spinner = createSpinner('Applying templates...').start();
+
+      // Initialize Orchestrator
       const projectRoot = await findProjectRoot();
       const { config, warnings: configWarnings } = await getConfig(projectRoot);
       await using orchestrator = await Orchestrator.create(projectRoot, config, {
         silent: true,
         configWarnings,
       });
-
-      // Render header with context
-      renderHeader({
-        subtitle,
-        version: packageJson.version,
-        templateDir: config.templateDir,
-        migrationDir: config.migrationDir,
-      });
-
-      const spinner = createSpinner('Applying templates...').start();
 
       // Display validation warnings
       displayValidationWarnings(orchestrator.getValidationWarnings());
@@ -60,15 +54,33 @@ export const applyCommand = new Command('apply')
       spinner.stop();
 
       // Transform results to new format
-      const rows: ResultRow[] = result.applied.map(name => ({
-        template: name,
-        status: 'applied' as const,
-      }));
+      const rows: ResultRow[] = [
+        // Applied templates
+        ...result.applied.map(name => ({
+          template: name,
+          status: 'applied' as const,
+        })),
+        // Error templates
+        ...result.errors.map(err => ({
+          template: err.file,
+          status: 'error' as const,
+        })),
+      ];
 
-      // Render results table
+      // Transform skipped to UnchangedRow - for apply, show "local db" context
+      const unchanged: UnchangedRow[] = result.skipped.map(name => {
+        const info = orchestrator.getTemplateInfo(name);
+        return {
+          template: name,
+          lastDate: info.lastDate,
+          lastAction: 'applied' as const,
+        };
+      });
+
+      // Render results table with summary footer
       renderResultsTable({
         rows,
-        unchanged: result.skipped,
+        unchanged,
         errorCount: result.errors.length,
       });
 

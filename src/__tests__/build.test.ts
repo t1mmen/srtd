@@ -30,6 +30,9 @@ const mockOrchestrator = {
   build: vi.fn(),
   apply: vi.fn(),
   getValidationWarnings: vi.fn().mockReturnValue([]),
+  getTemplateInfo: vi
+    .fn()
+    .mockReturnValue({ template: '', migrationFile: undefined, lastDate: undefined }),
   [Symbol.asyncDispose]: vi.fn().mockResolvedValue(undefined),
   [Symbol.dispose]: vi.fn(),
 };
@@ -213,7 +216,7 @@ describe('Build Command', () => {
   });
 
   describe('new UI components', () => {
-    it('uses renderHeader instead of renderBranding', async () => {
+    it('uses renderBranding with subtitle', async () => {
       const uiModule = await import('../ui/index.js');
       const { buildCommand } = await import('../commands/build.js');
 
@@ -227,8 +230,7 @@ describe('Build Command', () => {
       await buildCommand.parseAsync(['node', 'test']);
 
       spies.assertNoStderr();
-      expect(uiModule.renderHeader).toHaveBeenCalled();
-      expect(uiModule.renderBranding).not.toHaveBeenCalled();
+      expect(uiModule.renderBranding).toHaveBeenCalledWith({ subtitle: 'Build' });
     });
 
     it('uses renderResultsTable for displaying results', async () => {
@@ -247,10 +249,17 @@ describe('Build Command', () => {
       spies.assertNoStderr();
       expect(uiModule.renderResultsTable).toHaveBeenCalledWith({
         rows: [
-          { template: 'migration1.sql', status: 'built' },
-          { template: 'migration2.sql', status: 'built' },
+          { template: 'migration1.sql', status: 'built', target: undefined },
+          { template: 'migration2.sql', status: 'built', target: undefined },
         ],
-        unchanged: ['unchanged.sql'],
+        unchanged: [
+          {
+            template: 'unchanged.sql',
+            target: undefined,
+            lastDate: undefined,
+            lastAction: 'built',
+          },
+        ],
         errorCount: 0,
       });
       expect(uiModule.renderResults).not.toHaveBeenCalled();
@@ -279,10 +288,17 @@ describe('Build Command', () => {
       spies.assertNoStderr();
       expect(uiModule.renderResultsTable).toHaveBeenCalledWith({
         rows: [
-          { template: 'migration1.sql', status: 'built' },
+          { template: 'migration1.sql', status: 'built', target: undefined },
           { template: 'migration1.sql', status: 'applied' },
         ],
-        unchanged: ['unchanged.sql'],
+        unchanged: [
+          {
+            template: 'unchanged.sql',
+            target: undefined,
+            lastDate: undefined,
+            lastAction: 'built',
+          },
+        ],
         errorCount: 0,
       });
     });

@@ -7,7 +7,6 @@ import { renderErrorContext } from './errorContext.js';
 export interface ErrorItem {
   template: string; // Path to template file
   message: string; // Error message
-  line?: number; // Line number if available
   sqlSnippet?: string; // SQL code around error
   column?: number; // Column for caret positioning
 }
@@ -50,13 +49,21 @@ export function renderErrorDisplay(options: ErrorDisplayOptions): void {
 }
 
 /**
+ * Ensure template name has .sql extension
+ */
+function ensureSqlExtension(name: string): string {
+  const filename = formatPath.getFilename(name);
+  return filename.endsWith('.sql') ? filename : `${filename}.sql`;
+}
+
+/**
  * Renders a single error item with optional SQL context.
  */
 function renderError(error: ErrorItem): void {
-  const truncatedPath = formatPath.truncatePath(error.template);
+  const templateName = ensureSqlExtension(error.template);
 
-  // Error header: X .../path/to/file.sql
-  console.log(chalk.red(`${figures.cross} ${truncatedPath}`));
+  // Error header: X template.sql
+  console.log(chalk.red(`${figures.cross} ${templateName}`));
 
   // Error context: message, SQL snippet, caret
   renderErrorContext({

@@ -2,7 +2,6 @@ import chalk from 'chalk';
 // src/commands/build.ts
 import { Command } from 'commander';
 import figures from 'figures';
-import packageJson from '../../package.json' with { type: 'json' };
 import { Orchestrator } from '../services/Orchestrator.js';
 import type { ProcessedTemplateResult } from '../types.js';
 import { displayValidationWarnings } from '../ui/displayWarnings.js';
@@ -10,9 +9,10 @@ import {
   createSpinner,
   type ErrorItem,
   type ResultRow,
+  renderBranding,
   renderErrorDisplay,
-  renderHeader,
   renderResultsTable,
+  type UnchangedRow,
 } from '../ui/index.js';
 import { getConfig } from '../utils/config.js';
 import { findProjectRoot } from '../utils/findProjectRoot.js';
@@ -33,29 +33,23 @@ export const buildCommand = new Command('build')
     let exitCode = 0;
 
     try {
-      // Build subtitle with options
-      const parts: string[] = ['build'];
-      if (options.force) parts.push('(forced)');
-      if (options.bundle) parts.push('(bundled)');
-      const subtitle = parts.join(' ');
+      // Render header only if not invoked from menu
+      if (!process.env.__SRTD_FROM_MENU__) {
+        const parts: string[] = ['Build'];
+        if (options.force) parts.push('(forced)');
+        if (options.bundle) parts.push('(bundled)');
+        renderBranding({ subtitle: parts.join(' ') });
+      }
 
-      // Initialize Orchestrator first to get template info for header
+      const spinner = createSpinner('Building templates...').start();
+
+      // Initialize Orchestrator
       const projectRoot = await findProjectRoot();
       const { config, warnings: configWarnings } = await getConfig(projectRoot);
       await using orchestrator = await Orchestrator.create(projectRoot, config, {
         silent: true,
         configWarnings,
       });
-
-      // Render header with context
-      renderHeader({
-        subtitle,
-        version: packageJson.version,
-        templateDir: config.templateDir,
-        migrationDir: config.migrationDir,
-      });
-
-      const spinner = createSpinner('Building templates...').start();
 
       // Display validation warnings
       displayValidationWarnings(orchestrator.getValidationWarnings());
@@ -89,13 +83,26 @@ export const buildCommand = new Command('build')
 
       spinner.stop();
 
-      // Transform results to new format
-      const rows: ResultRow[] = result.built.map(name => ({
-        template: name,
-        status: 'built' as const,
-      }));
+      // Transform results to new format with migration file info
+      const rows: ResultRow[] = [
+        // Built templates
+        ...result.built.map(name => {
+          const info = orchestrator.getTemplateInfo(name);
+          return {
+            template: name,
+            status: 'built' as const,
+            target: info.migrationFile,
+          };
+        }),
+        // Error templates
+        ...result.errors.map(err => ({
+          template: err.file,
+          status: 'error' as const,
+        })),
+      ];
 
       if (options.apply) {
+        // Applied rows show "local db" as target (handled by renderResultsTable)
         rows.push(
           ...result.applied.map(name => ({
             template: name,
@@ -104,10 +111,21 @@ export const buildCommand = new Command('build')
         );
       }
 
-      // Render results table
+      // Transform skipped to UnchangedRow - show migration file for build context
+      const unchanged: UnchangedRow[] = result.skipped.map(name => {
+        const info = orchestrator.getTemplateInfo(name);
+        return {
+          template: name,
+          target: info.migrationFile,
+          lastDate: info.lastDate,
+          lastAction: 'built' as const,
+        };
+      });
+
+      // Render results table with summary footer
       renderResultsTable({
         rows,
-        unchanged: result.skipped,
+        unchanged,
         errorCount: result.errors.length,
       });
 
