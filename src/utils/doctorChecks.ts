@@ -125,9 +125,10 @@ export async function checkMigrationDirWritable(
   const migrationPath = path.join(projectRoot, config.migrationDir);
   const testFile = path.join(migrationPath, '.srtd-doctor-test');
 
+  let fileWritten = false;
   try {
     await fs.writeFile(testFile, 'test');
-    await fs.unlink(testFile);
+    fileWritten = true;
     return {
       name: 'Migration directory writable',
       passed: true,
@@ -138,6 +139,13 @@ export async function checkMigrationDirWritable(
       passed: false,
       message: error instanceof Error ? error.message : 'Cannot write to migration directory',
     };
+  } finally {
+    // Cleanup test file if it was written (ignore cleanup errors)
+    if (fileWritten) {
+      await fs.unlink(testFile).catch(() => {
+        // Intentionally ignore - cleanup failure doesn't affect writability result
+      });
+    }
   }
 }
 
