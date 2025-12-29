@@ -5,6 +5,7 @@
 import chalk from 'chalk';
 import { Command } from 'commander';
 import figures from 'figures';
+import { SEPARATOR } from '../ui/constants.js';
 import { renderBranding } from '../ui/index.js';
 import { getConfig } from '../utils/config.js';
 import { type DoctorCheckResult, runAllChecks } from '../utils/doctorChecks.js';
@@ -29,7 +30,7 @@ function renderCheckResult(result: DoctorCheckResult): void {
  * Render horizontal separator
  */
 function renderSeparator(): void {
-  console.log(chalk.dim('─'.repeat(63)));
+  console.log(chalk.dim(SEPARATOR));
 }
 
 /**

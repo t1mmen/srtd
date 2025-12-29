@@ -293,6 +293,23 @@ describe('doctorChecks', () => {
 
       expect(result.passed).toBe(true);
     });
+
+    it('returns failed when local build log has invalid JSON', async () => {
+      vi.mocked(fs.readFile).mockResolvedValue('{ invalid json');
+
+      const result = await checkLocalBuildLogValid(projectRoot, mockConfig);
+
+      expect(result.passed).toBe(false);
+      expect(result.message).toContain('Invalid');
+    });
+
+    it('returns failed when local build log has invalid schema', async () => {
+      vi.mocked(fs.readFile).mockResolvedValue(JSON.stringify({ foo: 'bar' }));
+
+      const result = await checkLocalBuildLogValid(projectRoot, mockConfig);
+
+      expect(result.passed).toBe(false);
+    });
   });
 
   describe('checkDatabaseConnection', () => {
