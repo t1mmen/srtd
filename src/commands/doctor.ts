@@ -23,6 +23,9 @@ function renderCheckResult(result: DoctorCheckResult): void {
     if (result.message) {
       console.log(chalk.dim(`  ${figures.arrowRight} ${result.message}`));
     }
+    if (result.hint) {
+      console.log(chalk.cyan(`  ${figures.info} ${result.hint}`));
+    }
   }
 }
 
@@ -88,5 +91,7 @@ export const doctorCommand = new Command('doctor')
       exitCode = 1;
     }
 
-    process.exit(exitCode);
+    // Use process.exitCode to allow event loop to drain naturally
+    // This enables proper cleanup and makes testing easier
+    process.exitCode = exitCode;
   });

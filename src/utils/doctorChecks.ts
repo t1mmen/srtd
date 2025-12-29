@@ -18,6 +18,8 @@ export interface DoctorCheckResult {
   name: string;
   passed: boolean;
   message?: string;
+  /** Actionable suggestion for fixing the issue */
+  hint?: string;
 }
 
 /**
@@ -31,6 +33,7 @@ export async function checkConfigExists(projectRoot: string): Promise<DoctorChec
     name: 'Config file exists',
     passed: exists,
     message: exists ? undefined : `srtd.config.json not found in ${projectRoot}`,
+    hint: exists ? undefined : 'Run `srtd init` to create a config file',
   };
 }
 
@@ -54,6 +57,7 @@ export async function checkConfigSchemaValid(
     name: 'Config schema valid',
     passed: false,
     message: configWarnings.map(w => w.message).join('; '),
+    hint: 'Check srtd.config.json for typos or invalid values',
   };
 }
 
@@ -71,6 +75,7 @@ export async function checkTemplateDirExists(
     name: 'Template directory exists',
     passed: exists,
     message: exists ? undefined : `Template directory not found: ${config.templateDir}`,
+    hint: exists ? undefined : `Create the directory: mkdir -p ${config.templateDir}`,
   };
 }
 
@@ -88,6 +93,7 @@ export async function checkMigrationDirExists(
     name: 'Migration directory exists',
     passed: exists,
     message: exists ? undefined : `Migration directory not found: ${config.migrationDir}`,
+    hint: exists ? undefined : `Create the directory: mkdir -p ${config.migrationDir}`,
   };
 }
 
@@ -111,6 +117,7 @@ export async function checkTemplateDirReadable(
       name: 'Template directory readable',
       passed: false,
       message: error instanceof Error ? error.message : 'Cannot read template directory',
+      hint: 'Check directory permissions or ownership',
     };
   }
 }
@@ -138,6 +145,7 @@ export async function checkMigrationDirWritable(
       name: 'Migration directory writable',
       passed: false,
       message: error instanceof Error ? error.message : 'Cannot write to migration directory',
+      hint: 'Check directory permissions or ownership',
     };
   } finally {
     // Cleanup test file if it was written (ignore cleanup errors)
@@ -173,6 +181,7 @@ export async function checkBuildLogValid(
       name: 'Build log valid',
       passed: false,
       message: `Invalid build log: ${result.error}`,
+      hint: 'Delete the build log and run `srtd build` to regenerate it',
     };
   } catch (error) {
     // File not found is OK - build log is optional until first build
@@ -187,6 +196,7 @@ export async function checkBuildLogValid(
       name: 'Build log valid',
       passed: false,
       message: error instanceof Error ? error.message : 'Cannot read build log',
+      hint: 'Check file permissions or delete and regenerate with `srtd build`',
     };
   }
 }
@@ -215,6 +225,7 @@ export async function checkLocalBuildLogValid(
       name: 'Local build log valid',
       passed: false,
       message: `Invalid local build log: ${result.error}`,
+      hint: 'Delete the local build log and run `srtd apply` to regenerate it',
     };
   } catch (error) {
     // File not found is OK - local build log is optional
@@ -229,6 +240,7 @@ export async function checkLocalBuildLogValid(
       name: 'Local build log valid',
       passed: false,
       message: error instanceof Error ? error.message : 'Cannot read local build log',
+      hint: 'Check file permissions or delete and regenerate with `srtd apply`',
     };
   }
 }
@@ -257,6 +269,7 @@ export async function checkDatabaseConnection(
         name: 'Database connection',
         passed: false,
         message: `Connection timed out after ${timeoutMs}ms`,
+        hint: 'Check if database is running: `supabase status` or `docker ps`',
       };
     }
 
@@ -271,12 +284,14 @@ export async function checkDatabaseConnection(
       name: 'Database connection',
       passed: false,
       message: 'Connection failed. Check database server is running.',
+      hint: 'Run `supabase start` or check pgConnection in config',
     };
   } catch (error) {
     return {
       name: 'Database connection',
       passed: false,
       message: error instanceof Error ? error.message : 'Connection failed',
+      hint: 'Run `supabase start` or verify pgConnection in srtd.config.json',
     };
   } finally {
     await db.dispose();
@@ -307,12 +322,14 @@ export async function checkTemplateCount(
       name: 'Template count',
       passed: false,
       message: `No SQL templates found in ${config.templateDir}`,
+      hint: 'Add .sql template files or run `srtd init` to create examples',
     };
   } catch {
     return {
       name: 'Template count',
       passed: false,
       message: `Cannot read template directory: ${config.templateDir}`,
+      hint: 'Check directory permissions or ensure it exists',
     };
   }
 }

@@ -223,6 +223,18 @@ describe('doctorChecks', () => {
       expect(result.passed).toBe(false);
       expect(result.message).toContain('Read-only');
     });
+
+    it('returns passed even when cleanup fails after successful write', async () => {
+      // Write succeeds, but cleanup (unlink) fails
+      vi.mocked(fs.writeFile).mockResolvedValue(undefined);
+      vi.mocked(fs.unlink).mockRejectedValue(new Error('Cleanup failed'));
+
+      const result = await checkMigrationDirWritable(projectRoot, mockConfig);
+
+      // Should still pass because write succeeded - cleanup failure is ignored
+      expect(result.passed).toBe(true);
+      expect(result.message).toBeUndefined();
+    });
   });
 
   describe('checkBuildLogValid', () => {
