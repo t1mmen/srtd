@@ -1080,4 +1080,40 @@ describe('StateService', () => {
       expect(handler).toHaveBeenCalled();
     });
   });
+
+  describe('auto-save error handling', () => {
+    it('should emit error event when auto-save fails', async () => {
+      const autoSaveConfig = { ...config, autoSave: true };
+      const testService = new StateService(autoSaveConfig);
+
+      vi.mocked(fs.readFile).mockResolvedValue(
+        JSON.stringify({ version: '1.0', lastTimestamp: '', templates: {} })
+      );
+      await testService.initialize();
+
+      // Set up error handler BEFORE triggering the error
+      const errorHandler = vi.fn();
+      testService.on('error', errorHandler);
+
+      // Make writeFile fail
+      vi.mocked(fs.writeFile).mockRejectedValue(new Error('Disk full'));
+
+      // Trigger a state change that will schedule auto-save
+      await testService.markAsApplied('/test/path.sql', 'hash');
+
+      // Wait for auto-save timer (1 second + buffer)
+      await new Promise(resolve => setTimeout(resolve, 1200));
+
+      // Should have emitted an error
+      expect(errorHandler).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: expect.stringContaining('Failed to save build logs'),
+        })
+      );
+
+      // Reset mock for clean dispose
+      vi.mocked(fs.writeFile).mockResolvedValue();
+      await testService.dispose();
+    });
+  });
 });
