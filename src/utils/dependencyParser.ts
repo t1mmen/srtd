@@ -51,7 +51,10 @@ export function extractDeclarations(sql: string): Declaration[] {
     const regex = new RegExp(pattern.source, pattern.flags);
     const matches = sql.matchAll(regex);
     for (const match of matches) {
-      declarations.push({ type, name: match[1] });
+      const name = match[1];
+      if (name) {
+        declarations.push({ type, name });
+      }
     }
   }
 
@@ -86,6 +89,7 @@ export function extractReferences(sql: string, exclude: Declaration[] = []): str
   const fromMatches = sql.matchAll(FROM_PATTERN);
   for (const match of fromMatches) {
     const tableList = match[1];
+    if (!tableList) continue;
     // Split by comma and trim each table name
     const tables = tableList.split(',').map(t => t.trim().split(/\s+/)[0]);
     for (const table of tables) {
@@ -101,7 +105,7 @@ export function extractReferences(sql: string, exclude: Declaration[] = []): str
     const matches = sql.matchAll(regex);
     for (const match of matches) {
       const name = match[1];
-      if (!excludeNames.has(name.toLowerCase())) {
+      if (name && !excludeNames.has(name.toLowerCase())) {
         references.add(name);
       }
     }
