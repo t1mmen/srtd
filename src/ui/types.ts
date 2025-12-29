@@ -41,6 +41,9 @@ export interface TemplateResult {
   /** Error message if status === 'error' */
   errorMessage?: string;
 
+  /** Actionable hint for fixing the error */
+  errorHint?: string;
+
   /** SQL snippet for error context */
   errorSqlSnippet?: string;
 

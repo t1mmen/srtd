@@ -9,6 +9,7 @@ export interface MigrationError {
   file: string;
   error: string;
   templateName: string;
+  hint?: string;
 }
 
 export interface ProcessedTemplateResult {

@@ -113,6 +113,7 @@ function renderWatchRow(result: TemplateResult): void {
     const indent = ' '.repeat(TIMESTAMP_COLUMN_WIDTH);
     renderErrorContext({
       message: result.errorMessage,
+      hint: result.errorHint,
       sqlSnippet: result.errorSqlSnippet,
       column: result.errorColumn,
       indentPrefix: indent,

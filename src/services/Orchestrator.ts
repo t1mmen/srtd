@@ -24,7 +24,7 @@ export interface OrchestratorEvents {
   templateChanged: TemplateStatus;
   templateApplied: TemplateStatus;
   templateBuilt: TemplateStatus;
-  templateError: { template: TemplateStatus; error: string };
+  templateError: { template: TemplateStatus; error: string; hint?: string };
   operationComplete: ProcessedTemplateResult;
 }
 
@@ -319,7 +319,8 @@ export class Orchestrator extends EventEmitter implements Disposable {
         const error = result.errors[0];
         const formattedError =
           typeof error === 'string' ? error : (error?.error ?? 'Unknown error');
-        this.emit('templateError', { template, error: formattedError });
+        const errorHint = typeof error === 'string' ? undefined : error?.hint;
+        this.emit('templateError', { template, error: formattedError, hint: errorHint });
       } else {
         // After apply, state has changed - re-read to get fresh status
         const updatedTemplate = await this.getTemplateStatus(templatePath, templateFile);
@@ -345,6 +346,7 @@ export class Orchestrator extends EventEmitter implements Disposable {
       this.emit('templateError', {
         template: safeTemplate,
         error: errorMessage,
+        hint: undefined,
       });
 
       return {
@@ -353,6 +355,7 @@ export class Orchestrator extends EventEmitter implements Disposable {
             file: templatePath,
             error: errorMessage,
             templateName,
+            hint: undefined,
           },
         ],
         applied: [],
@@ -444,6 +447,7 @@ export class Orchestrator extends EventEmitter implements Disposable {
           file: templatePath,
           templateName: templatePath,
           error: error instanceof Error ? error.message : 'Unknown error',
+          hint: undefined,
         });
       }
     }
@@ -660,7 +664,7 @@ export class Orchestrator extends EventEmitter implements Disposable {
       // Update StateService with error (single source of truth)
       await this.stateService.markAsError(templatePath, errorMessage, 'build');
 
-      this.emit('templateError', { template, error: errorMessage });
+      this.emit('templateError', { template, error: errorMessage, hint: undefined });
       throw error;
     }
   }

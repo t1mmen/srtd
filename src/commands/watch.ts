@@ -304,12 +304,13 @@ export const watchCommand = new Command('watch')
 
       orchestrator.on(
         'templateError',
-        ({ template, error }: { template: TemplateStatus; error: string }) => {
+        ({ template, error, hint }: { template: TemplateStatus; error: string; hint?: string }) => {
           recentUpdates.push({
             template: template.path,
             status: 'error',
             timestamp: new Date(),
             errorMessage: error,
+            errorHint: hint,
           });
           if (recentUpdates.length > MAX_HISTORY) recentUpdates.shift();
           errors.set(template.path, error);

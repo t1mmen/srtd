@@ -147,4 +147,20 @@ describe('renderErrorDisplay', () => {
     // Verify console.log was called multiple times (header, errors, footer)
     expect(consoleLogSpy.mock.calls.length).toBeGreaterThan(1);
   });
+
+  it('renders hint when provided with error', () => {
+    const errors: ErrorItem[] = [
+      {
+        template: '/path/to/views/missing_table.sql',
+        message: 'relation "users" does not exist',
+        hint: 'Table does not exist. Ensure the migration that creates it has run first.',
+      },
+    ];
+
+    renderErrorDisplay({ errors });
+
+    const output = consoleLogSpy.mock.calls.flat().join('\n');
+    expect(output).toContain('Hint:');
+    expect(output).toContain('Table does not exist');
+  });
 });
