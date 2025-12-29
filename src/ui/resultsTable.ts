@@ -13,14 +13,6 @@ const COL_TEMPLATE = 22;
 const COL_TARGET = 32;
 
 /**
- * Ensure template name has .sql extension
- */
-function ensureSqlExtension(name: string): string {
-  const filename = formatPath.getFilename(name);
-  return filename.endsWith('.sql') ? filename : `${filename}.sql`;
-}
-
-/**
  * Get status label for watch mode display.
  */
 function getStatusLabel(status: TemplateResult['status']): string {
@@ -134,7 +126,7 @@ function renderWatchRow(result: TemplateResult): void {
  */
 function renderTableRow(result: TemplateResult, context: RenderContext): void {
   const icon = getStatusIcon(result.status);
-  const templateName = ensureSqlExtension(result.template);
+  const templateName = formatPath.ensureSqlExtension(result.template);
   const isDimmed = result.status === 'unchanged' || result.status === 'skipped';
 
   const templateDisplay = isDimmed

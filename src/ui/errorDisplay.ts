@@ -49,18 +49,10 @@ export function renderErrorDisplay(options: ErrorDisplayOptions): void {
 }
 
 /**
- * Ensure template name has .sql extension
- */
-function ensureSqlExtension(name: string): string {
-  const filename = formatPath.getFilename(name);
-  return filename.endsWith('.sql') ? filename : `${filename}.sql`;
-}
-
-/**
  * Renders a single error item with optional SQL context.
  */
 function renderError(error: ErrorItem): void {
-  const templateName = ensureSqlExtension(error.template);
+  const templateName = formatPath.ensureSqlExtension(error.template);
 
   // Error header: X template.sql
   console.log(chalk.red(`${figures.cross} ${templateName}`));

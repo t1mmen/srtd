@@ -3,10 +3,9 @@ import {
   createSpinner,
   DEFAULT_WATCH_SHORTCUTS,
   renderBranding,
+  renderErrorDisplay,
   renderResultRow,
-  renderResults,
-  renderStatBadge,
-  renderStatBadges,
+  renderResultsTable,
   renderWatchFooter,
 } from './index.js';
 
@@ -19,20 +18,16 @@ describe('ui index exports', () => {
     expect(renderBranding).toBeTypeOf('function');
   });
 
-  it('should export renderResults', () => {
-    expect(renderResults).toBeTypeOf('function');
-  });
-
-  it('should export renderStatBadge', () => {
-    expect(renderStatBadge).toBeTypeOf('function');
-  });
-
-  it('should export renderStatBadges', () => {
-    expect(renderStatBadges).toBeTypeOf('function');
+  it('should export renderResultsTable', () => {
+    expect(renderResultsTable).toBeTypeOf('function');
   });
 
   it('should export renderResultRow', () => {
     expect(renderResultRow).toBeTypeOf('function');
+  });
+
+  it('should export renderErrorDisplay', () => {
+    expect(renderErrorDisplay).toBeTypeOf('function');
   });
 
   it('should export renderWatchFooter', () => {

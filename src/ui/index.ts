@@ -1,8 +1,5 @@
-export { renderStatBadge, renderStatBadges } from './badge.js';
 export { renderBranding } from './branding.js';
 export { type ErrorDisplayOptions, type ErrorItem, renderErrorDisplay } from './errorDisplay.js';
-export { type FinalStatusOptions, renderFinalStatus } from './finalStatus.js';
-export { renderResults } from './results.js';
 export {
   type RenderContext,
   type RenderResultsOptions,

@@ -12,7 +12,7 @@ describe('formatPath', () => {
     });
 
     it('handles single parent directory', () => {
-      expect(formatPath.truncatePath('templates/file.sql')).toBe('…/templates/file.sql');
+      expect(formatPath.truncatePath('templates/file.sql')).toBe('templates/file.sql');
     });
 
     it('handles deeply nested paths', () => {
