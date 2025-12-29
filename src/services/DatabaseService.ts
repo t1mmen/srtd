@@ -6,6 +6,7 @@
 import { EventEmitter } from 'node:events';
 import pg from 'pg';
 import type { CLIConfig, MigrationError } from '../types.js';
+import { getErrorHint } from '../utils/errorHints.js';
 import { logger } from '../utils/logger.js';
 
 export interface DatabaseServiceConfig {
@@ -41,6 +42,7 @@ export interface DatabaseError {
   originalError?: Error;
   code?: string;
   detail?: string;
+  hint?: string;
 }
 
 export interface SqlExecutionResult {
@@ -99,6 +101,7 @@ export class DatabaseService extends EventEmitter {
         originalError: error instanceof Error ? error : new Error(String(error)),
         code: errorCode,
         detail: errorMessage,
+        hint: getErrorHint(errorCode, errorMessage),
       };
     }
 
@@ -110,6 +113,7 @@ export class DatabaseService extends EventEmitter {
         originalError: error instanceof Error ? error : new Error(String(error)),
         code: errorCode,
         detail: errorMessage,
+        hint: getErrorHint(errorCode, errorMessage),
       };
     }
 
@@ -121,6 +125,7 @@ export class DatabaseService extends EventEmitter {
         originalError: error instanceof Error ? error : new Error(String(error)),
         code: errorCode,
         detail: errorMessage,
+        hint: getErrorHint(errorCode, errorMessage),
       };
     }
 
@@ -134,6 +139,7 @@ export class DatabaseService extends EventEmitter {
           originalError: error instanceof Error ? error : new Error(String(error)),
           code: errorCode,
           detail: errorMessage,
+          hint: getErrorHint(errorCode, errorMessage),
         };
       }
 
@@ -145,6 +151,7 @@ export class DatabaseService extends EventEmitter {
           originalError: error instanceof Error ? error : new Error(String(error)),
           code: errorCode,
           detail: errorMessage,
+          hint: getErrorHint(errorCode, errorMessage),
         };
       }
 
@@ -156,6 +163,7 @@ export class DatabaseService extends EventEmitter {
           originalError: error instanceof Error ? error : new Error(String(error)),
           code: errorCode,
           detail: errorMessage,
+          hint: getErrorHint(errorCode, errorMessage),
         };
       }
     }
@@ -167,6 +175,7 @@ export class DatabaseService extends EventEmitter {
       originalError: error instanceof Error ? error : new Error(String(error)),
       code: errorCode,
       detail: errorMessage,
+      hint: getErrorHint(errorCode, errorMessage),
     };
   }
 
@@ -356,6 +365,7 @@ export class DatabaseService extends EventEmitter {
       file: templateName,
       error: result.error || 'Unknown error',
       templateName,
+      hint: result.databaseError?.hint,
     };
   }
 

@@ -96,4 +96,43 @@ describe('renderErrorContext', () => {
     const lines = consoleLogSpy.mock.calls.flat();
     expect(lines.length).toBe(3); // message line, snippet line, caret line
   });
+
+  describe('hint display', () => {
+    it('renders hint when provided', () => {
+      renderErrorContext({
+        message: 'relation "users" does not exist',
+        hint: 'Table does not exist. Ensure the migration that creates it has run first.',
+      });
+
+      const output = consoleLogSpy.mock.calls.flat().join('\n');
+      expect(output).toContain('Hint:');
+      expect(output).toContain('Table does not exist');
+    });
+
+    it('does not render hint line when hint is undefined', () => {
+      renderErrorContext({
+        message: 'some error',
+      });
+
+      const output = consoleLogSpy.mock.calls.flat().join('\n');
+      expect(output).not.toContain('Hint:');
+    });
+
+    it('renders hint after message but before SQL snippet', () => {
+      renderErrorContext({
+        message: 'error message',
+        hint: 'Helpful hint',
+        sqlSnippet: 'SELECT * FROM table',
+      });
+
+      const lines = consoleLogSpy.mock.calls.flat();
+      expect(lines.length).toBe(3); // message, hint, snippet
+
+      // Hint should be after message
+      const outputJoined = lines.join('\n');
+      const hintPos = outputJoined.indexOf('Hint:');
+      const snippetPos = outputJoined.indexOf('SELECT');
+      expect(hintPos).toBeLessThan(snippetPos);
+    });
+  });
 });

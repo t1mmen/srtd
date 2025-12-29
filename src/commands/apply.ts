@@ -69,6 +69,7 @@ export const applyCommand = new Command('apply')
           template: err.file,
           status: 'error' as const,
           errorMessage: err.error,
+          errorHint: err.hint,
         })),
       ];
 

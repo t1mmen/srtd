@@ -104,6 +104,7 @@ export const buildCommand = new Command('build')
           template: err.file,
           status: 'error' as const,
           errorMessage: err.error,
+          errorHint: err.hint,
         })),
       ];
 

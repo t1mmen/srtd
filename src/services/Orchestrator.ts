@@ -24,7 +24,7 @@ export interface OrchestratorEvents {
   templateChanged: TemplateStatus;
   templateApplied: TemplateStatus;
   templateBuilt: TemplateStatus;
-  templateError: { template: TemplateStatus; error: string };
+  templateError: { template: TemplateStatus; error: string; hint?: string };
   operationComplete: ProcessedTemplateResult;
 }
 
@@ -319,7 +319,8 @@ export class Orchestrator extends EventEmitter implements Disposable {
         const error = result.errors[0];
         const formattedError =
           typeof error === 'string' ? error : (error?.error ?? 'Unknown error');
-        this.emit('templateError', { template, error: formattedError });
+        const errorHint = typeof error === 'string' ? undefined : error?.hint;
+        this.emit('templateError', { template, error: formattedError, hint: errorHint });
       } else {
         // After apply, state has changed - re-read to get fresh status
         const updatedTemplate = await this.getTemplateStatus(templatePath, templateFile);

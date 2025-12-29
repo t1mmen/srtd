@@ -2,6 +2,7 @@ import chalk from 'chalk';
 
 export interface ErrorContextOptions {
   message?: string;
+  hint?: string;
   sqlSnippet?: string;
   column?: number;
   indentPrefix?: string; // '' for errorDisplay, timestamp-width for watch mode
@@ -22,6 +23,9 @@ export function renderErrorContext(options: ErrorContextOptions): void {
 
   if (options.message) {
     console.log(`${indent}${gutter} ${chalk.red(options.message)}`);
+  }
+  if (options.hint) {
+    console.log(`${indent}${gutter} ${chalk.cyan('Hint:')} ${options.hint}`);
   }
   if (options.sqlSnippet) {
     console.log(`${indent}${gutter} ${options.sqlSnippet}`);
