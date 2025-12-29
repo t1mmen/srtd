@@ -253,16 +253,24 @@ export async function checkDatabaseConnection(
   timeoutMs = 5000
 ): Promise<DoctorCheckResult> {
   const db = DatabaseService.fromConfig(config);
+  let timeoutId: NodeJS.Timeout | undefined;
 
   try {
     // Race between testConnection and timeout
+    // Capture timeout ID so we can clear it to prevent timer leaks
     const timeoutPromise = new Promise<'timeout'>(resolve => {
-      setTimeout(() => resolve('timeout'), timeoutMs);
+      timeoutId = setTimeout(() => resolve('timeout'), timeoutMs);
     });
 
     const connectionPromise = db.testConnection();
 
     const result = await Promise.race([connectionPromise, timeoutPromise]);
+
+    // Clear timeout immediately after race completes (whichever won)
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+      timeoutId = undefined;
+    }
 
     if (result === 'timeout') {
       return {
@@ -294,6 +302,10 @@ export async function checkDatabaseConnection(
       hint: 'Run `supabase start` or verify pgConnection in srtd.config.json',
     };
   } finally {
+    // Always clean up: clear timer and dispose database connection
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
     await db.dispose();
   }
 }
