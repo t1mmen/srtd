@@ -571,4 +571,25 @@ describe('DatabaseService', () => {
       expect(mockQuery).toHaveBeenCalledWith(longSql);
     });
   });
+
+  describe('process signal handlers', () => {
+    it('should not add SIGINT/SIGTERM handlers (cleanup is handled by owner)', async () => {
+      // Track listener counts before creating service
+      const sigintBefore = process.listenerCount('SIGINT');
+      const sigtermBefore = process.listenerCount('SIGTERM');
+
+      // Create a new service
+      const testService = new DatabaseService({
+        connectionString: 'postgresql://test',
+        wrapInTransaction: true,
+      });
+
+      // Verify no new handlers were added
+      expect(process.listenerCount('SIGINT')).toBe(sigintBefore);
+      expect(process.listenerCount('SIGTERM')).toBe(sigtermBefore);
+
+      // Cleanup
+      await testService.dispose();
+    });
+  });
 });
