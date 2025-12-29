@@ -346,6 +346,7 @@ export class Orchestrator extends EventEmitter implements Disposable {
       this.emit('templateError', {
         template: safeTemplate,
         error: errorMessage,
+        hint: undefined,
       });
 
       return {
@@ -354,6 +355,7 @@ export class Orchestrator extends EventEmitter implements Disposable {
             file: templatePath,
             error: errorMessage,
             templateName,
+            hint: undefined,
           },
         ],
         applied: [],
@@ -445,6 +447,7 @@ export class Orchestrator extends EventEmitter implements Disposable {
           file: templatePath,
           templateName: templatePath,
           error: error instanceof Error ? error.message : 'Unknown error',
+          hint: undefined,
         });
       }
     }
@@ -661,7 +664,7 @@ export class Orchestrator extends EventEmitter implements Disposable {
       // Update StateService with error (single source of truth)
       await this.stateService.markAsError(templatePath, errorMessage, 'build');
 
-      this.emit('templateError', { template, error: errorMessage });
+      this.emit('templateError', { template, error: errorMessage, hint: undefined });
       throw error;
     }
   }
