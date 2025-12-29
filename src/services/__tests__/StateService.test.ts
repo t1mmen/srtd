@@ -1083,6 +1083,8 @@ describe('StateService', () => {
 
   describe('auto-save error handling', () => {
     it('should emit error event when auto-save fails', async () => {
+      vi.useFakeTimers();
+
       const autoSaveConfig = { ...config, autoSave: true };
       const testService = new StateService(autoSaveConfig);
 
@@ -1101,8 +1103,8 @@ describe('StateService', () => {
       // Trigger a state change that will schedule auto-save
       await testService.markAsApplied('/test/path.sql', 'hash');
 
-      // Wait for auto-save timer (1 second + buffer)
-      await new Promise(resolve => setTimeout(resolve, 1200));
+      // Advance timers to trigger the auto-save (faster than real timers)
+      await vi.advanceTimersByTimeAsync(1200);
 
       // Should have emitted an error
       expect(errorHandler).toHaveBeenCalledWith(
@@ -1114,6 +1116,8 @@ describe('StateService', () => {
       // Reset mock for clean dispose
       vi.mocked(fs.writeFile).mockResolvedValue();
       await testService.dispose();
+
+      vi.useRealTimers();
     });
   });
 });
