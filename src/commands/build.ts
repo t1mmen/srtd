@@ -21,6 +21,7 @@ interface BuildOptions {
   force?: boolean;
   apply?: boolean;
   bundle?: boolean;
+  deps?: boolean;
 }
 
 export const buildCommand = new Command('build')
@@ -28,6 +29,7 @@ export const buildCommand = new Command('build')
   .option('-f, --force', 'Force building of all templates, irrespective of changes')
   .option('-a, --apply', 'Apply the built templates')
   .option('-b, --bundle', 'Bundle all templates into a single migration')
+  .option('--no-deps', 'Disable automatic dependency ordering')
   .action(async (options: BuildOptions) => {
     let exitCode = 0;
 
@@ -56,6 +58,7 @@ export const buildCommand = new Command('build')
         force: options.force,
         bundle: options.bundle,
         silent: true,
+        respectDependencies: options.deps,
       });
 
       let result = buildResult;

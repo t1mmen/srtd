@@ -105,6 +105,7 @@ describe('Build Command', () => {
       force: undefined,
       bundle: undefined,
       silent: true,
+      respectDependencies: true,
     });
     expect(spies.exitSpy).toHaveBeenCalledWith(0);
   });
@@ -126,6 +127,7 @@ describe('Build Command', () => {
       force: true,
       bundle: undefined,
       silent: true,
+      respectDependencies: true,
     });
   });
 
@@ -146,6 +148,7 @@ describe('Build Command', () => {
       force: undefined,
       bundle: true,
       silent: true,
+      respectDependencies: true,
     });
   });
 

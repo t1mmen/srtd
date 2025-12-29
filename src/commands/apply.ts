@@ -19,7 +19,8 @@ import { getErrorMessage } from '../utils/getErrorMessage.js';
 export const applyCommand = new Command('apply')
   .description('Apply built migrations to the database')
   .option('-f, --force', 'Force apply of all templates, irrespective of changes')
-  .action(async (options: { force?: boolean }) => {
+  .option('--no-deps', 'Disable automatic dependency ordering')
+  .action(async (options: { force?: boolean; deps?: boolean }) => {
     let exitCode = 0;
 
     try {
@@ -45,6 +46,7 @@ export const applyCommand = new Command('apply')
       const result: ProcessedTemplateResult = await orchestrator.apply({
         force: options.force,
         silent: true,
+        respectDependencies: options.deps,
       });
 
       // Transform results to unified TemplateResult format
