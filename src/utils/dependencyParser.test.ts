@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { extractDeclarations } from './dependencyParser.js';
+import { extractDeclarations, extractReferences } from './dependencyParser.js';
 
 describe('extractDeclarations', () => {
   it('extracts CREATE TABLE declaration', () => {
@@ -73,5 +73,82 @@ describe('extractDeclarations', () => {
     const sql = 'SELECT * FROM users;';
     const result = extractDeclarations(sql);
     expect(result).toEqual([]);
+  });
+});
+
+describe('extractReferences', () => {
+  it('extracts FROM clause references', () => {
+    const sql = 'SELECT * FROM users WHERE active = true;';
+    const result = extractReferences(sql);
+    expect(result).toContain('users');
+  });
+
+  it('extracts multiple FROM clause references', () => {
+    const sql = 'SELECT * FROM users, posts WHERE users.id = posts.user_id;';
+    const result = extractReferences(sql);
+    expect(result).toContain('users');
+    expect(result).toContain('posts');
+  });
+
+  it('extracts JOIN clause references', () => {
+    const sql = 'SELECT * FROM users u JOIN posts p ON u.id = p.user_id;';
+    const result = extractReferences(sql);
+    expect(result).toContain('users');
+    expect(result).toContain('posts');
+  });
+
+  it('extracts LEFT/RIGHT/INNER JOIN references', () => {
+    const sql = `
+      SELECT * FROM users u
+      LEFT JOIN posts p ON u.id = p.user_id
+      INNER JOIN comments c ON p.id = c.post_id;
+    `;
+    const result = extractReferences(sql);
+    expect(result).toContain('users');
+    expect(result).toContain('posts');
+    expect(result).toContain('comments');
+  });
+
+  it('extracts REFERENCES in foreign key', () => {
+    const sql = 'CREATE TABLE posts (user_id INT REFERENCES users(id));';
+    const result = extractReferences(sql);
+    expect(result).toContain('users');
+  });
+
+  it('extracts schema-qualified references', () => {
+    const sql = 'SELECT * FROM public.users;';
+    const result = extractReferences(sql);
+    expect(result).toContain('public.users');
+  });
+
+  it('excludes declarations from references', () => {
+    const sql = 'CREATE TABLE users (id INT);';
+    const declarations = extractDeclarations(sql);
+    const references = extractReferences(sql, declarations);
+    expect(references).not.toContain('users');
+  });
+
+  it('excludes view declarations from references in view definition', () => {
+    const sql = 'CREATE VIEW active_users AS SELECT * FROM users WHERE active = true;';
+    const declarations = extractDeclarations(sql);
+    const references = extractReferences(sql, declarations);
+    expect(references).not.toContain('active_users');
+    expect(references).toContain('users');
+  });
+
+  it('returns empty array for SQL without references', () => {
+    const sql = 'CREATE TABLE users (id INT, name TEXT);';
+    const declarations = extractDeclarations(sql);
+    const references = extractReferences(sql, declarations);
+    expect(references).toEqual([]);
+  });
+
+  it('deduplicates repeated references', () => {
+    const sql = `
+      SELECT * FROM users u1
+      JOIN users u2 ON u1.manager_id = u2.id;
+    `;
+    const result = extractReferences(sql);
+    expect(result.filter(r => r === 'users')).toHaveLength(1);
   });
 });

@@ -57,3 +57,55 @@ export function extractDeclarations(sql: string): Declaration[] {
 
   return declarations;
 }
+
+/**
+ * Patterns for extracting SQL references (dependencies)
+ */
+const REFERENCE_PATTERNS = [
+  // JOIN clause: JOIN table_name, LEFT JOIN table_name, etc.
+  /JOIN\s+([a-zA-Z_][\w.]*)/gi,
+  // REFERENCES clause (foreign keys): REFERENCES table_name(column)
+  /REFERENCES\s+([a-zA-Z_][\w.]*)/gi,
+];
+
+/**
+ * Pattern to match FROM clause with optional comma-separated tables
+ * Captures: FROM table1, table2, table3 ...
+ */
+const FROM_PATTERN = /FROM\s+([a-zA-Z_][\w.]*(?:\s*,\s*[a-zA-Z_][\w.]*)*)/gi;
+
+/**
+ * Extract all references (FROM, JOIN, REFERENCES, etc.) from SQL
+ * Optionally exclude declarations to avoid self-references
+ */
+export function extractReferences(sql: string, exclude: Declaration[] = []): string[] {
+  const references = new Set<string>();
+  const excludeNames = new Set(exclude.map(d => d.name.toLowerCase()));
+
+  // Handle FROM clause specially (comma-separated tables)
+  const fromMatches = sql.matchAll(FROM_PATTERN);
+  for (const match of fromMatches) {
+    const tableList = match[1];
+    // Split by comma and trim each table name
+    const tables = tableList.split(',').map(t => t.trim().split(/\s+/)[0]);
+    for (const table of tables) {
+      if (table && !excludeNames.has(table.toLowerCase())) {
+        references.add(table);
+      }
+    }
+  }
+
+  // Handle other patterns (JOIN, REFERENCES)
+  for (const pattern of REFERENCE_PATTERNS) {
+    const regex = new RegExp(pattern.source, pattern.flags);
+    const matches = sql.matchAll(regex);
+    for (const match of matches) {
+      const name = match[1];
+      if (!excludeNames.has(name.toLowerCase())) {
+        references.add(name);
+      }
+    }
+  }
+
+  return Array.from(references);
+}
