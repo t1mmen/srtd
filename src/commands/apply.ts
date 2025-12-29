@@ -84,6 +84,7 @@ export const applyCommand = new Command('apply')
         const errorItems: ErrorItem[] = result.errors.map(err => ({
           template: err.file,
           message: err.error,
+          hint: err.hint,
         }));
         renderErrorDisplay({ errors: errorItems });
       }

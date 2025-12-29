@@ -91,10 +91,3 @@ export function getErrorHint(
 
   return undefined;
 }
-
-/**
- * Get all supported error codes (for documentation/testing)
- */
-export function getSupportedErrorCodes(): string[] {
-  return Object.keys(ERROR_CODE_HINTS);
-}

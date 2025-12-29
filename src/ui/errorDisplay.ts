@@ -7,6 +7,7 @@ import { renderErrorContext } from './errorContext.js';
 export interface ErrorItem {
   template: string; // Path to template file
   message: string; // Error message
+  hint?: string; // Actionable hint for fixing the error
   sqlSnippet?: string; // SQL code around error
   column?: number; // Column for caret positioning
 }
@@ -57,9 +58,10 @@ function renderError(error: ErrorItem): void {
   // Error header: X template.sql
   console.log(chalk.red(`${figures.cross} ${templateName}`));
 
-  // Error context: message, SQL snippet, caret
+  // Error context: message, SQL snippet, caret, hint
   renderErrorContext({
     message: error.message,
+    hint: error.hint,
     sqlSnippet: error.sqlSnippet,
     column: error.column,
     indentPrefix: '  ', // 2 spaces for errorDisplay
