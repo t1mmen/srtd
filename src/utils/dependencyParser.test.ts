@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { extractDeclarations, extractReferences } from './dependencyParser.js';
+import { extractDeclarations, extractReferences, stripSqlNoise } from './dependencyParser.js';
 
 describe('extractDeclarations', () => {
   it('extracts CREATE TABLE declaration', () => {
@@ -150,5 +150,128 @@ describe('extractReferences', () => {
     `;
     const result = extractReferences(sql);
     expect(result.filter(r => r === 'users')).toHaveLength(1);
+  });
+});
+
+describe('stripSqlNoise', () => {
+  it('removes single-line comments', () => {
+    const sql = 'SELECT * FROM users; -- comment';
+    const result = stripSqlNoise(sql);
+    expect(result).not.toContain('comment');
+    expect(result).toContain('SELECT');
+    expect(result).toContain('users');
+  });
+
+  it('removes multi-line comments', () => {
+    const sql = 'SELECT * /* comment */ FROM users;';
+    const result = stripSqlNoise(sql);
+    expect(result).not.toContain('comment');
+    expect(result).toContain('SELECT');
+    expect(result).toContain('users');
+  });
+
+  it('removes multi-line comments spanning lines', () => {
+    const sql = `SELECT *
+/* this is a
+   multi-line
+   comment */
+FROM users;`;
+    const result = stripSqlNoise(sql);
+    expect(result).not.toContain('multi-line');
+    expect(result).toContain('SELECT');
+    expect(result).toContain('users');
+  });
+
+  it('replaces single-quoted strings with empty strings', () => {
+    const sql = "SELECT 'FROM users' AS text FROM posts;";
+    const result = stripSqlNoise(sql);
+    expect(result).not.toContain('FROM users');
+    expect(result).toContain('posts');
+  });
+
+  it('handles escaped quotes in strings', () => {
+    const sql = "SELECT 'it''s a test' AS text FROM posts;";
+    const result = stripSqlNoise(sql);
+    expect(result).not.toContain("it's");
+    expect(result).toContain('posts');
+  });
+});
+
+describe('extractDeclarations with comments/strings', () => {
+  it('ignores declarations in single-line comments', () => {
+    const sql = `
+      -- CREATE TABLE fake_table (id INT);
+      CREATE TABLE real_table (id INT);
+    `;
+    const result = extractDeclarations(sql);
+    expect(result).toHaveLength(1);
+    expect(result[0].name).toBe('real_table');
+  });
+
+  it('ignores declarations in multi-line comments', () => {
+    const sql = `
+      /* CREATE TABLE fake_table (id INT); */
+      CREATE TABLE real_table (id INT);
+    `;
+    const result = extractDeclarations(sql);
+    expect(result).toHaveLength(1);
+    expect(result[0].name).toBe('real_table');
+  });
+
+  it('ignores declarations mentioned in strings', () => {
+    const sql = `
+      CREATE TABLE logs (message TEXT DEFAULT 'CREATE TABLE users');
+    `;
+    const result = extractDeclarations(sql);
+    expect(result).toHaveLength(1);
+    expect(result[0].name).toBe('logs');
+  });
+});
+
+describe('extractReferences with comments/strings', () => {
+  it('ignores references in single-line comments', () => {
+    const sql = `
+      -- FROM fake_table
+      SELECT * FROM real_table;
+    `;
+    const result = extractReferences(sql);
+    expect(result).toContain('real_table');
+    expect(result).not.toContain('fake_table');
+  });
+
+  it('ignores references in multi-line comments', () => {
+    const sql = `
+      /* SELECT * FROM fake_table; */
+      SELECT * FROM real_table;
+    `;
+    const result = extractReferences(sql);
+    expect(result).toContain('real_table');
+    expect(result).not.toContain('fake_table');
+  });
+
+  it('ignores references mentioned in strings', () => {
+    const sql = `
+      SELECT 'FROM fake_table' AS label FROM real_table;
+    `;
+    const result = extractReferences(sql);
+    expect(result).toContain('real_table');
+    expect(result).not.toContain('fake_table');
+  });
+
+  it('handles SQL with complex comments and strings', () => {
+    const sql = `
+      -- This function references users
+      CREATE FUNCTION get_data() RETURNS TABLE AS $$
+        /* Old code: SELECT * FROM old_users; */
+        SELECT id, 'FROM somewhere' as source
+        FROM users
+        WHERE active = true;
+      $$;
+    `;
+    const declarations = extractDeclarations(sql);
+    const references = extractReferences(sql, declarations);
+    expect(references).toContain('users');
+    expect(references).not.toContain('old_users');
+    expect(references).not.toContain('somewhere');
   });
 });

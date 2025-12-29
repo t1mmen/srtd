@@ -7,12 +7,7 @@
 import EventEmitter from 'node:events';
 import path from 'node:path';
 import type { CLIConfig, ProcessedTemplateResult, TemplateStatus } from '../types.js';
-import {
-  buildDependencyGraph,
-  detectCycles,
-  type TemplateInput,
-  topologicalSort,
-} from '../utils/dependencyGraph.js';
+import { buildDependencyGraph, detectCycles, topologicalSort } from '../utils/dependencyGraph.js';
 import { isWipTemplate } from '../utils/isWipTemplate.js';
 import type { ValidationWarning } from '../utils/schemas.js';
 import { DatabaseService } from './DatabaseService.js';
@@ -850,18 +845,21 @@ export class Orchestrator extends EventEmitter implements Disposable {
       return templatePaths;
     }
 
-    // Read all templates to analyze dependencies
-    const templates: TemplateInput[] = [];
-    for (const templatePath of templatePaths) {
-      try {
-        const file = await this.fileSystemService.readTemplate(templatePath);
-        templates.push({ path: templatePath, content: file.content });
-      } catch {
-        // If we can't read a template, include it with empty content
-        // so it still appears in the sorted output
-        templates.push({ path: templatePath, content: '' });
-      }
-    }
+    // Read all templates in parallel to analyze dependencies
+    const templates = await Promise.all(
+      templatePaths.map(async templatePath => {
+        try {
+          const file = await this.fileSystemService.readTemplate(templatePath);
+          return { path: templatePath, content: file.content };
+        } catch (error) {
+          // Log warning but include with empty content so it still appears in sorted output
+          const fileName = path.basename(templatePath);
+          const errorMsg = error instanceof Error ? error.message : String(error);
+          this.log(`Warning: Could not read ${fileName}: ${errorMsg}`, 'warn');
+          return { path: templatePath, content: '' };
+        }
+      })
+    );
 
     // Build dependency graph and detect cycles
     const graph = buildDependencyGraph(templates);
