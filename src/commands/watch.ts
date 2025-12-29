@@ -27,7 +27,7 @@ type WatchEventType = 'changed' | 'applied' | 'error';
  * Stack consecutive events for the same template (unless error).
  * e.g., [changed, applied] for same file becomes one stacked entry.
  */
-function stackResults(results: TemplateResult[]): TemplateResult[] {
+export function stackResults(results: TemplateResult[]): TemplateResult[] {
   const stacked: Array<{ result: TemplateResult; types: WatchEventType[] }> = [];
 
   for (const result of results) {
@@ -64,7 +64,8 @@ function stackResults(results: TemplateResult[]): TemplateResult[] {
   });
 }
 
-function statusToEventType(status: TemplateResult['status']): WatchEventType {
+/** Convert TemplateResult status to WatchEventType */
+export function statusToEventType(status: TemplateResult['status']): WatchEventType {
   switch (status) {
     case 'success':
       return 'applied';
@@ -78,13 +79,13 @@ function statusToEventType(status: TemplateResult['status']): WatchEventType {
 }
 
 /** Reason why a template needs building */
-type NeedsBuildReason = 'never-built' | 'outdated';
+export type NeedsBuildReason = 'never-built' | 'outdated';
 
 /**
  * Determine if a template needs building and why.
  * Returns null if template is up-to-date with current build.
  */
-function getBuildReason(template: TemplateStatus): NeedsBuildReason | null {
+export function getBuildReason(template: TemplateStatus): NeedsBuildReason | null {
   if (!template.buildState.lastBuildHash) return 'never-built';
   if (template.currentHash !== template.buildState.lastBuildHash) return 'outdated';
   return null;

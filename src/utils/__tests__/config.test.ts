@@ -39,9 +39,14 @@ describe('getConfig validation', () => {
     }
   });
 
-  async function createTestDir(): Promise<string> {
+  async function createTestDir(options?: { createTemplateDir?: boolean }): Promise<string> {
     const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'srtd-config-test-'));
     tempDirs.push(dir);
+    // By default, create the template directory to avoid "missing template dir" warnings
+    // unless explicitly opted out
+    if (options?.createTemplateDir !== false) {
+      await fs.mkdir(path.join(dir, 'supabase', 'migrations-templates'), { recursive: true });
+    }
     return dir;
   }
 

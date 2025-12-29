@@ -60,6 +60,125 @@ vi.mock('node:readline', () => ({
   },
 }));
 
+describe('statusToEventType', () => {
+  it('maps success status to applied event', async () => {
+    const { statusToEventType } = await import('../commands/watch.js');
+    expect(statusToEventType('success')).toBe('applied');
+  });
+
+  it('maps changed status to changed event', async () => {
+    const { statusToEventType } = await import('../commands/watch.js');
+    expect(statusToEventType('changed')).toBe('changed');
+  });
+
+  it('maps error status to error event', async () => {
+    const { statusToEventType } = await import('../commands/watch.js');
+    expect(statusToEventType('error')).toBe('error');
+  });
+
+  it('maps unknown status to changed event (default)', async () => {
+    const { statusToEventType } = await import('../commands/watch.js');
+    // Test statuses that aren't explicitly handled
+    expect(statusToEventType('built')).toBe('changed');
+    expect(statusToEventType('unchanged')).toBe('changed');
+    expect(statusToEventType('skipped')).toBe('changed');
+  });
+});
+
+describe('getBuildReason', () => {
+  it('returns never-built when no lastBuildHash', async () => {
+    const { getBuildReason } = await import('../commands/watch.js');
+    const template = {
+      name: 'test',
+      path: '/test.sql',
+      currentHash: 'abc123',
+      buildState: {},
+    };
+    expect(getBuildReason(template)).toBe('never-built');
+  });
+
+  it('returns outdated when hash differs from lastBuildHash', async () => {
+    const { getBuildReason } = await import('../commands/watch.js');
+    const template = {
+      name: 'test',
+      path: '/test.sql',
+      currentHash: 'abc123',
+      buildState: { lastBuildHash: 'old456' },
+    };
+    expect(getBuildReason(template)).toBe('outdated');
+  });
+
+  it('returns null when template is up-to-date', async () => {
+    const { getBuildReason } = await import('../commands/watch.js');
+    const template = {
+      name: 'test',
+      path: '/test.sql',
+      currentHash: 'abc123',
+      buildState: { lastBuildHash: 'abc123' },
+    };
+    expect(getBuildReason(template)).toBe(null);
+  });
+});
+
+describe('stackResults', () => {
+  it('returns empty array for empty input', async () => {
+    const { stackResults } = await import('../commands/watch.js');
+    expect(stackResults([])).toEqual([]);
+  });
+
+  it('returns single result unchanged', async () => {
+    const { stackResults } = await import('../commands/watch.js');
+    const results = [{ template: '/test.sql', status: 'success' as const, timestamp: new Date() }];
+    const stacked = stackResults(results);
+    expect(stacked).toHaveLength(1);
+    expect(stacked[0].template).toBe('/test.sql');
+  });
+
+  it('stacks consecutive events for same template', async () => {
+    const { stackResults } = await import('../commands/watch.js');
+    const results = [
+      { template: '/test.sql', status: 'changed' as const, timestamp: new Date() },
+      { template: '/test.sql', status: 'success' as const, timestamp: new Date() },
+    ];
+    const stacked = stackResults(results);
+    expect(stacked).toHaveLength(1);
+    expect(stacked[0].displayOverride).toContain('changed');
+    expect(stacked[0].displayOverride).toContain('applied');
+  });
+
+  it('does not stack when error is involved', async () => {
+    const { stackResults } = await import('../commands/watch.js');
+    const results = [
+      { template: '/test.sql', status: 'changed' as const, timestamp: new Date() },
+      { template: '/test.sql', status: 'error' as const, timestamp: new Date() },
+    ];
+    const stacked = stackResults(results);
+    expect(stacked).toHaveLength(2);
+  });
+
+  it('does not stack different templates', async () => {
+    const { stackResults } = await import('../commands/watch.js');
+    const results = [
+      { template: '/a.sql', status: 'success' as const, timestamp: new Date() },
+      { template: '/b.sql', status: 'success' as const, timestamp: new Date() },
+    ];
+    const stacked = stackResults(results);
+    expect(stacked).toHaveLength(2);
+  });
+
+  it('does not add duplicate types when stacking same status', async () => {
+    const { stackResults } = await import('../commands/watch.js');
+    const results = [
+      { template: '/test.sql', status: 'success' as const, timestamp: new Date() },
+      { template: '/test.sql', status: 'success' as const, timestamp: new Date() },
+    ];
+    const stacked = stackResults(results);
+    expect(stacked).toHaveLength(1);
+    // Should not have displayOverride since only one unique type
+    expect(stacked[0].displayOverride).toBeUndefined();
+  });
+});
+
 describe('Watch Command', () => {
   let spies: ReturnType<typeof setupCommandTestSpies>;
   let originalIsTTY: boolean | undefined;
@@ -350,5 +469,271 @@ describe('renderScreen', () => {
     const allOutput = consoleLogSpy.mock.calls.flat().join(' ');
     expect(allOutput).toContain('Recent activity');
     expect(ui.renderResultRow).toHaveBeenCalled();
+  });
+
+  it('stacks consecutive events for the same template', async () => {
+    const { renderScreen } = await import('../commands/watch.js');
+    const ui = await import('../ui/index.js');
+
+    // Two events for same template should be stacked
+    const recentUpdates = [
+      {
+        template: '/templates/test.sql',
+        status: 'changed' as const,
+        timestamp: new Date(),
+      },
+      {
+        template: '/templates/test.sql',
+        status: 'success' as const,
+        timestamp: new Date(),
+      },
+    ];
+
+    renderScreen({
+      templates: [],
+      recentUpdates,
+      historicActivity: [],
+      errors: new Map(),
+      showHistory: true,
+      needsBuild: new Map(),
+    });
+
+    // Should only call renderResultRow once (stacked)
+    expect(ui.renderResultRow).toHaveBeenCalledTimes(1);
+    // The stacked result should have displayOverride with both states
+    expect(ui.renderResultRow).toHaveBeenCalledWith(
+      expect.objectContaining({
+        template: '/templates/test.sql',
+        displayOverride: expect.stringContaining('applied'),
+      }),
+      { command: 'watch' }
+    );
+  });
+
+  it('does not stack error events', async () => {
+    const { renderScreen } = await import('../commands/watch.js');
+    const ui = await import('../ui/index.js');
+
+    // Error events should not be stacked
+    const recentUpdates = [
+      {
+        template: '/templates/test.sql',
+        status: 'changed' as const,
+        timestamp: new Date(),
+      },
+      {
+        template: '/templates/test.sql',
+        status: 'error' as const,
+        timestamp: new Date(),
+        errorMessage: 'SQL syntax error',
+      },
+    ];
+
+    renderScreen({
+      templates: [],
+      recentUpdates,
+      historicActivity: [],
+      errors: new Map(),
+      showHistory: true,
+      needsBuild: new Map(),
+    });
+
+    // Should call renderResultRow twice (not stacked due to error)
+    expect(ui.renderResultRow).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not stack events for different templates', async () => {
+    const { renderScreen } = await import('../commands/watch.js');
+    const ui = await import('../ui/index.js');
+
+    const recentUpdates = [
+      {
+        template: '/templates/a.sql',
+        status: 'changed' as const,
+        timestamp: new Date(),
+      },
+      {
+        template: '/templates/b.sql',
+        status: 'success' as const,
+        timestamp: new Date(),
+      },
+    ];
+
+    renderScreen({
+      templates: [],
+      recentUpdates,
+      historicActivity: [],
+      errors: new Map(),
+      showHistory: true,
+      needsBuild: new Map(),
+    });
+
+    // Should call renderResultRow twice (different templates)
+    expect(ui.renderResultRow).toHaveBeenCalledTimes(2);
+  });
+
+  it('shows outdated label for templates changed since build', async () => {
+    const { renderScreen } = await import('../commands/watch.js');
+
+    renderScreen({
+      templates: [],
+      recentUpdates: [],
+      historicActivity: [],
+      errors: new Map(),
+      showHistory: true,
+      needsBuild: new Map([['/templates/outdated.sql', 'outdated' as const]]),
+    });
+
+    const allOutput = consoleLogSpy.mock.calls.flat().join(' ');
+    expect(allOutput).toContain('changed since build');
+  });
+
+  it('limits historic activity based on remaining slots', async () => {
+    const { renderScreen } = await import('../commands/watch.js');
+    const ui = await import('../ui/index.js');
+
+    // Fill recent updates to reduce available slots
+    const recentUpdates = Array.from({ length: 8 }, (_, i) => ({
+      template: `/templates/recent${i}.sql`,
+      status: 'success' as const,
+      timestamp: new Date(),
+    }));
+
+    // Many historic entries - only some should show
+    const historicActivity = Array.from({ length: 10 }, (_, i) => ({
+      template: `/templates/historic${i}.sql`,
+      action: 'applied' as const,
+      timestamp: new Date(),
+    }));
+
+    renderScreen({
+      templates: [],
+      recentUpdates,
+      historicActivity,
+      errors: new Map(),
+      showHistory: true,
+      needsBuild: new Map(),
+    });
+
+    // Total calls should be limited to MAX_HISTORY (10)
+    // 8 recent + 2 remaining slots for historic = 10
+    expect(ui.renderResultRow).toHaveBeenCalledTimes(10);
+  });
+
+  it('skips historic entries already shown in recent updates', async () => {
+    const { renderScreen } = await import('../commands/watch.js');
+    const ui = await import('../ui/index.js');
+
+    const recentUpdates = [
+      {
+        template: '/templates/shared.sql',
+        status: 'success' as const,
+        timestamp: new Date(),
+      },
+    ];
+
+    const historicActivity = [
+      {
+        template: '/templates/shared.sql', // Same as recent
+        action: 'applied' as const,
+        timestamp: new Date(),
+      },
+      {
+        template: '/templates/other.sql',
+        action: 'built' as const,
+        timestamp: new Date(),
+      },
+    ];
+
+    renderScreen({
+      templates: [],
+      recentUpdates,
+      historicActivity,
+      errors: new Map(),
+      showHistory: true,
+      needsBuild: new Map(),
+    });
+
+    // Should only show 2 rows: 1 recent + 1 historic (the 'other.sql', not 'shared.sql')
+    expect(ui.renderResultRow).toHaveBeenCalledTimes(2);
+  });
+
+  it('shows template count in status line', async () => {
+    const { renderScreen } = await import('../commands/watch.js');
+
+    const templates = [
+      { name: 'a', path: '/a.sql', currentHash: '1', buildState: {} },
+      { name: 'b', path: '/b.sql', currentHash: '2', buildState: {} },
+      { name: 'c', path: '/c.sql', currentHash: '3', buildState: {} },
+    ];
+
+    renderScreen({
+      templates,
+      recentUpdates: [],
+      historicActivity: [],
+      errors: new Map(),
+      showHistory: true,
+      needsBuild: new Map(),
+    });
+
+    const allOutput = consoleLogSpy.mock.calls.flat().join(' ');
+    expect(allOutput).toContain('3 templates');
+  });
+
+  it('shows singular template when only one', async () => {
+    const { renderScreen } = await import('../commands/watch.js');
+
+    const templates = [{ name: 'a', path: '/a.sql', currentHash: '1', buildState: {} }];
+
+    renderScreen({
+      templates,
+      recentUpdates: [],
+      historicActivity: [],
+      errors: new Map(),
+      showHistory: true,
+      needsBuild: new Map(),
+    });
+
+    const allOutput = consoleLogSpy.mock.calls.flat().join(' ');
+    expect(allOutput).toContain('1 template');
+    expect(allOutput).not.toContain('1 templates');
+  });
+
+  it('shows needs build count in status line', async () => {
+    const { renderScreen } = await import('../commands/watch.js');
+
+    renderScreen({
+      templates: [],
+      recentUpdates: [],
+      historicActivity: [],
+      errors: new Map(),
+      showHistory: true,
+      needsBuild: new Map([
+        ['/a.sql', 'never-built'],
+        ['/b.sql', 'outdated'],
+      ]),
+    });
+
+    const allOutput = consoleLogSpy.mock.calls.flat().join(' ');
+    expect(allOutput).toContain('2 need build');
+  });
+
+  it('shows error count in status line', async () => {
+    const { renderScreen } = await import('../commands/watch.js');
+
+    renderScreen({
+      templates: [],
+      recentUpdates: [],
+      historicActivity: [],
+      errors: new Map([
+        ['/a.sql', 'Error 1'],
+        ['/b.sql', 'Error 2'],
+      ]),
+      showHistory: true,
+      needsBuild: new Map(),
+    });
+
+    const allOutput = consoleLogSpy.mock.calls.flat().join(' ');
+    expect(allOutput).toContain('2 errors');
   });
 });

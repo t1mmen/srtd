@@ -20,7 +20,7 @@ export function formatZodErrors(error: z.ZodError): string {
  */
 export interface ValidationWarning {
   source: 'buildLog' | 'localBuildLog' | 'config';
-  type: 'parse' | 'validation';
+  type: 'parse' | 'validation' | 'missing';
   message: string;
   path?: string;
 }

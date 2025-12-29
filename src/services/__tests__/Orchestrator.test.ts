@@ -122,6 +122,16 @@ describe('Orchestrator', () => {
       await orchestrator.initialize();
       expect(() => orchestrator[Symbol.dispose]()).not.toThrow();
     });
+
+    it('should dispose via async Symbol.asyncDispose', async () => {
+      await orchestrator.initialize();
+      await expect(orchestrator[Symbol.asyncDispose]()).resolves.not.toThrow();
+    });
+
+    it('should dispose via async dispose method', async () => {
+      await orchestrator.initialize();
+      await expect(orchestrator.dispose()).resolves.not.toThrow();
+    });
   });
 
   describe('typed events', () => {
