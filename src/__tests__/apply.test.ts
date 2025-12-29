@@ -169,11 +169,12 @@ describe('Apply Command', () => {
       await applyCommand.parseAsync(['node', 'test']);
 
       spies.assertNoStderr();
+      // Log-style ordering: unchanged (old) at top, applied (new) at bottom
       expect(uiModule.renderResultsTable).toHaveBeenCalledWith({
         results: [
+          { template: 'unchanged.sql', status: 'unchanged', timestamp: undefined },
           { template: 'migration1.sql', status: 'success' },
           { template: 'migration2.sql', status: 'success' },
-          { template: 'unchanged.sql', status: 'unchanged', timestamp: undefined },
         ],
         context: { command: 'apply', forced: undefined },
       });

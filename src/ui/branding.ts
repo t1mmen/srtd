@@ -17,15 +17,15 @@ export function renderBranding(options: BrandingOptions = {}): void {
 
   console.log();
 
-  // Blue/white badge
-  const badge = chalk.bgBlue.white(' srtd ');
+  // Dark green/white badge
+  const badge = chalk.bgAnsi256(22).white(' srtd ');
 
   // Render subtitle or main title
   let title: string;
   if (subtitle) {
     title = subtitle;
   } else {
-    title = `${chalk.blue.bold('S')}upabase ${chalk.blue.bold('R')}epeatable ${chalk.blue.bold('T')}emplate ${chalk.blue.bold('D')}efinitions`;
+    title = `${chalk.green.bold('S')}upabase ${chalk.green.bold('R')}epeatable ${chalk.green.bold('T')}emplate ${chalk.green.bold('D')}efinitions`;
   }
 
   // Version

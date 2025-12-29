@@ -48,13 +48,9 @@ export const applyCommand = new Command('apply')
       });
 
       // Transform results to unified TemplateResult format
+      // Log-style ordering: unchanged (old) at top, applied (new) at bottom
       const results: TemplateResult[] = [
-        // Applied templates (success)
-        ...result.applied.map(name => ({
-          template: name,
-          status: 'success' as const,
-        })),
-        // Skipped templates (unchanged)
+        // Skipped templates (unchanged) - old, at top
         ...result.skipped.map(name => {
           const info = orchestrator.getTemplateInfo(name);
           return {
@@ -63,7 +59,12 @@ export const applyCommand = new Command('apply')
             timestamp: info.lastDate ? new Date(info.lastDate) : undefined,
           };
         }),
-        // Error templates
+        // Applied templates (success) - new, at bottom
+        ...result.applied.map(name => ({
+          template: name,
+          status: 'success' as const,
+        })),
+        // Error templates - at bottom with applied
         ...result.errors.map(err => ({
           template: err.file,
           status: 'error' as const,
