@@ -78,9 +78,9 @@ export class DatabaseService extends EventEmitter {
       wrapInTransaction: false,
       ...config,
     };
-
-    // Handle process termination
-    this.setupProcessHandlers();
+    // Note: No process signal handlers here - cleanup is handled by the owner
+    // (Orchestrator or command) via the dispose() method and 'await using' pattern.
+    // This prevents race conditions with multiple handlers.
   }
 
   /**
@@ -416,20 +416,5 @@ export class DatabaseService extends EventEmitter {
       connectionString: config.pgConnection,
       wrapInTransaction: config.wrapInTransaction,
     });
-  }
-
-  /**
-   * Setup process termination handlers for graceful shutdown
-   */
-  private setupProcessHandlers(): void {
-    // Only add handlers if we don't already have too many
-    if (process.listenerCount('SIGTERM') < 10 && process.listenerCount('SIGINT') < 10) {
-      const cleanup = () => {
-        void this.dispose().then(() => process.exit(0));
-      };
-
-      process.on('SIGTERM', cleanup);
-      process.on('SIGINT', cleanup);
-    }
   }
 }

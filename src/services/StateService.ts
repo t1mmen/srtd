@@ -228,7 +228,11 @@ export class StateService extends EventEmitter {
     }
 
     this.saveTimer = setTimeout(() => {
-      void this.saveBuildLogs();
+      // Catch errors to prevent unhandled promise rejection
+      // saveBuildLogs() already emits 'error' event, so we just need to handle the rejection
+      this.saveBuildLogs().catch(() => {
+        // Error already emitted in saveBuildLogs - just prevent unhandled rejection
+      });
     }, 1000); // Save after 1 second of inactivity
   }
 
