@@ -3,6 +3,9 @@
 
 Output readme-demo.gif
 
+# Uncomment to generate PNG frames for review:
+# Output demo-frames/
+
 Require npx
 
 # Setup the terminal
@@ -14,7 +17,6 @@ Set Theme "Catppuccin Mocha"
 Set WindowBar Colorful
 
 # Initialize SRTD
-# Type "clear" Enter
 Type "srtd init"
 Enter
 Sleep 1s
@@ -22,100 +24,130 @@ Hide
 Sleep 2s
 Ctrl+C
 Show
-Sleep 250ms
+Sleep 1.5s
 
-# Create our first templates
-Type "echo '-- SQL for hello..' >> supabase/migrations-templates/hello.sql"
+# Breathing room after init
 Enter
-Sleep 50ms
-Type "echo '-- More fake SQL..' >> supabase/migrations-templates/test.sql"
-Enter
-Sleep 50ms
-Type "echo '-- Another one...' >> supabase/migrations-templates/another_test.sql"
-Enter
-Sleep 50ms
-Type "echo '-- WIP SQL here..' >> supabase/migrations-templates/experiment.wip.sql"
-Enter
-Sleep 50ms
-Enter
+Sleep 500ms
 
-# Apply changes directly
-Type "srtd apply" Enter
+# Show the templates we have
+Type "ls supabase/migrations-templates/"
+Enter
+Sleep 2s
+
+# Breathing room after ls
+Enter
+Sleep 500ms
+
+# Apply templates to local database
+Type "srtd apply"
+Enter
 Hide
 Sleep 2
 Show
-Sleep 2s
+Sleep 3s
 Hide
 Sleep 1s
 Ctrl+C
 Show
 
-# More templates
-Type "echo '-- Changes to existing template' >> supabase/migrations-templates/hello.sql" Enter
-Sleep 50ms
-Type "echo '-- New template' >> supabase/migrations-templates/new.sql" Enter
-Sleep 1s
+# Breathing room after apply
+Enter
+Sleep 500ms
 
-# Start watching for changes
+# Start watch mode briefly to show the UI
 Type "srtd watch"
-Sleep 1s
 Enter
 Hide
-Sleep 1s
+Sleep 2s
 Show
-Sleep 5s
+Sleep 4s
 Hide
 Ctrl+C
-Enter
 Show
-Sleep 1s
+Sleep 500ms
+
+# Breathing room after watch
+Enter
+Sleep 500ms
 
 # Build migration files
 Type "srtd build"
-Sleep 100ms
 Enter
 Hide
 Sleep 2
-Enter
 Show
 Sleep 3s
 
-# Make a change to hello.sql
-Type "echo '-- Another update to hello' >> supabase/migrations-templates/hello.sql" Enter
+# Breathing room after build - let viewer see "Built 3 templates"
 Enter
 Sleep 1s
 
-# Build migration files
-Type "srtd build" Enter
+# Create a WIP template
+Type "echo '-- Work in progress feature' > supabase/migrations-templates/srtd_demo_feature.wip.sql"
+Enter
+Sleep 1.5s
+
+# Apply WIP - shows it works locally
+Type "srtd apply"
+Enter
+Hide
+Sleep 2
+Show
 Sleep 3s
 Hide
 Ctrl+C
 Show
+
+# Breathing room after apply
+Enter
+Sleep 500ms
+
+# Build to show WIP is skipped for migrations
+Type "srtd build"
+Enter
+Sleep 4s
+Hide
+Ctrl+C
+Show
+
+# Breathing room - let viewer see "(wip)" indicator
+Enter
+Sleep 1s
 
 # Promote the WIP template
-Type "srtd promote experiment.wip.sql"
+Type "srtd promote srtd_demo_feature.wip.sql"
 Enter
 Hide
 Sleep 1s
 Show
-Sleep 2s
+Sleep 2.5s
 
-# Build migration files
-Type "srtd build" Enter
-Sleep 3s
+# Breathing room after promote
+Enter
+Sleep 500ms
+
+# Build after promotion
+Type "srtd build"
+Enter
+Sleep 4s
 Hide
 Ctrl+C
 Show
 
-# Show the resulting files
+# Breathing room after final build
+Enter
+Sleep 500ms
+
+# Show the resulting migration files
 Type "ls -1p supabase/migrations/"
 Enter
 Hide
 Enter
 Show
-Sleep 1s
+Sleep 2s
 
-# Success message
+# Sign off
 Enter
 Type "✨ Thanks for watching! Check out github.com/t1mmen/srtd for more info"
 Sleep 5s

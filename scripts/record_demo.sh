@@ -2,60 +2,65 @@
 
 set -e  # Exit on any error
 
-# Cleanup function
+# Ensure we're in the project root
+cd "$(dirname "$0")/.."
+
+# Paths that will be modified during demo
+DEMO_PATHS=(
+    "supabase/migrations-templates"
+    "supabase/migrations"
+    "srtd.config.json"
+)
+
+# Cleanup function - restore git state
 cleanup() {
     local exit_code=$?
-    echo "🧹 Cleaning up..."
-    [ -d "$BACKUP_DIR" ] && rm -rf "$BACKUP_DIR"
+    echo ""
+    echo "🧹 Restoring git state..."
+
+    # Restore tracked files
+    git checkout -- "${DEMO_PATHS[@]}" 2>/dev/null || true
+
+    # Remove untracked files created during demo
+    git clean -fd supabase/migrations-templates supabase/migrations 2>/dev/null || true
+
+    # Pop stash if we created one
+    if [ "$STASHED" = "true" ]; then
+        echo "📦 Restoring stashed changes..."
+        git stash pop --quiet || echo "⚠️ Could not restore stash"
+    fi
+
     exit $exit_code
 }
 
 trap cleanup EXIT
 
-# Ensure we're in the project root
-cd "$(dirname "$0")/.."
-
-# Create temp backup directory
-BACKUP_DIR=".demo-backup-$(date +%s)"
-echo "📦 Creating backup directory: $BACKUP_DIR"
-mkdir -p "$BACKUP_DIR"
-
-# Backup existing files
-echo "💾 Backing up existing files..."
-if [ -d "supabase/migrations-templates" ]; then
-    mkdir -p "$BACKUP_DIR/supabase"
-    cp -r supabase/migrations-templates "$BACKUP_DIR/supabase/"
-fi
-if [ -d "supabase/migrations" ]; then
-    mkdir -p "$BACKUP_DIR/supabase"
-    cp -r supabase/migrations "$BACKUP_DIR/supabase/"
+# Check for uncommitted changes in demo paths
+echo "🔍 Checking git state..."
+if ! git diff --quiet -- "${DEMO_PATHS[@]}" 2>/dev/null || \
+   ! git diff --cached --quiet -- "${DEMO_PATHS[@]}" 2>/dev/null; then
+    echo "📦 Stashing uncommitted changes in demo paths..."
+    git stash push -m "demo-recording-backup" -- "${DEMO_PATHS[@]}"
+    STASHED=true
+else
+    STASHED=false
 fi
 
-# Backup root files with debug output
-for file in "srtd.config.json" ".gitignore"; do
-    if [ -f "$file" ]; then
-        echo "📑 Backing up $file"
-        cp "$file" "$BACKUP_DIR/" || echo "⚠️ Failed to backup $file"
-    fi
-done
-
-# Clean slate for demo
+# Prepare clean environment using git
 echo "🧹 Preparing clean environment..."
+git checkout -- "${DEMO_PATHS[@]}" 2>/dev/null || true
+rm -rf supabase/migrations-templates/*
+rm -rf supabase/migrations/*
 rm -f srtd.config.json
-rm -f .gitignore
-rm -rf supabase/migrations-templates
-rm -rf supabase/migrations
-mkdir -p supabase/migrations
 
-# Debugging
-echo "🔍 State of files and folders..."
-ls -la supabase/migrations-templates || true
-ls -la supabase/migrations || true
-cat srtd.config.json || true
-cat supabase/migrations-templates/.srtd.buildlog.local.json  || true
-cat supabase/migrations-templates/.srtd.buildlog.json || true
+# Copy demo templates
+echo "📝 Setting up demo templates..."
+mkdir -p supabase/migrations-templates
+mkdir -p supabase/migrations
+cp demo-templates/*.sql supabase/migrations-templates/
 
 # Build
+echo "🔨 Building..."
 npm run build
 npm link
 chmod u+x ./dist/cli.js
@@ -63,33 +68,5 @@ chmod u+x ./dist/cli.js
 # Record the demo
 echo "🎥 Recording demo..."
 vhs readme-demo.tape
-
-# echo "🎥 Creating screenshots..."
-# vhs readme-screenshot.tape
-
-
-# Clean up demo-generated files
-echo "🧹 Cleaning up demo files..."
-rm -rf supabase/migrations-templates
-rm -rf supabase/migrations
-rm -f srtd.config.json
-
-# Restore original files
-echo "♻️ Restoring original files..."
-if [ -d "$BACKUP_DIR/supabase/migrations-templates" ]; then
-    mkdir -p supabase
-    cp -r "$BACKUP_DIR/supabase/migrations-templates" supabase/
-fi
-if [ -d "$BACKUP_DIR/supabase/migrations" ]; then
-    mkdir -p supabase
-    cp -r "$BACKUP_DIR/supabase/migrations" supabase/
-fi
-# Restore root files with debug output
-for file in "srtd.config.json" ".gitignore"; do
-    if [ -f "$BACKUP_DIR/$file" ]; then
-        echo "📑 Restoring $file"
-        cp "$BACKUP_DIR/$file" . || echo "⚠️ Failed to restore $file"
-    fi
-done
 
 echo "✨ Demo recorded! Check readme-demo.gif"

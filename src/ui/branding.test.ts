@@ -1,6 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { mockConsoleLog } from '../__tests__/helpers/testUtils.js';
-import type { DatabaseService } from '../services/DatabaseService.js';
 
 describe('renderBranding', () => {
   let consoleLogSpy: ReturnType<typeof vi.spyOn>;
@@ -15,46 +14,19 @@ describe('renderBranding', () => {
     consoleLogSpy.mockRestore();
   });
 
-  it('renders branding with connected status when DatabaseService is connected', async () => {
-    const mockDbService = {
-      testConnection: vi.fn().mockResolvedValue(true),
-    } as unknown as DatabaseService;
-
+  it('renders branding with blue badge', async () => {
     const { renderBranding } = await import('./branding.js');
-    await renderBranding({}, mockDbService);
-
-    expect(mockDbService.testConnection).toHaveBeenCalled();
-    expect(consoleLogSpy).toHaveBeenCalled();
-    // Check for green badge (connected)
-    const calls = consoleLogSpy.mock.calls.flat();
-    expect(calls.some(call => typeof call === 'string' && call.includes('srtd'))).toBe(true);
-  });
-
-  it('renders branding with disconnected status when DatabaseService throws', async () => {
-    const mockDbService = {
-      testConnection: vi.fn().mockRejectedValue(new Error('Connection failed')),
-    } as unknown as DatabaseService;
-
-    const { renderBranding } = await import('./branding.js');
-    await renderBranding({}, mockDbService);
-
-    expect(mockDbService.testConnection).toHaveBeenCalled();
-    expect(consoleLogSpy).toHaveBeenCalled();
-  });
-
-  it('renders branding with disconnected status when no DatabaseService provided', async () => {
-    const { renderBranding } = await import('./branding.js');
-    await renderBranding();
+    renderBranding();
 
     expect(consoleLogSpy).toHaveBeenCalled();
-    // Should still render branding (yellow/disconnected badge)
+    // Check for srtd badge
     const calls = consoleLogSpy.mock.calls.flat();
     expect(calls.some(call => typeof call === 'string' && call.includes('srtd'))).toBe(true);
   });
 
   it('renders branding with subtitle', async () => {
     const { renderBranding } = await import('./branding.js');
-    await renderBranding({ subtitle: 'Test Subtitle' });
+    renderBranding({ subtitle: 'Test Subtitle' });
 
     expect(consoleLogSpy).toHaveBeenCalled();
     // Check that subtitle was rendered
@@ -66,10 +38,10 @@ describe('renderBranding', () => {
 
   it('renders default branding without subtitle', async () => {
     const { renderBranding } = await import('./branding.js');
-    await renderBranding();
+    renderBranding();
 
     expect(consoleLogSpy).toHaveBeenCalled();
-    // Check that full name was rendered
+    // Check that full name was rendered (Supabase Repeatable Template Definitions)
     const calls = consoleLogSpy.mock.calls.flat();
     expect(calls.some(call => typeof call === 'string' && call.includes('upabase'))).toBe(true);
   });

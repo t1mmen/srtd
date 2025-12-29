@@ -786,6 +786,38 @@ export class Orchestrator extends EventEmitter implements Disposable {
   }
 
   /**
+   * Get recently applied templates (for history display)
+   */
+  getRecentlyApplied(limit = 5): Array<{ template: string; appliedDate: string }> {
+    return this.stateService.getRecentlyApplied(limit);
+  }
+
+  /**
+   * Get template info including migration file and last date
+   * Used for displaying arrow format: template.sql → migration_file.sql
+   */
+  getTemplateInfo(templatePath: string): {
+    template: string;
+    migrationFile?: string;
+    lastDate?: string;
+  } {
+    return this.stateService.getTemplateInfo(templatePath);
+  }
+
+  /**
+   * Get recent activity for watch mode history display.
+   * Returns the most recent builds and applies sorted by date.
+   */
+  getRecentActivity(limit = 10): Array<{
+    template: string;
+    action: 'built' | 'applied';
+    timestamp: Date;
+    target?: string;
+  }> {
+    return this.stateService.getRecentActivity(limit);
+  }
+
+  /**
    * Logging utility
    */
   private log(

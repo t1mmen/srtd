@@ -5,10 +5,17 @@ import figures from 'figures';
 import { Orchestrator } from '../services/Orchestrator.js';
 import type { ProcessedTemplateResult } from '../types.js';
 import { displayValidationWarnings } from '../ui/displayWarnings.js';
-import { createSpinner, renderBranding, renderResults } from '../ui/index.js';
+import {
+  type ErrorItem,
+  renderBranding,
+  renderErrorDisplay,
+  renderResultsTable,
+  type TemplateResult,
+} from '../ui/index.js';
 import { getConfig } from '../utils/config.js';
 import { findProjectRoot } from '../utils/findProjectRoot.js';
 import { getErrorMessage } from '../utils/getErrorMessage.js';
+import { isWipTemplate } from '../utils/isWipTemplate.js';
 
 interface BuildOptions {
   force?: boolean;
@@ -25,15 +32,13 @@ export const buildCommand = new Command('build')
     let exitCode = 0;
 
     try {
-      // Build subtitle with options
-      const parts: string[] = ['Build migrations'];
-      if (options.force) parts.push('(forced)');
-      if (options.bundle) parts.push('(bundled)');
-      const subtitle = parts.join(' ');
-
-      await renderBranding({ subtitle });
-
-      const spinner = createSpinner('Building templates...').start();
+      // Render header only if not invoked from menu
+      if (!process.env.__SRTD_FROM_MENU__) {
+        const parts: string[] = ['Build'];
+        if (options.force) parts.push('(forced)');
+        if (options.bundle) parts.push('(bundled)');
+        renderBranding({ subtitle: parts.join(' ') });
+      }
 
       // Initialize Orchestrator
       const projectRoot = await findProjectRoot();
@@ -57,8 +62,6 @@ export const buildCommand = new Command('build')
 
       // If apply flag is set, also apply the templates
       if (options.apply) {
-        spinner.text = 'Applying templates...';
-
         const applyResult: ProcessedTemplateResult = await orchestrator.apply({
           force: options.force,
           silent: true,
@@ -73,13 +76,51 @@ export const buildCommand = new Command('build')
         };
       }
 
-      spinner.stop();
+      // Transform results to unified TemplateResult format
+      // Order: unchanged/skipped first, then newly built (newest at bottom, log-style)
+      const results: TemplateResult[] = [
+        // Skipped templates - either 'skipped' (WIP) or 'unchanged' (already built)
+        ...result.skipped.map(name => {
+          const info = orchestrator.getTemplateInfo(name);
+          const isWip = isWipTemplate(name, config.wipIndicator);
+          return {
+            template: name,
+            status: isWip ? ('skipped' as const) : ('unchanged' as const),
+            target: isWip ? undefined : info.migrationFile,
+            timestamp: info.lastDate ? new Date(info.lastDate) : undefined,
+          };
+        }),
+        // Built templates (success) - at the bottom as "newest"
+        ...result.built.map(name => {
+          const info = orchestrator.getTemplateInfo(name);
+          return {
+            template: name,
+            status: 'success' as const,
+            target: info.migrationFile,
+          };
+        }),
+        // Error templates - at the very bottom (most important to see)
+        ...result.errors.map(err => ({
+          template: err.file,
+          status: 'error' as const,
+          errorMessage: err.error,
+        })),
+      ];
 
-      // Show results
-      renderResults(result, {
-        showBuild: true,
-        showApply: !!options.apply,
+      // Render results table with unified format
+      renderResultsTable({
+        results,
+        context: { command: 'build', forced: options.force },
       });
+
+      // Render errors if any
+      if (result.errors.length > 0) {
+        const errorItems: ErrorItem[] = result.errors.map(err => ({
+          template: err.file,
+          message: err.error,
+        }));
+        renderErrorDisplay({ errors: errorItems });
+      }
 
       exitCode = result.errors.length > 0 ? 1 : 0;
       // Exit happens after using block completes (dispose runs)

@@ -652,6 +652,149 @@ describe('StateService', () => {
     });
   });
 
+  describe('getRecentActivity', () => {
+    it('should return entries sorted by timestamp descending (most recent first)', async () => {
+      const testService = new StateService(config);
+
+      vi.mocked(fs.readFile).mockImplementation(async filePath => {
+        if (filePath === config.buildLogPath) {
+          return JSON.stringify({
+            version: '1.0',
+            lastTimestamp: '',
+            templates: {
+              'templates/older.sql': {
+                lastBuildHash: 'hash1',
+                lastBuildDate: '2024-01-01T10:00:00.000Z',
+                lastMigrationFile: '20240101_older.sql',
+              },
+              'templates/newer.sql': {
+                lastBuildHash: 'hash2',
+                lastBuildDate: '2024-01-02T10:00:00.000Z',
+                lastMigrationFile: '20240102_newer.sql',
+              },
+            },
+          });
+        }
+        return JSON.stringify({ version: '1.0', lastTimestamp: '', templates: {} });
+      });
+
+      await testService.initialize();
+
+      const activity = testService.getRecentActivity();
+
+      expect(activity).toHaveLength(2);
+      expect(activity[0]?.template).toBe('templates/newer.sql');
+      expect(activity[1]?.template).toBe('templates/older.sql');
+
+      await testService.dispose();
+    });
+
+    it('should respect limit parameter', async () => {
+      const testService = new StateService(config);
+
+      vi.mocked(fs.readFile).mockImplementation(async filePath => {
+        if (filePath === config.buildLogPath) {
+          return JSON.stringify({
+            version: '1.0',
+            lastTimestamp: '',
+            templates: {
+              'templates/a.sql': {
+                lastBuildHash: 'hash1',
+                lastBuildDate: '2024-01-01T10:00:00.000Z',
+              },
+              'templates/b.sql': {
+                lastBuildHash: 'hash2',
+                lastBuildDate: '2024-01-02T10:00:00.000Z',
+              },
+              'templates/c.sql': {
+                lastBuildHash: 'hash3',
+                lastBuildDate: '2024-01-03T10:00:00.000Z',
+              },
+            },
+          });
+        }
+        return JSON.stringify({ version: '1.0', lastTimestamp: '', templates: {} });
+      });
+
+      await testService.initialize();
+
+      const activityDefault = testService.getRecentActivity();
+      expect(activityDefault).toHaveLength(3);
+
+      const activityLimited = testService.getRecentActivity(2);
+      expect(activityLimited).toHaveLength(2);
+      expect(activityLimited[0]?.template).toBe('templates/c.sql');
+      expect(activityLimited[1]?.template).toBe('templates/b.sql');
+
+      await testService.dispose();
+    });
+
+    it('should return empty array when no builds or applies exist', async () => {
+      const testService = new StateService(config);
+
+      vi.mocked(fs.readFile).mockResolvedValue(
+        JSON.stringify({
+          version: '1.0',
+          lastTimestamp: '',
+          templates: {},
+        })
+      );
+
+      await testService.initialize();
+
+      const activity = testService.getRecentActivity();
+      expect(activity).toEqual([]);
+
+      await testService.dispose();
+    });
+
+    it('should combine both build and apply entries', async () => {
+      const testService = new StateService(config);
+
+      vi.mocked(fs.readFile).mockImplementation(async filePath => {
+        if (filePath === config.buildLogPath) {
+          return JSON.stringify({
+            version: '1.0',
+            lastTimestamp: '',
+            templates: {
+              'templates/built.sql': {
+                lastBuildHash: 'hash1',
+                lastBuildDate: '2024-01-02T10:00:00.000Z',
+                lastMigrationFile: '20240102_built.sql',
+              },
+            },
+          });
+        }
+        if (filePath === config.localBuildLogPath) {
+          return JSON.stringify({
+            version: '1.0',
+            lastTimestamp: '',
+            templates: {
+              'templates/applied.sql': {
+                lastAppliedHash: 'hash2',
+                lastAppliedDate: '2024-01-03T10:00:00.000Z',
+              },
+            },
+          });
+        }
+        throw new Error('File not found');
+      });
+
+      await testService.initialize();
+
+      const activity = testService.getRecentActivity();
+
+      expect(activity).toHaveLength(2);
+      expect(activity[0]?.action).toBe('applied');
+      expect(activity[0]?.template).toBe('templates/applied.sql');
+      expect(activity[1]?.action).toBe('built');
+      expect(activity[1]?.template).toBe('templates/built.sql');
+      expect(activity[1]?.target).toBe('20240102_built.sql');
+
+      await testService.dispose();
+    });
+  });
+
   describe('resource cleanup', () => {
     it('should dispose cleanly', async () => {
       const autoSaveConfig = { ...config, autoSave: true };

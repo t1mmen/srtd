@@ -6,7 +6,7 @@ import { Command } from 'commander';
 import figures from 'figures';
 import { Orchestrator } from '../services/Orchestrator.js';
 import type { TemplateStatus } from '../types.js';
-import { createSpinner, renderBranding } from '../ui/index.js';
+import { renderBranding } from '../ui/index.js';
 import { getConfig } from '../utils/config.js';
 import { findProjectRoot } from '../utils/findProjectRoot.js';
 import { getErrorMessage, isPromptExit } from '../utils/getErrorMessage.js';
@@ -19,23 +19,20 @@ async function handleTemplateRegistration(
   let successCount = 0;
   let failCount = 0;
 
-  const spinner = createSpinner('Registering templates...').start();
-
   for (const templatePath of templates) {
     try {
       // Use Orchestrator for registration (single source of truth)
       await orchestrator.registerTemplate(templatePath);
       successCount++;
       const relativePath = path.relative(projectRoot, templatePath);
-      spinner.text = `Registered: ${relativePath}`;
-      console.log(chalk.green(`✓ Registered template:`), relativePath);
+      console.log(chalk.green(`${figures.tick} Registered template:`), relativePath);
     } catch (err) {
       failCount++;
-      spinner.warn(`Failed: ${templatePath} - ${getErrorMessage(err)}`);
+      console.log(
+        chalk.yellow(`${figures.warning} Failed: ${templatePath} - ${getErrorMessage(err)}`)
+      );
     }
   }
-
-  spinner.stop();
 
   console.log();
   if (successCount > 0) {
@@ -69,8 +66,6 @@ export const registerCommand = new Command('register')
         exitCode = await handleTemplateRegistration(resolvedPaths, orchestrator, projectRoot);
       } else {
         // Load templates for interactive selection
-        const spinner = createSpinner('Loading templates...').start();
-
         const templatePaths = await orchestrator.findTemplates();
         const templates: TemplateStatus[] = [];
 
@@ -82,8 +77,6 @@ export const registerCommand = new Command('register')
             // Skip templates that can't be loaded
           }
         }
-
-        spinner.stop();
 
         // Filter to unregistered templates by default
         const unregisteredTemplates = templates

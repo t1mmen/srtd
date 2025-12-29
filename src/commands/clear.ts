@@ -16,7 +16,7 @@ const clearOptions = [
 ];
 
 async function handleClearAction(value: string, projectRoot: string): Promise<number> {
-  const spinner = createSpinner('Processing...').start();
+  const spinner = createSpinner('').start();
 
   try {
     const { config } = await getConfig(projectRoot);
@@ -40,7 +40,6 @@ async function handleClearAction(value: string, projectRoot: string): Promise<nu
         throw new Error('Invalid option');
     }
 
-    console.log(chalk.green(`${figures.tick} Reset complete`));
     return 0;
   } catch (err) {
     spinner.fail('Failed to clear');

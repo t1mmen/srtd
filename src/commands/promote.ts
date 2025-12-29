@@ -23,7 +23,7 @@ async function promoteTemplateAction(
   templatePath: string,
   orchestrator: Orchestrator
 ): Promise<number> {
-  const spinner = createSpinner('Promoting template...').start();
+  const spinner = createSpinner('').start();
 
   try {
     // Use Orchestrator for promotion (single source of truth)
@@ -101,9 +101,7 @@ export const promoteCommand = new Command('promote')
         exitCode = await handleTemplatePromotion(templateArg, config, projectRoot, orchestrator);
       } else {
         // Find WIP templates for interactive selection
-        const spinner = createSpinner('Finding WIP templates...').start();
         const wipTemplates = await findWipTemplates(config, projectRoot);
-        spinner.stop();
 
         if (wipTemplates.length === 0) {
           console.log(

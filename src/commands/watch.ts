@@ -1,5 +1,4 @@
 // src/commands/watch.ts
-import path from 'node:path';
 import readline from 'node:readline';
 import chalk from 'chalk';
 import { Command } from 'commander';
@@ -7,71 +6,161 @@ import figures from 'figures';
 import { Orchestrator } from '../services/Orchestrator.js';
 import type { TemplateStatus } from '../types.js';
 import { displayValidationWarnings } from '../ui/displayWarnings.js';
-import { createSpinner, renderBranding } from '../ui/index.js';
+import {
+  createSpinner,
+  renderBranding,
+  renderResultRow,
+  renderWatchFooter,
+  type TemplateResult,
+} from '../ui/index.js';
 import { getConfig } from '../utils/config.js';
 import { findProjectRoot } from '../utils/findProjectRoot.js';
+import { formatPath } from '../utils/formatPath.js';
 import { getErrorMessage } from '../utils/getErrorMessage.js';
 
-const PATH_DISPLAY_LENGTH = 15;
 const MAX_HISTORY = 10;
 
-interface TemplateUpdate {
-  type: 'applied' | 'changed' | 'error';
-  template: TemplateStatus;
-  timestamp: string;
-  error?: string;
+/** Internal event type for stacking logic */
+type WatchEventType = 'changed' | 'applied' | 'error';
+
+/**
+ * Stack consecutive events for the same template (unless error).
+ * e.g., [changed, applied] for same file becomes one stacked entry.
+ */
+function stackResults(results: TemplateResult[]): TemplateResult[] {
+  const stacked: Array<{ result: TemplateResult; types: WatchEventType[] }> = [];
+
+  for (const result of results) {
+    const last = stacked[stacked.length - 1];
+    const type = statusToEventType(result.status);
+
+    // Stack if same template and neither is error
+    if (
+      last &&
+      last.result.template === result.template &&
+      type !== 'error' &&
+      !last.types.includes('error')
+    ) {
+      // Add type if not already present
+      if (!last.types.includes(type)) {
+        last.types.push(type);
+      }
+    } else {
+      stacked.push({
+        result: { ...result },
+        types: [type],
+      });
+    }
+  }
+
+  // Convert back to TemplateResult with displayOverride for stacked events
+  return stacked.map(({ result, types }) => {
+    if (types.length > 1) {
+      // For stacked events, show comma-separated states
+      const typeLabels = types.map(t => (t === 'changed' ? chalk.dim(t) : t));
+      return { ...result, displayOverride: typeLabels.join(', ') };
+    }
+    return result;
+  });
 }
 
-/** Formats an ISO date string as a relative time (e.g., "5m ago") */
-export function formatRelativeTime(isoDate: string): string {
-  const seconds = Math.floor((Date.now() - new Date(isoDate).getTime()) / 1000);
-  if (seconds < 5) return 'just now';
-  if (seconds < 60) return `${seconds}s ago`;
-  if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
-  if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
-  return `${Math.floor(seconds / 86400)}d ago`;
+function statusToEventType(status: TemplateResult['status']): WatchEventType {
+  switch (status) {
+    case 'success':
+      return 'applied';
+    case 'changed':
+      return 'changed';
+    case 'error':
+      return 'error';
+    default:
+      return 'changed';
+  }
+}
+
+/** Reason why a template needs building */
+type NeedsBuildReason = 'never-built' | 'outdated';
+
+/**
+ * Determine if a template needs building and why.
+ * Returns null if template is up-to-date with current build.
+ */
+function getBuildReason(template: TemplateStatus): NeedsBuildReason | null {
+  if (!template.buildState.lastBuildHash) return 'never-built';
+  if (template.currentHash !== template.buildState.lastBuildHash) return 'outdated';
+  return null;
+}
+
+export interface RenderScreenOptions {
+  templates: TemplateStatus[];
+  recentUpdates: TemplateResult[];
+  historicActivity: Array<{
+    template: string;
+    action: 'built' | 'applied';
+    timestamp: Date;
+    target?: string;
+  }>;
+  errors: Map<string, string>;
+  showHistory: boolean;
+  needsBuild: Map<string, NeedsBuildReason>;
 }
 
 /** Renders the full watch mode screen with header, history, errors, and instructions */
-export function renderScreen(
-  templates: TemplateStatus[],
-  recentUpdates: TemplateUpdate[],
-  errors: Map<string, string>,
-  templateDir: string,
-  showHistory: boolean
-): void {
+export function renderScreen(options: RenderScreenOptions): void {
+  const { templates, recentUpdates, historicActivity, errors, showHistory, needsBuild } = options;
   console.clear();
 
-  // Header with stats
-  const needsBuild = templates.filter(
-    t => !t.buildState.lastBuildDate || t.currentHash !== t.buildState.lastBuildHash
-  ).length;
-  console.log(`${chalk.bold('srtd')}${chalk.dim(' - Watch Mode')}`);
-  console.log();
-  const needsBuildStr = needsBuild > 0 ? chalk.yellow(`[Needs Build: ${needsBuild}]`) : '';
-  const errorsStr = errors.size > 0 ? chalk.red(`[Errors: ${errors.size}]`) : '';
-  console.log(`${chalk.green(`[Total: ${templates.length}]`)} ${needsBuildStr} ${errorsStr}`);
+  // Render header
+  renderBranding({ subtitle: 'Watch' });
+
+  // Show status line
+  const templateCount = templates.length;
+  const statusParts: string[] = [`${templateCount} template${templateCount !== 1 ? 's' : ''}`];
+  if (needsBuild.size > 0) statusParts.push(chalk.yellow(`${needsBuild.size} need build`));
+  if (errors.size > 0) statusParts.push(chalk.red(`${errors.size} errors`));
+  console.log(chalk.dim(statusParts.join('  •  ')));
   console.log();
 
   // History section (if toggled on)
-  if (showHistory && recentUpdates.length > 0) {
+  // Combine historic activity with recent updates (oldest at top, newest at bottom)
+  const hasRecentActivity = recentUpdates.length > 0 || historicActivity.length > 0;
+  if (showHistory && hasRecentActivity) {
     console.log(chalk.bold('Recent activity:'));
-    for (const update of recentUpdates) {
-      const displayName = formatTemplateDisplay(update.template.path, templateDir);
-      const time = formatRelativeTime(update.timestamp);
-      const icon =
-        update.type === 'applied'
-          ? figures.play
-          : update.type === 'error'
-            ? figures.cross
-            : figures.info;
-      const color =
-        update.type === 'applied' ? chalk.green : update.type === 'error' ? chalk.red : chalk.cyan;
-      console.log(
-        color(
-          `  ${icon} ${displayName}: ${update.type === 'error' ? update.error : update.type} (${time})`
-        )
-      );
+
+    const stacked = stackResults(recentUpdates);
+
+    // First show historic activity (older entries at top)
+    // historicActivity comes newest-first, so reverse to get oldest-first
+    const remainingSlots = MAX_HISTORY - stacked.length;
+    if (remainingSlots > 0) {
+      const historicToShow = historicActivity.slice(0, remainingSlots).reverse();
+      for (const entry of historicToShow) {
+        // Skip if this template is already shown in recent updates
+        const alreadyShown = stacked.some(s => s.template === entry.template);
+        if (alreadyShown) continue;
+
+        // Convert historic entry to TemplateResult
+        const result: TemplateResult = {
+          template: entry.template,
+          status: 'success',
+          timestamp: entry.timestamp,
+        };
+        renderResultRow(result, { command: 'watch' });
+      }
+    }
+
+    // Then show stacked recent updates (newer entries at bottom)
+    for (const result of stacked) {
+      renderResultRow(result, { command: 'watch' });
+    }
+    console.log();
+  }
+
+  // Pending build section with reasons
+  if (needsBuild.size > 0) {
+    console.log(chalk.yellow.bold('Pending build:'));
+    for (const [templatePath, reason] of needsBuild) {
+      const label = reason === 'never-built' ? 'never built' : 'changed since build';
+      console.log(chalk.yellow(`  ⚡ ${formatPath.truncatePath(templatePath)} (${label})`));
     }
     console.log();
   }
@@ -80,32 +169,19 @@ export function renderScreen(
   if (errors.size > 0) {
     console.log(chalk.red.bold('Errors:'));
     for (const [templatePath, error] of errors) {
-      console.log(chalk.red(`  ${formatTemplateDisplay(templatePath, templateDir)}: ${error}`));
+      console.log(chalk.red(`  ${formatPath.truncatePath(templatePath)}: ${error}`));
     }
     console.log();
   }
 
-  // Instructions
-  console.log(
-    chalk.dim(
-      `Watching for changes... Press ${showHistory ? 'u to hide' : 'u to show'} history, q to quit`
-    )
-  );
-}
-
-function formatTemplateDisplay(templatePath: string, templateDir: string): string {
-  const parts = templatePath.split(path.sep);
-  const filename = parts.pop() || '';
-  const dirPath = parts.join(path.sep);
-
-  if (dirPath && templateDir && dirPath.includes(templateDir)) {
-    const relativePath = dirPath.substring(dirPath.indexOf(templateDir) + templateDir.length + 1);
-    if (relativePath) {
-      const truncatedPath = relativePath.slice(-PATH_DISPLAY_LENGTH);
-      return `${truncatedPath}/${filename}`;
-    }
-  }
-  return filename;
+  // Footer with keyboard shortcuts
+  renderWatchFooter({
+    shortcuts: [
+      { key: 'q', label: 'quit' },
+      { key: 'b', label: 'build' },
+      { key: 'u', label: showHistory ? 'hide history' : 'show history' },
+    ],
+  });
 }
 
 export const watchCommand = new Command('watch')
@@ -115,9 +191,12 @@ export const watchCommand = new Command('watch')
     let orchestrator: Orchestrator | null = null;
 
     try {
-      await renderBranding({ subtitle: 'Watch Mode' });
+      // Render header only if not invoked from menu
+      if (!process.env.__SRTD_FROM_MENU__) {
+        renderBranding({ subtitle: 'Watch' });
+      }
 
-      const spinner = createSpinner('Starting watch mode...').start();
+      const spinner = createSpinner('').start();
 
       // Initialize Orchestrator
       const projectRoot = await findProjectRoot();
@@ -129,6 +208,9 @@ export const watchCommand = new Command('watch')
 
       // Display validation warnings
       displayValidationWarnings(orchestrator.getValidationWarnings());
+
+      // Load historic activity for initial display
+      const historicActivity = orchestrator.getRecentActivity(MAX_HISTORY);
 
       // Load initial templates
       const templatePaths = await orchestrator.findTemplates();
@@ -146,38 +228,91 @@ export const watchCommand = new Command('watch')
 
       spinner.succeed(`Watching ${templates.length} template(s)`);
 
-      // State for history tracking
-      const recentUpdates: TemplateUpdate[] = [];
+      // State for history tracking - now uses unified TemplateResult
+      const recentUpdates: TemplateResult[] = [];
       let showHistory = true;
 
+      // Track templates that need building with reason
+      const needsBuild = new Map<string, NeedsBuildReason>();
+
+      // Populate needsBuild from initial template state
+      for (const template of templates) {
+        const reason = getBuildReason(template);
+        if (reason) needsBuild.set(template.path, reason);
+      }
+
       // Initial render
-      renderScreen(templates, recentUpdates, errors, config.templateDir, showHistory);
+      renderScreen({
+        templates,
+        recentUpdates,
+        historicActivity,
+        errors,
+        showHistory,
+        needsBuild,
+      });
+
+      // Helper to call renderScreen with all current state
+      const doRender = () => {
+        renderScreen({
+          templates,
+          recentUpdates,
+          historicActivity,
+          errors,
+          showHistory,
+          needsBuild,
+        });
+      };
 
       // Set up orchestrator event listeners
       orchestrator.on('templateChanged', (template: TemplateStatus) => {
-        recentUpdates.unshift({ type: 'changed', template, timestamp: new Date().toISOString() });
-        if (recentUpdates.length > MAX_HISTORY) recentUpdates.pop();
-        renderScreen(templates, recentUpdates, errors, config.templateDir, showHistory);
+        // Check if this change invalidates a previous build
+        const hadBuild = !!template.buildState.lastBuildHash;
+
+        recentUpdates.push({
+          template: template.path,
+          status: 'changed',
+          timestamp: new Date(),
+          buildOutdated: hadBuild,
+        });
+        if (recentUpdates.length > MAX_HISTORY) recentUpdates.shift();
+
+        // Update needsBuild tracking
+        const reason = getBuildReason(template);
+        if (reason) needsBuild.set(template.path, reason);
+
+        doRender();
       });
 
       orchestrator.on('templateApplied', (template: TemplateStatus) => {
-        recentUpdates.unshift({ type: 'applied', template, timestamp: new Date().toISOString() });
-        if (recentUpdates.length > MAX_HISTORY) recentUpdates.pop();
-        renderScreen(templates, recentUpdates, errors, config.templateDir, showHistory);
+        recentUpdates.push({
+          template: template.path,
+          status: 'success',
+          timestamp: new Date(),
+        });
+        if (recentUpdates.length > MAX_HISTORY) recentUpdates.shift();
+
+        // Track as needing build if not already built with current hash
+        const reason = getBuildReason(template);
+        if (reason) needsBuild.set(template.path, reason);
+
+        // Clear any previous error for this template
+        errors.delete(template.path);
+
+        doRender();
       });
 
       orchestrator.on(
         'templateError',
         ({ template, error }: { template: TemplateStatus; error: string }) => {
-          recentUpdates.unshift({
-            type: 'error',
-            template,
-            timestamp: new Date().toISOString(),
-            error,
+          recentUpdates.push({
+            template: template.path,
+            status: 'error',
+            timestamp: new Date(),
+            errorMessage: error,
           });
-          if (recentUpdates.length > MAX_HISTORY) recentUpdates.pop();
+          if (recentUpdates.length > MAX_HISTORY) recentUpdates.shift();
           errors.set(template.path, error);
-          renderScreen(templates, recentUpdates, errors, config.templateDir, showHistory);
+          doRender();
         }
       );
 
@@ -198,7 +333,91 @@ export const watchCommand = new Command('watch')
         process.exit(exitCode);
       };
 
-      // Set up keyboard input handling for quit and toggle
+      /**
+       * Extract template name from migration filename.
+       * Format: {timestamp}_{prefix}-{templateName}.sql
+       * e.g., 20241228_srtd-audit.sql -> audit.sql
+       */
+      const extractTemplateName = (migrationFile: string): string => {
+        const match = migrationFile.match(/_[^-]+-(.+)\.sql$/);
+        return match ? `${match[1]}.sql` : migrationFile;
+      };
+
+      /**
+       * Refresh needsBuild map from current template state.
+       * Clears the map and repopulates based on fresh template hashes.
+       */
+      const refreshNeedsBuild = async (
+        orch: Orchestrator,
+        templatePaths: string[]
+      ): Promise<void> => {
+        needsBuild.clear();
+        for (const templatePath of templatePaths) {
+          try {
+            const template = await orch.getTemplateStatusExternal(templatePath);
+            const reason = getBuildReason(template);
+            if (reason) needsBuild.set(template.path, reason);
+          } catch {
+            // Template may have been deleted, skip
+          }
+        }
+      };
+
+      // Build action handler for 'b' key
+      const triggerBuild = async () => {
+        if (!orchestrator) return;
+
+        // Refresh template state before building
+        const templatePaths = await orchestrator.findTemplates();
+        await refreshNeedsBuild(orchestrator, templatePaths);
+
+        // Check if anything needs building
+        if (needsBuild.size === 0) {
+          // Show "all up to date" feedback in activity log
+          recentUpdates.push({
+            template: 'all templates',
+            status: 'unchanged',
+            timestamp: new Date(),
+            displayOverride: 'all up to date',
+          });
+          if (recentUpdates.length > MAX_HISTORY) recentUpdates.shift();
+          doRender();
+          return;
+        }
+
+        try {
+          const result = await orchestrator.build({ silent: true });
+
+          // Add build results to recent updates with 'built' status
+          for (const migrationFile of result.built) {
+            const templateName = extractTemplateName(migrationFile);
+            recentUpdates.push({
+              template: templateName,
+              status: 'built',
+              target: migrationFile,
+              timestamp: new Date(),
+            });
+          }
+
+          if (recentUpdates.length > MAX_HISTORY) {
+            recentUpdates.splice(0, recentUpdates.length - MAX_HISTORY);
+          }
+
+          // Show any build errors
+          for (const err of result.errors) {
+            errors.set(err.file, err.error);
+          }
+
+          // Refresh needsBuild after building
+          await refreshNeedsBuild(orchestrator, templatePaths);
+        } catch (error) {
+          console.log(chalk.red(`Build failed: ${getErrorMessage(error)}`));
+        }
+
+        doRender();
+      };
+
+      // Set up keyboard input handling for quit, toggle, and build
       if (process.stdin.isTTY) {
         // Reset stdin state in case it was modified by previous prompts
         process.stdin.setRawMode(false);
@@ -217,7 +436,10 @@ export const watchCommand = new Command('watch')
           }
           if (key && key.name === 'u') {
             showHistory = !showHistory;
-            renderScreen(templates, recentUpdates, errors, config.templateDir, showHistory);
+            doRender();
+          }
+          if (key && key.name === 'b') {
+            void triggerBuild();
           }
         });
       }

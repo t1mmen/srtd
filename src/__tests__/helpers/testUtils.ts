@@ -75,7 +75,19 @@ export function createErrorWithCode(message: string, code: string): Error & { co
  */
 export function createMockUiModule() {
   return {
-    renderBranding: vi.fn().mockResolvedValue(undefined),
+    // UI components
+    renderBranding: vi.fn(),
+    renderResults: vi.fn(),
+    renderResultsTable: vi.fn(),
+    renderResultRow: vi.fn(),
+    renderErrorDisplay: vi.fn(),
+    renderWatchFooter: vi.fn(),
+    DEFAULT_WATCH_SHORTCUTS: [
+      { key: 'q', label: 'quit' },
+      { key: 'u', label: 'toggle unchanged' },
+      { key: 'b', label: 'build all' },
+    ],
+    // Spinner
     createSpinner: vi.fn(() => ({
       start: vi.fn().mockReturnThis(),
       stop: vi.fn(),
@@ -84,7 +96,6 @@ export function createMockUiModule() {
       warn: vi.fn(),
       text: '',
     })),
-    renderResults: vi.fn(),
   };
 }
 
