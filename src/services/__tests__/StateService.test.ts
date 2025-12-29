@@ -894,4 +894,190 @@ describe('StateService', () => {
       expect(state?.lastError).toBeUndefined(); // Error should be cleared on successful apply
     });
   });
+
+  describe('getLastTimestamp', () => {
+    it('should return the last timestamp from build log', () => {
+      const timestamp = service.getLastTimestamp();
+      expect(timestamp).toBe('2024-01-01T00:00:00.000Z');
+    });
+
+    it('should return updated timestamp after updateTimestamp is called', () => {
+      service.updateTimestamp('2024-02-01T12:00:00.000Z');
+
+      const timestamp = service.getLastTimestamp();
+      expect(timestamp).toBe('2024-02-01T12:00:00.000Z');
+    });
+  });
+
+  describe('getTemplateBuildState', () => {
+    it('should return undefined for non-existent template', () => {
+      const buildState = service.getTemplateBuildState('/test/base/templates/nonexistent.sql');
+      expect(buildState).toBeUndefined();
+    });
+
+    it('should return merged build state from both common and local logs', () => {
+      // users.sql exists in both common and local build logs
+      const buildState = service.getTemplateBuildState('/test/base/templates/users.sql');
+
+      expect(buildState).toBeDefined();
+      // From common build log
+      expect(buildState?.lastBuildHash).toBe('build123');
+      expect(buildState?.lastBuildDate).toBe('2024-01-01T10:00:00.000Z');
+      expect(buildState?.lastMigrationFile).toBe('20240101100000_users.sql');
+      // From local build log
+      expect(buildState?.lastAppliedHash).toBe('apply123');
+      expect(buildState?.lastAppliedDate).toBe('2024-01-01T09:00:00.000Z');
+    });
+
+    it('should return local-only state when template only in local log', () => {
+      // posts.sql only exists in local build log
+      const buildState = service.getTemplateBuildState('/test/base/templates/posts.sql');
+
+      expect(buildState).toBeDefined();
+      expect(buildState?.lastAppliedHash).toBe('apply456');
+      expect(buildState?.lastAppliedError).toBe('SQL syntax error');
+      expect(buildState?.lastBuildHash).toBeUndefined();
+    });
+
+    it('should handle relative paths', () => {
+      const buildState = service.getTemplateBuildState('templates/users.sql');
+
+      expect(buildState).toBeDefined();
+      expect(buildState?.lastBuildHash).toBe('build123');
+    });
+  });
+
+  describe('getBuildLogForMigration', () => {
+    it('should return the build log for migration generation', () => {
+      const buildLog = service.getBuildLogForMigration();
+
+      expect(buildLog).toBeDefined();
+      expect(buildLog.version).toBe('1.0');
+      expect(buildLog.lastTimestamp).toBe('2024-01-01T00:00:00.000Z');
+      expect(buildLog.templates['templates/users.sql']).toBeDefined();
+    });
+
+    it('should return a read-only view of the build log', () => {
+      const buildLog = service.getBuildLogForMigration();
+
+      // Verify it has the expected structure
+      expect(buildLog.templates).toBeDefined();
+      expect(Object.keys(buildLog.templates).length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('renameTemplate', () => {
+    it('should rename template in common build log', async () => {
+      const oldPath = '/test/base/templates/users.sql';
+      const newPath = '/test/base/templates/users-renamed.sql';
+
+      await service.renameTemplate(oldPath, newPath);
+
+      // Old entry should be removed
+      const oldState = service.getTemplateBuildState(oldPath);
+      expect(oldState).toBeUndefined();
+
+      // New entry should exist with same data
+      const newState = service.getTemplateBuildState(newPath);
+      expect(newState).toBeDefined();
+      expect(newState?.lastBuildHash).toBe('build123');
+      expect(newState?.lastAppliedHash).toBe('apply123');
+    });
+
+    it('should rename template in local build log', async () => {
+      const oldPath = '/test/base/templates/posts.sql';
+      const newPath = '/test/base/templates/posts-renamed.sql';
+
+      await service.renameTemplate(oldPath, newPath);
+
+      const oldState = service.getTemplateBuildState(oldPath);
+      expect(oldState).toBeUndefined();
+
+      const newState = service.getTemplateBuildState(newPath);
+      expect(newState).toBeDefined();
+      expect(newState?.lastAppliedHash).toBe('apply456');
+    });
+
+    it('should update in-memory state map', async () => {
+      const oldPath = '/test/base/templates/users.sql';
+      const newPath = '/test/base/templates/users-renamed.sql';
+
+      // First verify the old path has state
+      const oldTemplateStatus = service.getTemplateStatus(oldPath);
+      expect(oldTemplateStatus).toBeDefined();
+
+      await service.renameTemplate(oldPath, newPath);
+
+      // Old path should no longer have state
+      const oldStateAfter = service.getTemplateStatus(oldPath);
+      expect(oldStateAfter).toBeUndefined();
+
+      // New path should have state
+      const newState = service.getTemplateStatus(newPath);
+      expect(newState).toBeDefined();
+    });
+
+    it('should handle non-existent template gracefully', async () => {
+      const oldPath = '/test/base/templates/nonexistent.sql';
+      const newPath = '/test/base/templates/new.sql';
+
+      // Should not throw
+      await expect(service.renameTemplate(oldPath, newPath)).resolves.not.toThrow();
+    });
+
+    it('should handle relative paths', async () => {
+      const oldPath = 'templates/users.sql';
+      const newPath = 'templates/users-new.sql';
+
+      await service.renameTemplate(oldPath, newPath);
+
+      const newState = service.getTemplateBuildState(newPath);
+      expect(newState).toBeDefined();
+      expect(newState?.lastBuildHash).toBe('build123');
+    });
+  });
+
+  describe('clearBuildLogs', () => {
+    it('should clear local build logs only', async () => {
+      await service.clearBuildLogs('local');
+
+      // Local should be empty but shared should still have data
+      const usersState = service.getTemplateBuildState('/test/base/templates/users.sql');
+      expect(usersState?.lastBuildHash).toBe('build123'); // From shared
+      expect(usersState?.lastAppliedHash).toBeUndefined(); // Cleared from local
+
+      // Posts was only in local, should be gone
+      const postsState = service.getTemplateBuildState('/test/base/templates/posts.sql');
+      expect(postsState).toBeUndefined();
+    });
+
+    it('should clear shared build logs only', async () => {
+      await service.clearBuildLogs('shared');
+
+      // Shared should be empty but local should still have data
+      const usersState = service.getTemplateBuildState('/test/base/templates/users.sql');
+      expect(usersState?.lastBuildHash).toBeUndefined(); // Cleared from shared
+      expect(usersState?.lastAppliedHash).toBe('apply123'); // Still in local
+    });
+
+    it('should clear both build logs', async () => {
+      await service.clearBuildLogs('both');
+
+      // Both should be empty
+      const usersState = service.getTemplateBuildState('/test/base/templates/users.sql');
+      expect(usersState).toBeUndefined();
+
+      const postsState = service.getTemplateBuildState('/test/base/templates/posts.sql');
+      expect(postsState).toBeUndefined();
+    });
+
+    it('should emit state:cleared event', async () => {
+      const handler = vi.fn();
+      service.on('state:cleared', handler);
+
+      await service.clearBuildLogs('local');
+
+      expect(handler).toHaveBeenCalled();
+    });
+  });
 });

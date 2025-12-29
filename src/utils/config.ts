@@ -2,6 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { CONFIG_FILE, DEFAULT_PG_CONNECTION } from '../constants.js';
 import type { CLIConfig } from '../types.js';
+import { fileExists } from './fileExists.js';
 import { logger } from './logger.js';
 import { CLIConfigSchema, formatZodErrors, type ValidationWarning } from './schemas.js';
 
@@ -94,6 +95,18 @@ export async function getConfig(dir: string = process.cwd()): Promise<ConfigResu
   } catch {
     // File not found or other read error - use defaults silently
     config = { ...defaultConfig };
+  }
+
+  // Check if template directory exists
+  const templateDirPath = path.join(resolvedDir, config.templateDir);
+  const templateDirExists = await fileExists(templateDirPath);
+  if (!templateDirExists) {
+    warnings.push({
+      source: 'config',
+      type: 'missing',
+      message: `Template directory does not exist: ${config.templateDir}`,
+      path: templateDirPath,
+    });
   }
 
   const result = { config, warnings };

@@ -125,4 +125,6 @@ describe('config file operations', () => {
     expect(config.migrationDir).toBe('supabase/migrations');
     expect(config.wipIndicator).toBe('.wip');
   });
+
+  // Note: Template directory validation tests are in src/utils/__tests__/config.test.ts
 });

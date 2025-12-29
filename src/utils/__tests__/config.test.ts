@@ -39,9 +39,14 @@ describe('getConfig validation', () => {
     }
   });
 
-  async function createTestDir(): Promise<string> {
+  async function createTestDir(options?: { createTemplateDir?: boolean }): Promise<string> {
     const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'srtd-config-test-'));
     tempDirs.push(dir);
+    // By default, create the template directory to avoid "missing template dir" warnings
+    // unless explicitly opted out
+    if (options?.createTemplateDir !== false) {
+      await fs.mkdir(path.join(dir, 'supabase', 'migrations-templates'), { recursive: true });
+    }
     return dir;
   }
 
@@ -181,6 +186,50 @@ describe('getConfig validation', () => {
 
       // Should NOT record any warnings
       expect(warnings).toHaveLength(0);
+    });
+  });
+
+  describe('template directory validation', () => {
+    it('returns warning when template directory does not exist', async () => {
+      // Opt out of creating template directory to test the warning
+      const testDir = await createTestDir({ createTemplateDir: false });
+      const configPath = path.join(testDir, 'srtd.config.json');
+      await fs.writeFile(
+        configPath,
+        JSON.stringify({
+          templateDir: 'non-existent-templates',
+          migrationDir: 'migrations',
+        })
+      );
+
+      const { config, warnings } = await getConfig(testDir);
+
+      expect(config.templateDir).toBe('non-existent-templates');
+      expect(warnings.length).toBeGreaterThan(0);
+      expect(warnings.some(w => w.source === 'config' && w.type === 'missing')).toBe(true);
+      expect(warnings.some(w => w.message.includes('Template directory'))).toBe(true);
+    });
+
+    it('does not warn when template directory exists', async () => {
+      const testDir = await createTestDir(); // Creates template dir by default
+      const configPath = path.join(testDir, 'srtd.config.json');
+      await fs.writeFile(configPath, JSON.stringify({ filter: '*.sql' }));
+
+      const { warnings } = await getConfig(testDir);
+
+      // Should have no warnings about template directory
+      expect(warnings.filter(w => w.type === 'missing')).toHaveLength(0);
+    });
+
+    it('returns warning with correct path when using default templateDir', async () => {
+      // Create dir but without the default template directory
+      const testDir = await createTestDir({ createTemplateDir: false });
+
+      const { warnings } = await getConfig(testDir);
+
+      // Should warn about missing default template directory
+      expect(warnings.some(w => w.type === 'missing')).toBe(true);
+      expect(warnings.some(w => w.message.includes('supabase/migrations-templates'))).toBe(true);
     });
   });
 });
