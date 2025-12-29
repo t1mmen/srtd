@@ -88,7 +88,22 @@ Type "echo '-- Work in progress feature' > supabase/migrations-templates/srtd_de
 Enter
 Sleep 1.5s
 
-# Build again to show WIP is skipped
+# Apply WIP - shows it works locally
+Type "srtd apply"
+Enter
+Hide
+Sleep 2
+Show
+Sleep 3s
+Hide
+Ctrl+C
+Show
+
+# Breathing room after apply
+Enter
+Sleep 500ms
+
+# Build to show WIP is skipped for migrations
 Type "srtd build"
 Enter
 Sleep 4s
@@ -132,7 +147,7 @@ Enter
 Show
 Sleep 2s
 
-# Success message
+# Sign off
 Enter
-Type "# Thanks for watching! github.com/t1mmen/srtd"
+Type "✨ Thanks for watching! Check out github.com/t1mmen/srtd for more info"
 Sleep 5s
