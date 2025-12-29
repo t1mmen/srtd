@@ -75,9 +75,12 @@ export function getErrorHint(
   code: string | undefined,
   detail: string | undefined
 ): string | undefined {
-  // Try code-based lookup first
-  if (code && ERROR_CODE_HINTS[code]) {
-    return ERROR_CODE_HINTS[code];
+  // Try code-based lookup first (normalize to uppercase for defensive matching)
+  if (code) {
+    const normalizedCode = code.toUpperCase();
+    if (ERROR_CODE_HINTS[normalizedCode]) {
+      return ERROR_CODE_HINTS[normalizedCode];
+    }
   }
 
   // Fall back to pattern matching on detail message
