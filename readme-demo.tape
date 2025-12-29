@@ -43,35 +43,23 @@ Sleep 1s
 Ctrl+C
 Show
 
-# Make a change to a template (add a simple comment to trigger change detection)
-Type "echo '' >> supabase/migrations-templates/srtd_demo_greet.sql"
-Enter
-Sleep 50ms
-Type "echo '-- Updated: added logging' >> supabase/migrations-templates/srtd_demo_greet.sql"
-Enter
-Sleep 1s
-
-# Start watching for changes
+# Start watch mode briefly to show the UI
 Type "srtd watch"
-Sleep 1s
 Enter
 Hide
-Sleep 1s
+Sleep 2s
 Show
-Sleep 5s
+Sleep 3s
 Hide
 Ctrl+C
-Enter
 Show
-Sleep 1s
+Sleep 500ms
 
 # Build migration files
 Type "srtd build"
-Sleep 100ms
 Enter
 Hide
 Sleep 2
-Enter
 Show
 Sleep 3s
 
