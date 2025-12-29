@@ -15,6 +15,7 @@ import {
 import { getConfig } from '../utils/config.js';
 import { findProjectRoot } from '../utils/findProjectRoot.js';
 import { getErrorMessage } from '../utils/getErrorMessage.js';
+import { isWipTemplate } from '../utils/isWipTemplate.js';
 
 interface BuildOptions {
   force?: boolean;
@@ -76,8 +77,20 @@ export const buildCommand = new Command('build')
       }
 
       // Transform results to unified TemplateResult format
+      // Order: unchanged/skipped first, then newly built (newest at bottom, log-style)
       const results: TemplateResult[] = [
-        // Built templates (success)
+        // Skipped templates - either 'skipped' (WIP) or 'unchanged' (already built)
+        ...result.skipped.map(name => {
+          const info = orchestrator.getTemplateInfo(name);
+          const isWip = isWipTemplate(name, config.wipIndicator);
+          return {
+            template: name,
+            status: isWip ? ('skipped' as const) : ('unchanged' as const),
+            target: isWip ? undefined : info.migrationFile,
+            timestamp: info.lastDate ? new Date(info.lastDate) : undefined,
+          };
+        }),
+        // Built templates (success) - at the bottom as "newest"
         ...result.built.map(name => {
           const info = orchestrator.getTemplateInfo(name);
           return {
@@ -86,17 +99,7 @@ export const buildCommand = new Command('build')
             target: info.migrationFile,
           };
         }),
-        // Skipped templates (unchanged)
-        ...result.skipped.map(name => {
-          const info = orchestrator.getTemplateInfo(name);
-          return {
-            template: name,
-            status: 'unchanged' as const,
-            target: info.migrationFile,
-            timestamp: info.lastDate ? new Date(info.lastDate) : undefined,
-          };
-        }),
-        // Error templates
+        // Error templates - at the very bottom (most important to see)
         ...result.errors.map(err => ({
           template: err.file,
           status: 'error' as const,

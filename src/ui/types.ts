@@ -9,10 +9,17 @@
  * - 'success': Template was successfully applied to local DB
  * - 'built': Template was successfully built to migration file
  * - 'unchanged': Template has not changed since last operation
+ * - 'skipped': Template intentionally skipped (e.g., WIP templates)
  * - 'error': Operation failed
  * - 'changed': Template file modified, pending apply (watch mode)
  */
-export type TemplateResultStatus = 'success' | 'built' | 'unchanged' | 'error' | 'changed';
+export type TemplateResultStatus =
+  | 'success'
+  | 'built'
+  | 'unchanged'
+  | 'skipped'
+  | 'error'
+  | 'changed';
 
 /**
  * Unified result for a template operation.

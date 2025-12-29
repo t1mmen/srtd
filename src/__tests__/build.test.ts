@@ -247,16 +247,17 @@ describe('Build Command', () => {
       await buildCommand.parseAsync(['node', 'test']);
 
       spies.assertNoStderr();
+      // Order: unchanged/skipped first, then built (newest at bottom, log-style)
       expect(uiModule.renderResultsTable).toHaveBeenCalledWith({
         results: [
-          { template: 'migration1.sql', status: 'success', target: undefined },
-          { template: 'migration2.sql', status: 'success', target: undefined },
           {
             template: 'unchanged.sql',
             status: 'unchanged',
             target: undefined,
             timestamp: undefined,
           },
+          { template: 'migration1.sql', status: 'success', target: undefined },
+          { template: 'migration2.sql', status: 'success', target: undefined },
         ],
         context: { command: 'build', forced: undefined },
       });
@@ -284,15 +285,16 @@ describe('Build Command', () => {
       await buildCommand.parseAsync(['node', 'test', '--apply']);
 
       spies.assertNoStderr();
+      // Order: unchanged/skipped first, then built (newest at bottom, log-style)
       expect(uiModule.renderResultsTable).toHaveBeenCalledWith({
         results: [
-          { template: 'migration1.sql', status: 'success', target: undefined },
           {
             template: 'unchanged.sql',
             status: 'unchanged',
             target: undefined,
             timestamp: undefined,
           },
+          { template: 'migration1.sql', status: 'success', target: undefined },
         ],
         context: { command: 'build', forced: undefined },
       });

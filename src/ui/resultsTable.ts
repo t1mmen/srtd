@@ -35,6 +35,8 @@ function getStatusLabel(status: TemplateResult['status']): string {
       return 'error';
     case 'unchanged':
       return 'unchanged';
+    case 'skipped':
+      return 'skipped';
   }
 }
 
@@ -50,6 +52,8 @@ function getStatusIcon(status: TemplateResult['status']): string {
       return chalk.dim(figures.bullet);
     case 'unchanged':
       return chalk.dim(figures.bullet);
+    case 'skipped':
+      return chalk.yellow(figures.arrowRight);
     case 'error':
       return chalk.red(figures.cross);
   }
@@ -67,6 +71,8 @@ function getStatusColor(status: TemplateResult['status']): (text: string) => str
       return chalk.dim;
     case 'unchanged':
       return chalk.dim;
+    case 'skipped':
+      return chalk.yellow;
     case 'error':
       return chalk.red;
   }
@@ -129,9 +135,9 @@ function renderWatchRow(result: TemplateResult): void {
 function renderTableRow(result: TemplateResult, context: RenderContext): void {
   const icon = getStatusIcon(result.status);
   const templateName = ensureSqlExtension(result.template);
-  const isUnchanged = result.status === 'unchanged';
+  const isDimmed = result.status === 'unchanged' || result.status === 'skipped';
 
-  const templateDisplay = isUnchanged
+  const templateDisplay = isDimmed
     ? chalk.dim(templateName.padEnd(COL_TEMPLATE))
     : templateName.padEnd(COL_TEMPLATE);
 
@@ -141,10 +147,16 @@ function renderTableRow(result: TemplateResult, context: RenderContext): void {
     return;
   }
 
+  // For skipped (WIP templates), show label instead of target
+  if (result.status === 'skipped') {
+    console.log(`${icon} ${templateDisplay} ${chalk.yellow('(wip)')}`);
+    return;
+  }
+
   const arrow = chalk.dim('→');
   const targetText = getTargetDisplay(result, context);
 
-  if (isUnchanged) {
+  if (result.status === 'unchanged') {
     // Unchanged: show target and relative time
     const targetDisplay = chalk.dim(targetText.padEnd(COL_TARGET));
     const timeDisplay = result.timestamp ? chalk.dim(formatTime.relative(result.timestamp)) : '';
@@ -218,21 +230,9 @@ function renderSummary(results: TemplateResult[], context: RenderContext): void 
 export function renderResultsTable(options: RenderResultsOptions): void {
   const { results, context } = options;
 
-  // For watch mode, don't sort - preserve chronological order
-  if (context.command === 'watch') {
-    for (const result of results) {
-      renderResultRow(result, context);
-    }
-    return;
-  }
-
-  // For build/apply, sort: success/built first, then unchanged, then errors
-  const sorted = [...results].sort((a, b) => {
-    const order = { success: 0, built: 1, changed: 2, unchanged: 3, error: 4 };
-    return order[a.status] - order[b.status];
-  });
-
-  for (const result of sorted) {
+  // Preserve order for all commands - no sorting
+  // This ensures consistent "oldest at top, newest at bottom" log-style ordering
+  for (const result of results) {
     renderResultRow(result, context);
   }
 

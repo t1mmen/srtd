@@ -128,7 +128,7 @@ describe('renderResultsTable', () => {
     expect(output).toContain('local db');
   });
 
-  it('sorts results: success first, then unchanged, then errors', async () => {
+  it('preserves order of results (no sorting)', async () => {
     const { renderResultsTable } = await import('./resultsTable.js');
     renderResultsTable({
       results: [
@@ -140,11 +140,12 @@ describe('renderResultsTable', () => {
     });
 
     const output = consoleLogSpy.mock.calls.flat().join('\n');
-    const successIdx = output.indexOf('success.sql');
-    const unchangedIdx = output.indexOf('unchanged.sql');
     const errorIdx = output.indexOf('error.sql');
-    expect(successIdx).toBeLessThan(unchangedIdx);
-    expect(unchangedIdx).toBeLessThan(errorIdx);
+    const unchangedIdx = output.indexOf('unchanged.sql');
+    const successIdx = output.indexOf('success.sql');
+    // Results should appear in the order they were passed
+    expect(errorIdx).toBeLessThan(unchangedIdx);
+    expect(unchangedIdx).toBeLessThan(successIdx);
   });
 
   it('handles unchanged rows without timestamp', async () => {
