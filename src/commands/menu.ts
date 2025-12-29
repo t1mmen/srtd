@@ -13,6 +13,7 @@ const menuCommands = [
   { name: 'register  - Register templates to track them', value: 'register' },
   { name: 'promote   - Promote a WIP template', value: 'promote' },
   { name: 'clear     - Clear build logs or reset configuration', value: 'clear' },
+  { name: 'doctor    - Validate setup and configuration', value: 'doctor' },
 ];
 
 /**
@@ -69,6 +70,11 @@ export async function showMenu(): Promise<void> {
         case 'clear': {
           const { clearCommand } = await import('./clear.js');
           await clearCommand.parseAsync(baseArgs);
+          break;
+        }
+        case 'doctor': {
+          const { doctorCommand } = await import('./doctor.js');
+          await doctorCommand.parseAsync(baseArgs);
           break;
         }
       }
