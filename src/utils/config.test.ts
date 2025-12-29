@@ -126,40 +126,5 @@ describe('config file operations', () => {
     expect(config.wipIndicator).toBe('.wip');
   });
 
-  it('should return warning when template directory does not exist', async () => {
-    // Create a config file pointing to a non-existent template directory
-    const configContent = {
-      templateDir: 'non-existent-templates',
-      migrationDir: 'migrations',
-    };
-    await fs.writeFile(path.join(tempDir, 'srtd.config.json'), JSON.stringify(configContent));
-
-    // Fresh import after unmocking
-    const { getConfig } = await import('./config.js');
-    const { config, warnings } = await getConfig(tempDir);
-
-    expect(config.templateDir).toBe('non-existent-templates');
-    expect(warnings.length).toBeGreaterThan(0);
-    expect(warnings.some(w => w.source === 'config' && w.message.includes('template'))).toBe(true);
-  });
-
-  it('should not warn when template directory exists', async () => {
-    // Create the template directory
-    const templateDir = path.join(tempDir, 'existing-templates');
-    await fs.mkdir(templateDir, { recursive: true });
-
-    // Create a config file pointing to it
-    const configContent = {
-      templateDir: 'existing-templates',
-      migrationDir: 'migrations',
-    };
-    await fs.writeFile(path.join(tempDir, 'srtd.config.json'), JSON.stringify(configContent));
-
-    // Fresh import after unmocking
-    const { getConfig } = await import('./config.js');
-    const { warnings } = await getConfig(tempDir);
-
-    // Should have no warnings about template directory
-    expect(warnings.filter(w => w.message.includes('template'))).toHaveLength(0);
-  });
+  // Note: Template directory validation tests are in src/utils/__tests__/config.test.ts
 });

@@ -98,4 +98,23 @@ describe('displayValidationWarnings', () => {
     const output = consoleLogSpy.mock.calls.flat().join('\n');
     expect(output).toContain('/project/supabase/.buildlog.json');
   });
+
+  it('displays missing type warnings for config', () => {
+    const warnings: ValidationWarning[] = [
+      {
+        source: 'config',
+        type: 'missing',
+        message: 'Template directory does not exist: supabase/migrations-templates',
+        path: '/project/supabase/migrations-templates',
+      },
+    ];
+
+    displayValidationWarnings(warnings);
+
+    expect(consoleLogSpy).toHaveBeenCalled();
+    const output = consoleLogSpy.mock.calls.flat().join('\n');
+    expect(output).toContain('Validation Warnings');
+    expect(output).toContain('config (missing)');
+    expect(output).toContain('Template directory does not exist');
+  });
 });

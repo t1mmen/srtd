@@ -1,5 +1,5 @@
 import { Command } from 'commander';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   createMockFindProjectRoot,
   createMockUiModule,
@@ -61,23 +61,26 @@ vi.mock('node:readline', () => ({
 }));
 
 describe('statusToEventType', () => {
-  it('maps success status to applied event', async () => {
-    const { statusToEventType } = await import('../commands/watch.js');
+  let statusToEventType: Awaited<typeof import('../commands/watch.js')>['statusToEventType'];
+
+  beforeAll(async () => {
+    const watch = await import('../commands/watch.js');
+    statusToEventType = watch.statusToEventType;
+  });
+
+  it('maps success status to applied event', () => {
     expect(statusToEventType('success')).toBe('applied');
   });
 
-  it('maps changed status to changed event', async () => {
-    const { statusToEventType } = await import('../commands/watch.js');
+  it('maps changed status to changed event', () => {
     expect(statusToEventType('changed')).toBe('changed');
   });
 
-  it('maps error status to error event', async () => {
-    const { statusToEventType } = await import('../commands/watch.js');
+  it('maps error status to error event', () => {
     expect(statusToEventType('error')).toBe('error');
   });
 
-  it('maps unknown status to changed event (default)', async () => {
-    const { statusToEventType } = await import('../commands/watch.js');
+  it('maps unknown status to changed event (default)', () => {
     // Test statuses that aren't explicitly handled
     expect(statusToEventType('built')).toBe('changed');
     expect(statusToEventType('unchanged')).toBe('changed');
@@ -86,8 +89,14 @@ describe('statusToEventType', () => {
 });
 
 describe('getBuildReason', () => {
-  it('returns never-built when no lastBuildHash', async () => {
-    const { getBuildReason } = await import('../commands/watch.js');
+  let getBuildReason: Awaited<typeof import('../commands/watch.js')>['getBuildReason'];
+
+  beforeAll(async () => {
+    const watch = await import('../commands/watch.js');
+    getBuildReason = watch.getBuildReason;
+  });
+
+  it('returns never-built when no lastBuildHash', () => {
     const template = {
       name: 'test',
       path: '/test.sql',
@@ -97,8 +106,7 @@ describe('getBuildReason', () => {
     expect(getBuildReason(template)).toBe('never-built');
   });
 
-  it('returns outdated when hash differs from lastBuildHash', async () => {
-    const { getBuildReason } = await import('../commands/watch.js');
+  it('returns outdated when hash differs from lastBuildHash', () => {
     const template = {
       name: 'test',
       path: '/test.sql',
@@ -108,8 +116,7 @@ describe('getBuildReason', () => {
     expect(getBuildReason(template)).toBe('outdated');
   });
 
-  it('returns null when template is up-to-date', async () => {
-    const { getBuildReason } = await import('../commands/watch.js');
+  it('returns null when template is up-to-date', () => {
     const template = {
       name: 'test',
       path: '/test.sql',
@@ -121,21 +128,25 @@ describe('getBuildReason', () => {
 });
 
 describe('stackResults', () => {
-  it('returns empty array for empty input', async () => {
-    const { stackResults } = await import('../commands/watch.js');
+  let stackResults: Awaited<typeof import('../commands/watch.js')>['stackResults'];
+
+  beforeAll(async () => {
+    const watch = await import('../commands/watch.js');
+    stackResults = watch.stackResults;
+  });
+
+  it('returns empty array for empty input', () => {
     expect(stackResults([])).toEqual([]);
   });
 
-  it('returns single result unchanged', async () => {
-    const { stackResults } = await import('../commands/watch.js');
+  it('returns single result unchanged', () => {
     const results = [{ template: '/test.sql', status: 'success' as const, timestamp: new Date() }];
     const stacked = stackResults(results);
     expect(stacked).toHaveLength(1);
     expect(stacked[0].template).toBe('/test.sql');
   });
 
-  it('stacks consecutive events for same template', async () => {
-    const { stackResults } = await import('../commands/watch.js');
+  it('stacks consecutive events for same template', () => {
     const results = [
       { template: '/test.sql', status: 'changed' as const, timestamp: new Date() },
       { template: '/test.sql', status: 'success' as const, timestamp: new Date() },
@@ -146,8 +157,7 @@ describe('stackResults', () => {
     expect(stacked[0].displayOverride).toContain('applied');
   });
 
-  it('does not stack when error is involved', async () => {
-    const { stackResults } = await import('../commands/watch.js');
+  it('does not stack when error is involved', () => {
     const results = [
       { template: '/test.sql', status: 'changed' as const, timestamp: new Date() },
       { template: '/test.sql', status: 'error' as const, timestamp: new Date() },
@@ -156,8 +166,7 @@ describe('stackResults', () => {
     expect(stacked).toHaveLength(2);
   });
 
-  it('does not stack different templates', async () => {
-    const { stackResults } = await import('../commands/watch.js');
+  it('does not stack different templates', () => {
     const results = [
       { template: '/a.sql', status: 'success' as const, timestamp: new Date() },
       { template: '/b.sql', status: 'success' as const, timestamp: new Date() },
@@ -166,8 +175,7 @@ describe('stackResults', () => {
     expect(stacked).toHaveLength(2);
   });
 
-  it('does not add duplicate types when stacking same status', async () => {
-    const { stackResults } = await import('../commands/watch.js');
+  it('does not add duplicate types when stacking same status', () => {
     const results = [
       { template: '/test.sql', status: 'success' as const, timestamp: new Date() },
       { template: '/test.sql', status: 'success' as const, timestamp: new Date() },
