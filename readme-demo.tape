@@ -24,12 +24,20 @@ Hide
 Sleep 2s
 Ctrl+C
 Show
-Sleep 250ms
+Sleep 1.5s
+
+# Breathing room after init
+Enter
+Sleep 500ms
 
 # Show the templates we have
 Type "ls supabase/migrations-templates/"
 Enter
-Sleep 1s
+Sleep 2s
+
+# Breathing room after ls
+Enter
+Sleep 500ms
 
 # Apply templates to local database
 Type "srtd apply"
@@ -37,11 +45,15 @@ Enter
 Hide
 Sleep 2
 Show
-Sleep 2s
+Sleep 3s
 Hide
 Sleep 1s
 Ctrl+C
 Show
+
+# Breathing room after apply
+Enter
+Sleep 500ms
 
 # Start watch mode briefly to show the UI
 Type "srtd watch"
@@ -49,10 +61,14 @@ Enter
 Hide
 Sleep 2s
 Show
-Sleep 3s
+Sleep 4s
 Hide
 Ctrl+C
 Show
+Sleep 500ms
+
+# Breathing room after watch
+Enter
 Sleep 500ms
 
 # Build migration files
@@ -63,18 +79,26 @@ Sleep 2
 Show
 Sleep 3s
 
+# Breathing room after build - let viewer see "Built 3 templates"
+Enter
+Sleep 1s
+
 # Create a WIP template
 Type "echo '-- Work in progress feature' > supabase/migrations-templates/srtd_demo_feature.wip.sql"
 Enter
-Sleep 1s
+Sleep 1.5s
 
 # Build again to show WIP is skipped
 Type "srtd build"
 Enter
-Sleep 3s
+Sleep 4s
 Hide
 Ctrl+C
 Show
+
+# Breathing room - let viewer see "(wip)" indicator
+Enter
+Sleep 1s
 
 # Promote the WIP template
 Type "srtd promote srtd_demo_feature.wip.sql"
@@ -82,15 +106,23 @@ Enter
 Hide
 Sleep 1s
 Show
-Sleep 2s
+Sleep 2.5s
+
+# Breathing room after promote
+Enter
+Sleep 500ms
 
 # Build after promotion
 Type "srtd build"
 Enter
-Sleep 3s
+Sleep 4s
 Hide
 Ctrl+C
 Show
+
+# Breathing room after final build
+Enter
+Sleep 500ms
 
 # Show the resulting migration files
 Type "ls -1p supabase/migrations/"
@@ -98,7 +130,7 @@ Enter
 Hide
 Enter
 Show
-Sleep 1s
+Sleep 2s
 
 # Success message
 Enter
