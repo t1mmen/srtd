@@ -1,11 +1,12 @@
 /**
  * Dependency Graph Builder
  *
- * Builds a dependency graph from SQL templates and provides
- * topological sorting and cycle detection.
+ * Builds a dependency graph from SQL templates using @depends-on comments
+ * and provides topological sorting and cycle detection.
  */
 
-import { extractDeclarations, extractReferences } from './dependencyParser.js';
+import * as path from 'node:path';
+import { extractDependsOn } from './dependencyParser.js';
 
 /**
  * Input template for dependency analysis
@@ -18,38 +19,37 @@ export interface TemplateInput {
 /**
  * Build a dependency graph from templates
  *
+ * Uses @depends-on comments to determine dependencies.
+ * Dependencies are matched by filename (basename) to full paths.
+ *
  * Returns a Map where:
  * - Keys are template paths
  * - Values are arrays of template paths that the key depends on
  */
 export function buildDependencyGraph(templates: TemplateInput[]): Map<string, string[]> {
-  // First pass: build declaration name -> template path mapping
-  const declarationToPath = new Map<string, string>();
-
+  // Build filename -> full path mapping for resolution
+  const filenameToPath = new Map<string, string>();
   for (const template of templates) {
-    const declarations = extractDeclarations(template.content);
-    for (const decl of declarations) {
-      declarationToPath.set(decl.name.toLowerCase(), template.path);
-    }
+    const filename = path.basename(template.path);
+    filenameToPath.set(filename.toLowerCase(), template.path);
   }
 
-  // Second pass: build dependency graph
+  // Build dependency graph
   const graph = new Map<string, string[]>();
 
   for (const template of templates) {
-    const declarations = extractDeclarations(template.content);
-    const references = extractReferences(template.content, declarations);
+    const declaredDeps = extractDependsOn(template.content);
+    const resolvedDeps: string[] = [];
 
-    const dependencies: string[] = [];
-    for (const ref of references) {
-      const depPath = declarationToPath.get(ref.toLowerCase());
-      // Only add if the dependency is in our template set and not self
-      if (depPath && depPath !== template.path && !dependencies.includes(depPath)) {
-        dependencies.push(depPath);
+    for (const dep of declaredDeps) {
+      const depPath = filenameToPath.get(dep.toLowerCase());
+      // Only add if dependency exists in template set and isn't self
+      if (depPath && depPath !== template.path && !resolvedDeps.includes(depPath)) {
+        resolvedDeps.push(depPath);
       }
     }
 
-    graph.set(template.path, dependencies);
+    graph.set(template.path, resolvedDeps);
   }
 
   return graph;
@@ -60,6 +60,9 @@ export function buildDependencyGraph(templates: TemplateInput[]): Map<string, st
  *
  * Returns templates in an order where dependencies come before dependents.
  * Uses depth-first search for stable ordering.
+ *
+ * Note: If cycles exist, returns a best-effort ordering.
+ * Use detectCycles() first to warn users.
  */
 export function topologicalSort(graph: Map<string, string[]>): string[] {
   const visited = new Set<string>();
@@ -91,7 +94,7 @@ export function topologicalSort(graph: Map<string, string[]>): string[] {
  * Detect cycles in the dependency graph
  *
  * Returns an array of cycles found. Each cycle is an array of template paths
- * representing the cycle (e.g., ['a.sql', 'b.sql'] means a -> b -> a).
+ * representing the cycle (e.g., ['/a.sql', '/b.sql'] means a -> b -> a).
  */
 export function detectCycles(graph: Map<string, string[]>): string[][] {
   const cycles: string[][] = [];

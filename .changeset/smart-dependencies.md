@@ -2,13 +2,20 @@
 "@t1mmen/srtd": minor
 ---
 
-Add automatic dependency ordering for SQL templates
+Add dependency ordering for SQL templates via @depends-on comments
 
-Templates are now automatically sorted based on SQL dependencies before apply and build:
-- Detects CREATE TABLE/VIEW/FUNCTION/TRIGGER/POLICY declarations
-- Parses FROM, JOIN, REFERENCES clauses to find dependencies
-- Topologically sorts templates so dependencies run before dependents
-- Warns about circular dependencies (but continues execution)
+Templates can now declare dependencies on other templates using comments:
+
+```sql
+-- @depends-on: users_table.sql, roles.sql
+CREATE VIEW active_users AS ...
+```
+
+Features:
+- Templates sorted so dependencies apply/build first
+- Circular dependencies detected and reported
+- Case-insensitive filename matching
+- Multiple @depends-on comments supported
 
 Use `--no-deps` flag to disable if needed:
 ```bash
