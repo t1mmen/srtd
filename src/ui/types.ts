@@ -73,6 +73,9 @@ export interface RenderContext {
 
   /** Whether the operation was forced (build --force) */
   forced?: boolean;
+
+  /** Output as JSON instead of human-readable format */
+  json?: boolean;
 }
 
 /**
