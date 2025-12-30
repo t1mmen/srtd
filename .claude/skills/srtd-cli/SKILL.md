@@ -24,12 +24,47 @@ Monitor with `TaskOutput`. Event types:
 
 ## Writing Templates
 
-Templates live in `supabase/migrations-templates/*.sql`. They must be idempotent (safe to run multiple times).
+Templates live in `supabase/migrations-templates/*.sql`. Must be idempotent.
 
-See the SRTD rule (injected when editing templates) for SQL patterns. Key points:
-- Functions: `CREATE OR REPLACE` works; use `DROP` only when changing signature
-- Policies/Triggers: Must `DROP IF EXISTS` first
-- Dependencies: `-- @depends-on: helper.sql` comment at top
+**Functions** - `CREATE OR REPLACE` works for body changes:
+```sql
+CREATE OR REPLACE FUNCTION public.my_func()
+RETURNS text AS $$
+BEGIN
+  RETURN 'result';
+END;
+$$ LANGUAGE plpgsql;
+```
+Use `DROP FUNCTION IF EXISTS` only when changing signature (params/return type).
+
+**Policies** - must drop first:
+```sql
+DROP POLICY IF EXISTS "policy_name" ON table_name;
+CREATE POLICY "policy_name" ON table_name USING (auth.uid() = user_id);
+```
+
+**Triggers** - drop both trigger and function:
+```sql
+DROP TRIGGER IF EXISTS trigger_name ON table_name;
+DROP FUNCTION IF EXISTS trigger_func;
+CREATE FUNCTION trigger_func() RETURNS trigger AS $$
+BEGIN
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+CREATE TRIGGER trigger_name AFTER INSERT ON table_name
+  FOR EACH ROW EXECUTE FUNCTION trigger_func();
+```
+
+**Dependencies** - declare at top of file:
+```sql
+-- @depends-on: helper.sql
+```
+
+**Common mistakes:**
+- Missing `IF EXISTS` in DROP statements
+- Changing function signature without DROP (fails with `CREATE OR REPLACE`)
+- Not dropping both trigger AND function for trigger changes
 
 ## WIP Templates
 
