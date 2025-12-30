@@ -11,9 +11,13 @@ vi.mock('../ui/index.js', () => createMockUiModule());
 
 // Mock output module - need to track calls to output()
 const mockOutput = vi.fn();
-vi.mock('../output/index.js', () => ({
-  output: mockOutput,
-}));
+vi.mock('../output/index.js', async importOriginal => {
+  const actual = await importOriginal<typeof import('../output/index.js')>();
+  return {
+    ...actual,
+    output: mockOutput,
+  };
+});
 vi.mock('../utils/findProjectRoot.js', () => createMockFindProjectRoot());
 
 vi.mock('../utils/config.js', () => ({
@@ -528,8 +532,9 @@ describe('Build Command', () => {
       // Find JSON error output (includes space due to pretty-printing)
       const jsonOutputStr = outputs.find(o => o.includes('"success": false'));
       expect(jsonOutputStr).toBeDefined();
+      if (!jsonOutputStr) throw new Error('Expected JSON output');
 
-      const jsonOutput = JSON.parse(jsonOutputStr!);
+      const jsonOutput = JSON.parse(jsonOutputStr);
       expect(jsonOutput).toMatchObject({
         success: false,
         command: 'build',

@@ -1,4 +1,12 @@
-export { formatJsonOutput, type JsonOutput, type JsonOutputSummary } from './jsonOutput.js';
+export {
+  type BaseJsonOutput,
+  createBaseJsonOutput,
+  formatFatalError,
+  formatJsonOutput,
+  type JsonOutput,
+  type JsonOutputSummary,
+  writeJson,
+} from './jsonOutput.js';
 export {
   ndjsonEvent,
   type StreamEvent,

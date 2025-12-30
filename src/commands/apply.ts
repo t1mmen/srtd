@@ -2,7 +2,7 @@ import chalk from 'chalk';
 // src/commands/apply.ts
 import { Command } from 'commander';
 import figures from 'figures';
-import { output } from '../output/index.js';
+import { formatFatalError, output, writeJson } from '../output/index.js';
 import { Orchestrator } from '../services/Orchestrator.js';
 import type { ProcessedTemplateResult } from '../types.js';
 import { displayValidationWarnings } from '../ui/displayWarnings.js';
@@ -72,20 +72,7 @@ export const applyCommand = new Command('apply')
       exitCode = result.errors.length > 0 ? 1 : 0;
     } catch (error) {
       if (options.json) {
-        process.stdout.write(
-          `${JSON.stringify(
-            {
-              success: false,
-              command: 'apply',
-              timestamp: new Date().toISOString(),
-              error: getErrorMessage(error),
-              results: [],
-              summary: { total: 0, success: 0, error: 1, unchanged: 0, skipped: 0 },
-            },
-            null,
-            2
-          )}\n`
-        );
+        writeJson(formatFatalError('apply', getErrorMessage(error)));
       } else {
         console.log();
         console.log(chalk.red(`${figures.cross} Error applying templates:`));

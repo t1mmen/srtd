@@ -5,6 +5,7 @@ import chalk from 'chalk';
 import { Command } from 'commander';
 import figures from 'figures';
 import { glob } from 'glob';
+import { type BaseJsonOutput, createBaseJsonOutput, writeJson } from '../output/index.js';
 import { Orchestrator } from '../services/Orchestrator.js';
 import type { CLIConfig } from '../types.js';
 import { createSpinner, renderBranding } from '../ui/index.js';
@@ -12,12 +13,8 @@ import { getConfig } from '../utils/config.js';
 import { findProjectRoot } from '../utils/findProjectRoot.js';
 import { getErrorMessage, isPromptExit } from '../utils/getErrorMessage.js';
 
-interface PromoteJsonOutput {
-  success: boolean;
-  command: 'promote';
-  timestamp: string;
+interface PromoteJsonOutput extends BaseJsonOutput<'promote'> {
   promoted?: { from: string; to: string };
-  error?: string;
 }
 
 function formatPromoteJsonOutput(
@@ -25,14 +22,10 @@ function formatPromoteJsonOutput(
   promoted?: { from: string; to: string },
   error?: string
 ): PromoteJsonOutput {
-  const output: PromoteJsonOutput = {
-    success,
-    command: 'promote',
-    timestamp: new Date().toISOString(),
+  return {
+    ...createBaseJsonOutput('promote', success, error),
+    ...(promoted && { promoted }),
   };
-  if (promoted) output.promoted = promoted;
-  if (error) output.error = error;
-  return output;
 }
 
 async function findWipTemplates(config: CLIConfig, projectRoot: string): Promise<string[]> {
@@ -196,7 +189,7 @@ export const promoteCommand = new Command('promote')
           promoteResult,
           errorMsg
         );
-        process.stdout.write(`${JSON.stringify(jsonOutput, null, 2)}\n`);
+        writeJson(jsonOutput);
       }
     } catch (error) {
       // Handle Ctrl+C gracefully
@@ -206,7 +199,7 @@ export const promoteCommand = new Command('promote')
         const errMsg = getErrorMessage(error);
         if (options.json) {
           const jsonOutput = formatPromoteJsonOutput(false, undefined, errMsg);
-          process.stdout.write(`${JSON.stringify(jsonOutput, null, 2)}\n`);
+          writeJson(jsonOutput);
         } else {
           console.log();
           console.log(chalk.red(`${figures.cross} Error promoting template:`));

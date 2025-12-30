@@ -4,6 +4,7 @@ import { checkbox } from '@inquirer/prompts';
 import chalk from 'chalk';
 import { Command } from 'commander';
 import figures from 'figures';
+import { type BaseJsonOutput, createBaseJsonOutput, writeJson } from '../output/index.js';
 import { Orchestrator } from '../services/Orchestrator.js';
 import type { TemplateStatus } from '../types.js';
 import { renderBranding } from '../ui/index.js';
@@ -16,19 +17,14 @@ interface RegisterResult {
   failed: Array<{ file: string; error: string }>;
 }
 
-interface RegisterJsonOutput {
-  success: boolean;
-  command: 'register';
-  timestamp: string;
+interface RegisterJsonOutput extends BaseJsonOutput<'register'> {
   registered: string[];
   failed: Array<{ file: string; error: string }>;
 }
 
 function formatRegisterJsonOutput(result: RegisterResult): RegisterJsonOutput {
   return {
-    success: result.failed.length === 0,
-    command: 'register',
-    timestamp: new Date().toISOString(),
+    ...createBaseJsonOutput('register', result.failed.length === 0),
     registered: result.registered,
     failed: result.failed,
   };
@@ -193,7 +189,7 @@ export const registerCommand = new Command('register')
       // Output JSON if in JSON mode
       if (options.json) {
         const jsonOutput = formatRegisterJsonOutput(result);
-        process.stdout.write(`${JSON.stringify(jsonOutput, null, 2)}\n`);
+        writeJson(jsonOutput);
       }
     } catch (error) {
       // Handle Ctrl+C gracefully
@@ -205,7 +201,7 @@ export const registerCommand = new Command('register')
             registered: [],
             failed: [{ file: '', error: getErrorMessage(error) }],
           });
-          process.stdout.write(`${JSON.stringify(jsonOutput, null, 2)}\n`);
+          writeJson(jsonOutput);
         } else {
           console.log();
           console.log(chalk.red(`${figures.cross} Error loading templates:`));

@@ -74,18 +74,18 @@ describe('ndjsonOutput', () => {
       expect(parsed.data).toEqual(data);
     });
 
-    it('handles array of TemplateResults for buildComplete', () => {
+    it('handles array of TemplateResults', () => {
       const data: TemplateResult[] = [
-        { template: 'a.sql', status: 'built', target: '001_srtd-a.sql' },
-        { template: 'b.sql', status: 'built', target: '002_srtd-b.sql' },
+        { template: 'a.sql', status: 'success' },
+        { template: 'b.sql', status: 'success' },
       ];
 
-      ndjsonEvent('buildComplete', data);
+      ndjsonEvent('templateApplied', data);
 
       const output = stdoutWriteSpy.mock.calls[0][0] as string;
       const parsed: StreamEvent = JSON.parse(output);
 
-      expect(parsed.type).toBe('buildComplete');
+      expect(parsed.type).toBe('templateApplied');
       expect(Array.isArray(parsed.data)).toBe(true);
       expect(parsed.data).toHaveLength(2);
     });
@@ -96,8 +96,7 @@ describe('ndjsonOutput', () => {
         'templateChanged',
         'templateApplied',
         'templateError',
-        'templateBuilt',
-        'buildComplete',
+        'error',
       ];
 
       for (const eventType of eventTypes) {

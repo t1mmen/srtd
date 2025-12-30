@@ -1,29 +1,23 @@
+// src/commands/clear.ts
 import { select } from '@inquirer/prompts';
 import chalk from 'chalk';
-// src/commands/clear.ts
 import { Command } from 'commander';
 import figures from 'figures';
+import { type BaseJsonOutput, createBaseJsonOutput, writeJson } from '../output/index.js';
 import { Orchestrator } from '../services/Orchestrator.js';
 import { createSpinner, renderBranding } from '../ui/index.js';
 import { getConfig, resetConfig } from '../utils/config.js';
 import { findProjectRoot } from '../utils/findProjectRoot.js';
 import { getErrorMessage, isPromptExit } from '../utils/getErrorMessage.js';
 
-interface ClearJsonOutput {
-  success: boolean;
-  command: 'clear';
-  timestamp: string;
+interface ClearJsonOutput extends BaseJsonOutput<'clear'> {
   cleared: boolean;
-  error?: string;
 }
 
 function formatClearJsonOutput(success: boolean, error?: string): ClearJsonOutput {
   return {
-    success,
-    command: 'clear',
-    timestamp: new Date().toISOString(),
+    ...createBaseJsonOutput('clear', success, error),
     cleared: success,
-    error,
   };
 }
 
@@ -131,7 +125,7 @@ export const clearCommand = new Command('clear')
         // Output JSON if in JSON mode
         if (options.json) {
           const jsonOutput = formatClearJsonOutput(exitCode === 0, errorMsg);
-          process.stdout.write(`${JSON.stringify(jsonOutput, null, 2)}\n`);
+          writeJson(jsonOutput);
         }
       } catch (error) {
         // Handle Ctrl+C gracefully
@@ -141,7 +135,7 @@ export const clearCommand = new Command('clear')
           const errMsg = getErrorMessage(error);
           if (options.json) {
             const jsonOutput = formatClearJsonOutput(false, errMsg);
-            process.stdout.write(`${JSON.stringify(jsonOutput, null, 2)}\n`);
+            writeJson(jsonOutput);
           } else {
             console.log();
             console.log(chalk.red(`${figures.cross} Error accessing project:`));

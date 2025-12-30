@@ -5,6 +5,7 @@ import chalk from 'chalk';
 import { Command } from 'commander';
 import figures from 'figures';
 import { CONFIG_FILE } from '../constants.js';
+import { type BaseJsonOutput, createBaseJsonOutput, writeJson } from '../output/index.js';
 import type { CLIConfig } from '../types.js';
 import { renderBranding } from '../ui/index.js';
 import { getConfig, saveConfig } from '../utils/config.js';
@@ -14,13 +15,9 @@ import { fileExists } from '../utils/fileExists.js';
 import { findProjectRoot } from '../utils/findProjectRoot.js';
 import { getErrorMessage } from '../utils/getErrorMessage.js';
 
-interface InitJsonOutput {
-  success: boolean;
-  command: 'init';
-  timestamp: string;
+interface InitJsonOutput extends BaseJsonOutput<'init'> {
   config?: CLIConfig;
   configPath?: string;
-  error?: string;
 }
 
 function formatInitJsonOutput(
@@ -28,17 +25,10 @@ function formatInitJsonOutput(
   config?: CLIConfig,
   error?: string
 ): InitJsonOutput {
-  const output: InitJsonOutput = {
-    success,
-    command: 'init',
-    timestamp: new Date().toISOString(),
+  return {
+    ...createBaseJsonOutput('init', success, error),
+    ...(config && { config, configPath: CONFIG_FILE }),
   };
-  if (config) {
-    output.config = config;
-    output.configPath = CONFIG_FILE;
-  }
-  if (error) output.error = error;
-  return output;
 }
 
 export const initCommand = new Command('init')
@@ -146,7 +136,7 @@ export const initCommand = new Command('init')
 
       if (options.json) {
         const jsonOutput = formatInitJsonOutput(true, config);
-        process.stdout.write(`${JSON.stringify(jsonOutput, null, 2)}\n`);
+        writeJson(jsonOutput);
       } else {
         console.log();
         console.log(chalk.green(`${figures.tick} Initialization complete!`));
@@ -162,7 +152,7 @@ export const initCommand = new Command('init')
       const errMsg = getErrorMessage(error);
       if (options.json) {
         const jsonOutput = formatInitJsonOutput(false, undefined, errMsg);
-        process.stdout.write(`${JSON.stringify(jsonOutput, null, 2)}\n`);
+        writeJson(jsonOutput);
       } else {
         console.log();
         console.log(chalk.red(`${figures.cross} Failed to initialize: ${errMsg}`));

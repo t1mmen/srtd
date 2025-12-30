@@ -24,7 +24,6 @@ import { StateService } from './StateService.js';
 export interface OrchestratorEvents {
   templateChanged: TemplateStatus;
   templateApplied: TemplateStatus;
-  templateBuilt: TemplateStatus;
   templateError: { template: TemplateStatus; error: string; hint?: string };
   operationComplete: ProcessedTemplateResult;
 }
@@ -671,8 +670,6 @@ export class Orchestrator extends EventEmitter implements Disposable {
         templateFile.hash,
         migrationResult.fileName
       );
-
-      this.emit('templateBuilt', template);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
 
