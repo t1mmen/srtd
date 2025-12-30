@@ -147,6 +147,15 @@ Enter
 Show
 Sleep 2s
 
+# Breathing room after ls
+Enter
+Sleep 500ms
+
+# Run doctor to validate setup
+Type "srtd doctor"
+Enter
+Sleep 3s
+
 # Sign off
 Enter
 Type "✨ Thanks for watching! Check out github.com/t1mmen/srtd for more info"

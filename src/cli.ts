@@ -15,6 +15,7 @@ if (!isTestMode) {
 import { applyCommand } from './commands/apply.js';
 import { buildCommand } from './commands/build.js';
 import { clearCommand } from './commands/clear.js';
+import { doctorCommand } from './commands/doctor.js';
 // Import commands
 import { initCommand } from './commands/init.js';
 import { showMenu } from './commands/menu.js';
@@ -48,6 +49,7 @@ program.addCommand(initCommand);
 program.addCommand(applyCommand);
 program.addCommand(buildCommand);
 program.addCommand(clearCommand);
+program.addCommand(doctorCommand);
 program.addCommand(promoteCommand);
 program.addCommand(registerCommand);
 program.addCommand(watchCommand);
