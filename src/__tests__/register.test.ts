@@ -249,5 +249,30 @@ describe('Register Command', () => {
       expect(parsed.success).toBe(true);
       expect(parsed.registered).toHaveLength(0);
     });
+
+    it('outputs JSON with top-level error field for fatal errors', async () => {
+      // Import and get reference to Orchestrator mock
+      const { Orchestrator } = await import('../services/Orchestrator.js');
+      vi.mocked(Orchestrator.create).mockRejectedValueOnce(new Error('Database connection failed'));
+
+      const { registerCommand } = await import('../commands/register.js');
+
+      await registerCommand.parseAsync(['node', 'test', '--json', 'template.sql']);
+
+      expect(spies.exitSpy).toHaveBeenCalledWith(1);
+
+      const jsonOutput = stdoutSpy.mock.calls.map(call => call[0]).join('');
+      const parsed = JSON.parse(jsonOutput);
+
+      // Fatal errors should use top-level error field, not failed array
+      expect(parsed.success).toBe(false);
+      expect(parsed.command).toBe('register');
+      expect(parsed.error).toBe('Database connection failed');
+      expect(parsed.registered).toHaveLength(0);
+      expect(parsed.failed).toHaveLength(0);
+
+      // Reset mock for other tests
+      vi.mocked(Orchestrator.create).mockResolvedValue(mockOrchestrator);
+    });
   });
 });

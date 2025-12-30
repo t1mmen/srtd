@@ -197,11 +197,12 @@ export const registerCommand = new Command('register')
         exitCode = 0;
       } else {
         if (options.json) {
-          const jsonOutput = formatRegisterJsonOutput({
+          // Fatal errors use top-level error field, not failed array
+          writeJson({
+            ...createBaseJsonOutput('register', false, getErrorMessage(error)),
             registered: [],
-            failed: [{ file: '', error: getErrorMessage(error) }],
+            failed: [],
           });
-          writeJson(jsonOutput);
         } else {
           console.log();
           console.log(chalk.red(`${figures.cross} Error loading templates:`));
