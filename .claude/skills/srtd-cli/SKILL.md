@@ -29,9 +29,9 @@ Location: `supabase/migrations-templates/*.sql`. Must be idempotent.
 ## Commands
 
 ```bash
-srtd apply [--force]     # One-off apply
-srtd build [--bundle]    # Generate migrations when done
-srtd clear --reset       # Reset state if confused
+srtd apply [--force] [--json]   # Apply to local DB (use instead of watch for one-off)
+srtd build [--bundle]           # Generate migration FILES only (does NOT apply to DB)
+srtd clear --reset              # Reset state if confused
 ```
 
 ## State
