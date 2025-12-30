@@ -135,27 +135,14 @@ When it's ready: `srtd promote my_experiment.wip.sql`
 
 ## Template Dependencies
 
-Templates can declare dependencies on other templates using `@depends-on` comments:
+Declare dependencies between templates with `@depends-on` comments:
 
 ```sql
--- @depends-on: users_table.sql
--- @depends-on: permissions.sql, roles.sql
-
-CREATE VIEW active_users AS
-SELECT * FROM users WHERE deleted_at IS NULL;
+-- @depends-on: helper_functions.sql
+CREATE FUNCTION complex_calc() ...
 ```
 
-**How it works:**
-- Templates are sorted so dependencies apply first
-- Circular dependencies are detected and reported
-- Dependencies not in the template set are ignored
-- Use `--no-deps` flag to disable dependency ordering
-
-**When to use:**
-- Views that reference tables defined in other templates
-- Functions that call other functions
-- Triggers that depend on functions
-- RLS policies that use helper functions
+During `apply` and `build`, templates are sorted so dependencies run first. Circular dependencies are detected and reported. Use `--no-deps` to disable.
 
 
 ## Existing Projects
