@@ -8,6 +8,16 @@ import {
 
 // Mock all dependencies before importing the command
 vi.mock('../ui/index.js', () => createMockUiModule());
+
+// Mock output module - need to track calls to output()
+const mockOutput = vi.fn();
+vi.mock('../output/index.js', async importOriginal => {
+  const actual = await importOriginal<typeof import('../output/index.js')>();
+  return {
+    ...actual,
+    output: mockOutput,
+  };
+});
 vi.mock('../utils/findProjectRoot.js', () => createMockFindProjectRoot());
 
 vi.mock('../utils/config.js', () => ({
@@ -89,6 +99,7 @@ describe('Apply Command', () => {
     expect(mockOrchestrator.apply).toHaveBeenCalledWith({
       force: undefined,
       silent: true,
+      respectDependencies: true,
     });
     expect(spies.exitSpy).toHaveBeenCalledWith(0);
   });
@@ -109,6 +120,7 @@ describe('Apply Command', () => {
     expect(mockOrchestrator.apply).toHaveBeenCalledWith({
       force: true,
       silent: true,
+      respectDependencies: true,
     });
   });
 
@@ -155,8 +167,7 @@ describe('Apply Command', () => {
       expect(uiModule.renderBranding).toHaveBeenCalledWith({ subtitle: 'Apply' });
     });
 
-    it('uses renderResultsTable for displaying results', async () => {
-      const uiModule = await import('../ui/index.js');
+    it('uses output() for displaying results', async () => {
       const { applyCommand } = await import('../commands/apply.js');
 
       mockOrchestrator.apply.mockResolvedValue({
@@ -170,15 +181,14 @@ describe('Apply Command', () => {
 
       spies.assertNoStderr();
       // Log-style ordering: unchanged (old) at top, applied (new) at bottom
-      expect(uiModule.renderResultsTable).toHaveBeenCalledWith({
+      expect(mockOutput).toHaveBeenCalledWith({
         results: [
           { template: 'unchanged.sql', status: 'unchanged', timestamp: undefined },
           { template: 'migration1.sql', status: 'success' },
           { template: 'migration2.sql', status: 'success' },
         ],
-        context: { command: 'apply', forced: undefined },
+        context: { command: 'apply', forced: undefined, json: undefined },
       });
-      expect(uiModule.renderResults).not.toHaveBeenCalled();
     });
 
     it('uses renderErrorDisplay for errors', async () => {
@@ -214,6 +224,160 @@ describe('Apply Command', () => {
 
       spies.assertNoStderr();
       expect(uiModule.renderErrorDisplay).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('--json flag', () => {
+    it('supports --json option', async () => {
+      const { applyCommand } = await import('../commands/apply.js');
+      const jsonOption = applyCommand.options.find(opt => opt.long === '--json');
+      expect(jsonOption).toBeDefined();
+    });
+
+    it('uses output() with json context when --json flag is provided', async () => {
+      const { applyCommand } = await import('../commands/apply.js');
+
+      mockOrchestrator.apply.mockResolvedValue({
+        applied: ['migration1.sql'],
+        built: [],
+        skipped: ['unchanged.sql'],
+        errors: [],
+      });
+
+      await applyCommand.parseAsync(['node', 'test', '--json']);
+
+      spies.assertNoStderr();
+      expect(mockOutput).toHaveBeenCalledWith({
+        results: expect.arrayContaining([
+          expect.objectContaining({ template: 'unchanged.sql', status: 'unchanged' }),
+          expect.objectContaining({ template: 'migration1.sql', status: 'success' }),
+        ]),
+        context: { command: 'apply', forced: undefined, json: true },
+      });
+    });
+
+    it('skips branding when --json flag is provided', async () => {
+      const uiModule = await import('../ui/index.js');
+      const { applyCommand } = await import('../commands/apply.js');
+
+      mockOrchestrator.apply.mockResolvedValue({
+        applied: ['migration1.sql'],
+        built: [],
+        skipped: [],
+        errors: [],
+      });
+
+      await applyCommand.parseAsync(['node', 'test', '--json']);
+
+      spies.assertNoStderr();
+      expect(uiModule.renderBranding).not.toHaveBeenCalled();
+    });
+
+    it('skips renderErrorDisplay when --json flag is provided even with errors', async () => {
+      const uiModule = await import('../ui/index.js');
+      const { applyCommand } = await import('../commands/apply.js');
+
+      mockOrchestrator.apply.mockResolvedValue({
+        applied: [],
+        built: [],
+        skipped: [],
+        errors: [{ file: 'bad.sql', templateName: 'bad.sql', error: 'syntax error' }],
+      });
+
+      await applyCommand.parseAsync(['node', 'test', '--json']);
+
+      // Errors are included in JSON output, not via renderErrorDisplay
+      expect(uiModule.renderErrorDisplay).not.toHaveBeenCalled();
+      expect(spies.exitSpy).toHaveBeenCalledWith(1);
+    });
+
+    it('skips displayValidationWarnings when --json flag is provided', async () => {
+      const displayWarnings = await import('../ui/displayWarnings.js');
+      const { applyCommand } = await import('../commands/apply.js');
+
+      mockOrchestrator.getValidationWarnings.mockReturnValue([
+        { type: 'warning', message: 'Some warning' },
+      ]);
+      mockOrchestrator.apply.mockResolvedValue({
+        applied: ['migration1.sql'],
+        built: [],
+        skipped: [],
+        errors: [],
+      });
+
+      await applyCommand.parseAsync(['node', 'test', '--json']);
+
+      spies.assertNoStderr();
+      expect(displayWarnings.displayValidationWarnings).not.toHaveBeenCalled();
+    });
+
+    it('uses output() with json: undefined when --json is not provided', async () => {
+      const { applyCommand } = await import('../commands/apply.js');
+
+      mockOrchestrator.apply.mockResolvedValue({
+        applied: ['migration1.sql'],
+        built: [],
+        skipped: [],
+        errors: [],
+      });
+
+      await applyCommand.parseAsync(['node', 'test']);
+
+      spies.assertNoStderr();
+      // When not in JSON mode, output() is called with json: undefined
+      expect(mockOutput).toHaveBeenCalledWith({
+        results: expect.any(Array),
+        context: { command: 'apply', forced: undefined, json: undefined },
+      });
+    });
+
+    it('outputs JSON error when fatal error occurs with --json flag', async () => {
+      const { applyCommand } = await import('../commands/apply.js');
+
+      // Capture stdout output
+      const outputs: string[] = [];
+      const stdoutSpy = vi.spyOn(process.stdout, 'write').mockImplementation((chunk: unknown) => {
+        if (typeof chunk === 'string') {
+          outputs.push(chunk);
+        }
+        return true;
+      });
+
+      mockOrchestrator.apply.mockRejectedValue(new Error('Database connection failed'));
+
+      await applyCommand.parseAsync(['node', 'test', '--json']);
+
+      // Find JSON error output (includes space due to pretty-printing)
+      const jsonOutputStr = outputs.find(o => o.includes('"success": false'));
+      expect(jsonOutputStr).toBeDefined();
+      if (!jsonOutputStr) throw new Error('Expected JSON output');
+
+      const jsonOutput = JSON.parse(jsonOutputStr);
+      expect(jsonOutput).toMatchObject({
+        success: false,
+        command: 'apply',
+        error: 'Database connection failed',
+        results: [],
+        summary: { total: 0, success: 0, error: 1, unchanged: 0, skipped: 0 },
+      });
+      expect(jsonOutput.timestamp).toBeDefined();
+
+      expect(spies.exitSpy).toHaveBeenCalledWith(1);
+      stdoutSpy.mockRestore();
+    });
+
+    it('outputs human-readable error when fatal error occurs without --json flag', async () => {
+      const { applyCommand } = await import('../commands/apply.js');
+
+      mockOrchestrator.apply.mockRejectedValue(new Error('Database connection failed'));
+
+      await applyCommand.parseAsync(['node', 'test']);
+
+      // Should use console.log with chalk.red for human-readable error
+      const output = spies.consoleLogSpy.mock.calls.flat().join('\n');
+      expect(output).toContain('Error applying templates');
+      expect(output).toContain('Database connection failed');
+      expect(spies.exitSpy).toHaveBeenCalledWith(1);
     });
   });
 });
