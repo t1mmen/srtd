@@ -18,10 +18,10 @@ cleanup() {
     echo ""
     echo "🧹 Restoring git state..."
 
-    # Restore tracked files
+    # Restore tracked files to committed state
     git checkout -- "${DEMO_PATHS[@]}" 2>/dev/null || true
 
-    # Remove untracked files created during demo
+    # Remove untracked files created during demo (like the 4th template)
     git clean -fd supabase/migrations-templates supabase/migrations 2>/dev/null || true
 
     # Pop stash if we created one
@@ -46,24 +46,23 @@ else
     STASHED=false
 fi
 
-# Prepare clean environment using git
-echo "🧹 Preparing clean environment..."
+# Reset to clean git state - this gives us the 3 shipped templates + migrations
+echo "🧹 Resetting to clean git state..."
 git checkout -- "${DEMO_PATHS[@]}" 2>/dev/null || true
-rm -rf supabase/migrations-templates/*
-rm -rf supabase/migrations/*
+git clean -fd supabase/migrations-templates supabase/migrations 2>/dev/null || true
 rm -f srtd.config.json
 
-# Copy demo templates
-echo "📝 Setting up demo templates..."
-mkdir -p supabase/migrations-templates
-mkdir -p supabase/migrations
-cp demo-templates/*.sql supabase/migrations-templates/
-
-# Build
-echo "🔨 Building..."
+# Build CLI
+echo "🔨 Building CLI..."
 npm run build
 npm link
 chmod u+x ./dist/cli.js
+
+# The repo ships with 3 templates + pre-built migrations
+# The demo will create the 4th template (get_user_email) live via heredoc
+echo "📦 Verifying shipped state..."
+echo "  Templates: $(ls supabase/migrations-templates/*.sql | wc -l | tr -d ' ')"
+echo "  Migrations: $(ls supabase/migrations/*.sql | wc -l | tr -d ' ')"
 
 # Record the demo
 echo "🎥 Recording demo..."

@@ -1,162 +1,84 @@
-# See https://github.com/charmbracelet/vhs
-# Generate with `npm run vhs`
+# SRTD Hero Demo - The "Aha Moment" in ~25 seconds
+# Storytelling approach: Pain → Discovery → Delight
+# Uses git diff to show ONLY what changed (not full files)
 
 Output readme-demo.gif
 
-# Uncomment to generate PNG frames for review:
-# Output demo-frames/
+Require srtd
 
-Require npx
-
-# Setup the terminal
-Set FontSize 16
-Set Width 1024
-Set Height 550
-Set TypingSpeed 10ms
+# Larger font, smaller terminal = less overwhelming
+Set FontSize 18
+Set Width 900
+Set Height 480
+Set TypingSpeed 35ms
 Set Theme "Catppuccin Mocha"
 Set WindowBar Colorful
+Set LoopOffset 30%
 
-# Initialize SRTD
-Type "srtd init"
+# ============================================================
+# ACT 1: THE PAIN (3s)
+# ============================================================
+
+Type "# The problem: changing a function = new migration file"
 Enter
-Sleep 1s
-Hide
 Sleep 2s
-Ctrl+C
-Show
+
+Type "ls supabase/migrations/"
+Enter
 Sleep 1.5s
 
-# Breathing room after init
 Enter
-Sleep 500ms
+Sleep 300ms
 
-# Show the templates we have
+# ============================================================
+# ACT 2: THE DISCOVERY (10s)
+# Show templates as source of truth, make a tiny change
+# ============================================================
+
+Type "# With srtd: templates are the source of truth"
+Enter
+Sleep 1.5s
+
 Type "ls supabase/migrations-templates/"
 Enter
-Sleep 2s
-
-# Breathing room after ls
-Enter
-Sleep 500ms
-
-# Apply templates to local database
-Type "srtd apply"
-Enter
-Hide
-Sleep 2
-Show
-Sleep 3s
-Hide
-Sleep 1s
-Ctrl+C
-Show
-
-# Breathing room after apply
-Enter
-Sleep 500ms
-
-# Start watch mode briefly to show the UI
-Type "srtd watch"
-Enter
-Hide
-Sleep 2s
-Show
-Sleep 4s
-Hide
-Ctrl+C
-Show
-Sleep 500ms
-
-# Breathing room after watch
-Enter
-Sleep 500ms
-
-# Build migration files
-Type "srtd build"
-Enter
-Hide
-Sleep 2
-Show
-Sleep 3s
-
-# Breathing room after build - let viewer see "Built 3 templates"
-Enter
-Sleep 1s
-
-# Create a WIP template
-Type "echo '-- Work in progress feature' > supabase/migrations-templates/srtd_demo_feature.wip.sql"
-Enter
 Sleep 1.5s
 
-# Apply WIP - shows it works locally
+# Make a tiny, visible change
+Type "sed -i '' 's/Hello/Howdy/' supabase/migrations-templates/srtd_demo_greet.sql"
+Enter
+Sleep 500ms
+
+# Show ONLY the change with git diff (the money shot)
+Type "git diff --color supabase/migrations-templates/"
+Enter
+Sleep 3.5s
+
+Enter
+Sleep 300ms
+
+# ============================================================
+# ACT 3: THE DELIGHT (10s)
+# Apply locally, build for production
+# ============================================================
+
 Type "srtd apply"
 Enter
-Hide
-Sleep 2
-Show
-Sleep 3s
-Hide
-Ctrl+C
-Show
-
-# Breathing room after apply
-Enter
-Sleep 500ms
-
-# Build to show WIP is skipped for migrations
-Type "srtd build"
-Enter
-Sleep 4s
-Hide
-Ctrl+C
-Show
-
-# Breathing room - let viewer see "(wip)" indicator
-Enter
-Sleep 1s
-
-# Promote the WIP template
-Type "srtd promote srtd_demo_feature.wip.sql"
-Enter
-Hide
-Sleep 1s
-Show
-Sleep 2.5s
-
-# Breathing room after promote
-Enter
-Sleep 500ms
-
-# Build after promotion
-Type "srtd build"
-Enter
-Sleep 4s
-Hide
-Ctrl+C
-Show
-
-# Breathing room after final build
-Enter
-Sleep 500ms
-
-# Show the resulting migration files
-Type "ls -1p supabase/migrations/"
-Enter
-Hide
-Enter
-Show
 Sleep 2s
 
-# Breathing room after ls
+Type "srtd build"
 Enter
-Sleep 500ms
+Sleep 2.5s
 
-# Run doctor to validate setup
-Type "srtd doctor"
+# Show new migration appeared
+Type "ls supabase/migrations/"
 Enter
-Sleep 3s
+Sleep 2s
 
-# Sign off
+# ============================================================
+# SIGN OFF (2s)
+# ============================================================
+
 Enter
-Type "✨ Thanks for watching! Check out github.com/t1mmen/srtd for more info"
-Sleep 5s
+Sleep 300ms
+Type "# Template = truth. Migration = artifact."
+Sleep 2s
