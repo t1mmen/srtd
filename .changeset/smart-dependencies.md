@@ -2,23 +2,21 @@
 "@t1mmen/srtd": minor
 ---
 
-Add dependency ordering for SQL templates via @depends-on comments
+Add template dependency ordering via @depends-on comments
 
-Templates can now declare dependencies on other templates using comments:
+Templates can declare dependencies on other templates:
 
 ```sql
--- @depends-on: users_table.sql, roles.sql
+-- @depends-on: users.sql, roles.sql
 CREATE VIEW active_users AS ...
 ```
 
-Features:
-- Templates sorted so dependencies apply/build first
-- Circular dependencies detected and reported
-- Case-insensitive filename matching
-- Multiple @depends-on comments supported
+During `apply` and `build`, templates are topologically sorted so dependencies run first. Circular dependencies are detected and warned about.
 
-Use `--no-deps` flag to disable if needed:
-```bash
-srtd apply --no-deps
-srtd build --no-deps
-```
+Features:
+- Explicit dependency declaration via comments
+- Topological sorting with cycle detection
+- Case-insensitive filename matching
+- `--no-deps` flag to disable ordering
+
+Does not apply to `watch` command (file-at-a-time execution).
