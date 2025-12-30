@@ -103,74 +103,14 @@ Options: `build --force` rebuilds all, `build --bundle` combines into single mig
 
 ## JSON Output
 
-All commands support `--json` for machine-readable output, useful for CI/CD pipelines and LLM integrations.
+All commands support `--json` for machine-readable output (CI/CD, LLM integrations):
 
 ```bash
-srtd build --json
-srtd apply --json
-srtd watch --json
+srtd build --json   # Single JSON object with results array and summary
+srtd watch --json   # NDJSON stream (one event per line)
 ```
 
-### Batch Commands
-
-Commands output a single JSON object. Structure varies by command:
-
-**build / apply** — Results with summary:
-
-```json
-{
-  "success": true,
-  "command": "build",
-  "timestamp": "2024-12-30T10:30:00.000Z",
-  "results": [
-    {
-      "template": "my_function.sql",
-      "status": "success",
-      "target": "20241230_srtd-my_function.sql"
-    }
-  ],
-  "summary": {
-    "total": 1,
-    "success": 1,
-    "error": 0,
-    "unchanged": 0,
-    "skipped": 0
-  }
-}
-```
-
-**register** — Registered and failed arrays:
-
-```json
-{
-  "success": true,
-  "command": "register",
-  "timestamp": "...",
-  "registered": ["a.sql"],
-  "failed": []
-}
-```
-
-**promote / init / clear** — Command-specific fields:
-
-```json
-{ "success": true, "command": "promote", "timestamp": "...", "promoted": { "from": "my_function.wip.sql", "to": "my_function.sql" } }
-{ "success": true, "command": "init", "timestamp": "...", "configPath": "srtd.config.json", "config": { "templateDir": "...", "migrationDir": "...", ... } }
-{ "success": true, "command": "clear", "timestamp": "...", "cleared": true }
-```
-
-### Streaming Commands
-
-`watch --json` outputs NDJSON (newline-delimited JSON)—one event per line:
-
-```bash
-srtd watch --json
-{"type":"init","timestamp":"...","data":{"templates":["a.sql"],"needsBuild":[],"errors":[]}}
-{"type":"templateChanged","timestamp":"...","data":{"template":"a.sql","status":"changed"}}
-{"type":"templateApplied","timestamp":"...","data":{"template":"a.sql","status":"success"}}
-```
-
-Event types: `init`, `templateChanged`, `templateApplied`, `templateError`, `error`.
+Output includes `success`, `command`, `timestamp`, and command-specific fields. Errors use a top-level `error` field.
 
 ## What Works as Templates
 
