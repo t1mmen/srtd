@@ -5,7 +5,9 @@ paths:
 
 # SRTD Template Rules
 
-You are editing an SRTD template file. These templates are the source of truth for database objects and build to timestamped migrations.
+You are editing an SRTD template file. Load `Skill('srtd-cli')` for full workflow context (watch mode, build commands, event types).
+
+These templates are the source of truth for database objects and build to timestamped migrations.
 
 ## Required Pattern
 
