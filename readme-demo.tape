@@ -1,162 +1,100 @@
-# See https://github.com/charmbracelet/vhs
-# Generate with `npm run vhs`
+# SRTD Hero Demo
+# Storytelling approach: Pain → Discovery → Delight
 
 Output readme-demo.gif
 
-# Uncomment to generate PNG frames for review:
-# Output demo-frames/
+Require srtd
 
-Require npx
-
-# Setup the terminal
 Set FontSize 16
-Set Width 1024
+Set Width 1100
 Set Height 550
-Set TypingSpeed 10ms
+Set TypingSpeed 35ms
 Set Theme "Catppuccin Mocha"
 Set WindowBar Colorful
+Set LoopOffset 30%
 
-# Initialize SRTD
-Type "srtd init"
-Enter
-Sleep 1s
-Hide
-Sleep 2s
-Ctrl+C
-Show
+# ============================================================
+# OPENING - gentle start
+# ============================================================
+
 Sleep 1.5s
 
-# Breathing room after init
-Enter
-Sleep 500ms
+# ============================================================
+# ACT 1: THE PAIN
+# ============================================================
 
-# Show the templates we have
-Type "ls supabase/migrations-templates/"
+Type "# The problem: every function change = new migration file"
+Enter
 Enter
 Sleep 2s
 
-# Breathing room after ls
+Type "ls -1 supabase/migrations/"
 Enter
-Sleep 500ms
-
-# Apply templates to local database
-Type "srtd apply"
-Enter
-Hide
-Sleep 2
-Show
-Sleep 3s
-Hide
-Sleep 1s
-Ctrl+C
-Show
-
-# Breathing room after apply
-Enter
-Sleep 500ms
-
-# Start watch mode briefly to show the UI
-Type "srtd watch"
-Enter
-Hide
 Sleep 2s
-Show
+
+Enter
+Sleep 500ms
+
+# ============================================================
+# ACT 2: THE DISCOVERY
+# Show templates as source of truth, make a tiny change
+# ============================================================
+
+Type "# With srtd: templates are the single source of truth"
+Enter
+Enter
+Sleep 2s
+
+Type "ls -1 supabase/migrations-templates/"
+Enter
+Sleep 2s
+
+# Make a tiny, visible change
+Type "sed -i '' 's/Hello/Howdy/' supabase/migrations-templates/srtd_demo_greet.sql"
+Enter
+Sleep 500ms
+
+# Show ONLY the change with git diff (the money shot)
+Type "git --no-pager diff --color supabase/migrations-templates/"
+Enter
 Sleep 4s
-Hide
-Ctrl+C
-Show
-Sleep 500ms
 
-# Breathing room after watch
 Enter
 Sleep 500ms
 
-# Build migration files
-Type "srtd build"
-Enter
-Hide
-Sleep 2
-Show
-Sleep 3s
+# ============================================================
+# ACT 3: THE DELIGHT
+# Apply locally, build for production
+# ============================================================
 
-# Breathing room after build - let viewer see "Built 3 templates"
+Type "# apply = instant reload to local database"
 Enter
-Sleep 1s
-
-# Create a WIP template
-Type "echo '-- Work in progress feature' > supabase/migrations-templates/srtd_demo_feature.wip.sql"
 Enter
 Sleep 1.5s
 
-# Apply WIP - shows it works locally
 Type "srtd apply"
 Enter
-Hide
-Sleep 2
-Show
-Sleep 3s
-Hide
-Ctrl+C
-Show
-
-# Breathing room after apply
-Enter
-Sleep 500ms
-
-# Build to show WIP is skipped for migrations
-Type "srtd build"
-Enter
-Sleep 4s
-Hide
-Ctrl+C
-Show
-
-# Breathing room - let viewer see "(wip)" indicator
-Enter
-Sleep 1s
-
-# Promote the WIP template
-Type "srtd promote srtd_demo_feature.wip.sql"
-Enter
-Hide
-Sleep 1s
-Show
 Sleep 2.5s
 
-# Breathing room after promote
+Type "# build = generate migration when ready to deploy"
 Enter
-Sleep 500ms
+Enter
+Sleep 1.5s
 
-# Build after promotion
 Type "srtd build"
 Enter
-Sleep 4s
-Hide
-Ctrl+C
-Show
+Sleep 2.5s
 
-# Breathing room after final build
+# Show new migration appeared
+Type "ls -1 supabase/migrations/"
+Enter
+Sleep 2.5s
+
+# ============================================================
+# SIGN OFF
+# ============================================================
+
 Enter
 Sleep 500ms
-
-# Show the resulting migration files
-Type "ls -1p supabase/migrations/"
-Enter
-Hide
-Enter
-Show
-Sleep 2s
-
-# Breathing room after ls
-Enter
-Sleep 500ms
-
-# Run doctor to validate setup
-Type "srtd doctor"
-Enter
-Sleep 3s
-
-# Sign off
-Enter
-Type "✨ Thanks for watching! Check out github.com/t1mmen/srtd for more info"
-Sleep 5s
+Type "# Template = truth. Migration = artifact."
+Sleep 2.5s

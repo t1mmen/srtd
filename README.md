@@ -7,7 +7,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![CI/CD](https://github.com/t1mmen/srtd/actions/workflows/ci.yml/badge.svg)](https://github.com/t1mmen/srtd/actions/workflows/ci.yml)
 
-[![demo](./readme-demo.gif)](./readme-demo.gif)
+![demo](./readme-demo.gif)
 
 ## Why This Exists
 
@@ -136,6 +136,8 @@ my_experiment.wip.sql  → Applies locally, never builds to migration
 ```
 
 When it's ready: `srtd promote my_experiment.wip.sql`
+
+![WIP workflow demo](./readme-workflow-demo.gif)
 
 ## Template Dependencies
 

@@ -57,8 +57,16 @@ export function stackResults(results: TemplateResult[]): TemplateResult[] {
   // Convert back to TemplateResult with displayOverride for stacked events
   return stacked.map(({ result, types }) => {
     if (types.length > 1) {
-      // For stacked events, show comma-separated states
-      const typeLabels = types.map(t => (t === 'changed' ? chalk.dim(t) : t));
+      // For stacked events, show comma-separated states with consistent coloring:
+      // - 'changed' = dim (no action, just detected change)
+      // - 'applied' = green (action taken)
+      // - 'error' = red (problem)
+      const typeLabels = types.map(t => {
+        if (t === 'changed') return chalk.dim(t);
+        if (t === 'applied') return chalk.green(t);
+        if (t === 'error') return chalk.red(t);
+        return t;
+      });
       return { ...result, displayOverride: typeLabels.join(', ') };
     }
     return result;
