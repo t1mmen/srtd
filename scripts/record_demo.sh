@@ -51,6 +51,7 @@ echo "🧹 Resetting to clean git state..."
 git checkout -- "${DEMO_PATHS[@]}" 2>/dev/null || true
 git clean -fd supabase/migrations-templates supabase/migrations 2>/dev/null || true
 rm -f srtd.config.json
+rm -f supabase/migrations-templates/.srtd.buildlog.local.json
 
 # Build CLI
 echo "🔨 Building CLI..."
