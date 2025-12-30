@@ -1,47 +1,51 @@
-# SRTD Hero Demo - The "Aha Moment" in ~25 seconds
+# SRTD Hero Demo
 # Storytelling approach: Pain → Discovery → Delight
-# Uses git diff to show ONLY what changed (not full files)
 
 Output readme-demo.gif
 
 Require srtd
 
-# Larger font, smaller terminal = less overwhelming
-Set FontSize 18
-Set Width 900
-Set Height 480
+Set FontSize 16
+Set Width 1100
+Set Height 550
 Set TypingSpeed 35ms
 Set Theme "Catppuccin Mocha"
 Set WindowBar Colorful
 Set LoopOffset 30%
 
 # ============================================================
-# ACT 1: THE PAIN (3s)
+# OPENING - gentle start
 # ============================================================
 
-Type "# The problem: changing a function = new migration file"
+Sleep 1.5s
+
+# ============================================================
+# ACT 1: THE PAIN
+# ============================================================
+
+Type "# The problem: every function change = new migration file"
 Enter
 Sleep 2s
 
 Type "ls supabase/migrations/"
 Enter
-Sleep 1.5s
+Sleep 2s
 
 Enter
-Sleep 300ms
+Sleep 500ms
 
 # ============================================================
-# ACT 2: THE DISCOVERY (10s)
+# ACT 2: THE DISCOVERY
 # Show templates as source of truth, make a tiny change
 # ============================================================
 
-Type "# With srtd: templates are the source of truth"
+Type "# With srtd: templates are the single source of truth"
 Enter
-Sleep 1.5s
+Sleep 2s
 
 Type "ls supabase/migrations-templates/"
 Enter
-Sleep 1.5s
+Sleep 2s
 
 # Make a tiny, visible change
 Type "sed -i '' 's/Hello/Howdy/' supabase/migrations-templates/srtd_demo_greet.sql"
@@ -49,22 +53,29 @@ Enter
 Sleep 500ms
 
 # Show ONLY the change with git diff (the money shot)
-# Use --no-pager to avoid the pager blocking
 Type "git --no-pager diff --color supabase/migrations-templates/"
 Enter
-Sleep 3.5s
+Sleep 4s
 
 Enter
-Sleep 300ms
+Sleep 500ms
 
 # ============================================================
-# ACT 3: THE DELIGHT (10s)
+# ACT 3: THE DELIGHT
 # Apply locally, build for production
 # ============================================================
 
+Type "# apply = instant reload to local database"
+Enter
+Sleep 1.5s
+
 Type "srtd apply"
 Enter
-Sleep 2s
+Sleep 2.5s
+
+Type "# build = generate migration when ready to deploy"
+Enter
+Sleep 1.5s
 
 Type "srtd build"
 Enter
@@ -73,13 +84,13 @@ Sleep 2.5s
 # Show new migration appeared
 Type "ls supabase/migrations/"
 Enter
-Sleep 2s
+Sleep 2.5s
 
 # ============================================================
-# SIGN OFF (2s)
+# SIGN OFF
 # ============================================================
 
 Enter
-Sleep 300ms
+Sleep 500ms
 Type "# Template = truth. Migration = artifact."
-Sleep 2s
+Sleep 2.5s
