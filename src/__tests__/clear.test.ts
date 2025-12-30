@@ -197,4 +197,123 @@ describe('Clear Command', () => {
     const output = spies.consoleLogSpy.mock.calls.flat().join('\n');
     expect(output).toContain('Error');
   });
+
+  describe('JSON output mode', () => {
+    let stdoutSpy: ReturnType<typeof vi.spyOn>;
+
+    beforeEach(async () => {
+      stdoutSpy = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
+      // Reset findProjectRoot mock to default (previous test may have set it to reject)
+      const { findProjectRoot } = await import('../utils/findProjectRoot.js');
+      vi.mocked(findProjectRoot).mockResolvedValue('/test/project');
+    });
+
+    afterEach(() => {
+      stdoutSpy.mockRestore();
+    });
+
+    it('supports --json option', async () => {
+      const { clearCommand } = await import('../commands/clear.js');
+      const jsonOption = clearCommand.options.find(opt => opt.long === '--json');
+      expect(jsonOption).toBeDefined();
+    });
+
+    it('outputs JSON when --json flag is provided with --local', async () => {
+      mockOrchestrator.clearBuildLogs.mockClear();
+
+      const { clearCommand } = await import('../commands/clear.js');
+
+      await clearCommand.parseAsync(['node', 'test', '--json', '--local']);
+
+      spies.assertNoStderr();
+      expect(mockOrchestrator.clearBuildLogs).toHaveBeenCalledWith('local');
+      expect(spies.exitSpy).toHaveBeenCalledWith(0);
+
+      const jsonOutput = stdoutSpy.mock.calls.map(call => call[0]).join('');
+      const parsed = JSON.parse(jsonOutput);
+
+      expect(parsed.success).toBe(true);
+      expect(parsed.command).toBe('clear');
+      expect(parsed.timestamp).toBeDefined();
+      expect(parsed.cleared).toBe(true);
+    });
+
+    it('outputs JSON when --json flag is provided with --shared', async () => {
+      mockOrchestrator.clearBuildLogs.mockClear();
+
+      const { clearCommand } = await import('../commands/clear.js');
+
+      await clearCommand.parseAsync(['node', 'test', '--json', '--shared']);
+
+      spies.assertNoStderr();
+      expect(mockOrchestrator.clearBuildLogs).toHaveBeenCalledWith('shared');
+      expect(spies.exitSpy).toHaveBeenCalledWith(0);
+
+      const jsonOutput = stdoutSpy.mock.calls.map(call => call[0]).join('');
+      const parsed = JSON.parse(jsonOutput);
+
+      expect(parsed.success).toBe(true);
+      expect(parsed.command).toBe('clear');
+      expect(parsed.cleared).toBe(true);
+    });
+
+    it('outputs JSON when --json flag is provided with --reset', async () => {
+      mockOrchestrator.clearBuildLogs.mockClear();
+
+      const { clearCommand } = await import('../commands/clear.js');
+
+      await clearCommand.parseAsync(['node', 'test', '--json', '--reset']);
+
+      spies.assertNoStderr();
+      expect(mockOrchestrator.clearBuildLogs).toHaveBeenCalledWith('both');
+      expect(spies.exitSpy).toHaveBeenCalledWith(0);
+
+      const jsonOutput = stdoutSpy.mock.calls.map(call => call[0]).join('');
+      const parsed = JSON.parse(jsonOutput);
+
+      expect(parsed.success).toBe(true);
+      expect(parsed.command).toBe('clear');
+      expect(parsed.cleared).toBe(true);
+    });
+
+    it('skips branding in JSON mode', async () => {
+      const { renderBranding } = await import('../ui/index.js');
+
+      const { clearCommand } = await import('../commands/clear.js');
+
+      await clearCommand.parseAsync(['node', 'test', '--json', '--local']);
+
+      expect(renderBranding).not.toHaveBeenCalled();
+    });
+
+    it('outputs JSON error on failure', async () => {
+      mockOrchestrator.clearBuildLogs.mockRejectedValueOnce(new Error('Permission denied'));
+
+      const { clearCommand } = await import('../commands/clear.js');
+
+      await clearCommand.parseAsync(['node', 'test', '--json', '--local']);
+
+      expect(spies.exitSpy).toHaveBeenCalledWith(1);
+
+      const jsonOutput = stdoutSpy.mock.calls.map(call => call[0]).join('');
+      const parsed = JSON.parse(jsonOutput);
+
+      expect(parsed.success).toBe(false);
+      expect(parsed.error).toContain('Permission denied');
+    });
+
+    it('requires --local, --shared, or --reset flag in JSON mode', async () => {
+      const { clearCommand } = await import('../commands/clear.js');
+
+      await clearCommand.parseAsync(['node', 'test', '--json']);
+
+      expect(spies.exitSpy).toHaveBeenCalledWith(1);
+
+      const jsonOutput = stdoutSpy.mock.calls.map(call => call[0]).join('');
+      const parsed = JSON.parse(jsonOutput);
+
+      expect(parsed.success).toBe(false);
+      expect(parsed.error).toBeDefined();
+    });
+  });
 });

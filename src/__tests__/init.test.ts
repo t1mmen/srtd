@@ -109,4 +109,84 @@ describe('Init Command', () => {
 
     expect(spies.exitSpy).toHaveBeenCalledWith(1);
   });
+
+  describe('JSON output mode', () => {
+    let stdoutSpy: ReturnType<typeof vi.spyOn>;
+
+    beforeEach(async () => {
+      stdoutSpy = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
+      // Reset mocks to default
+      const { ensureDirectories } = await import('../utils/ensureDirectories.js');
+      vi.mocked(ensureDirectories).mockResolvedValue({
+        templateDir: true,
+        migrationDir: true,
+      });
+    });
+
+    afterEach(() => {
+      stdoutSpy.mockRestore();
+    });
+
+    it('supports --json option', async () => {
+      const { initCommand } = await import('../commands/init.js');
+      const jsonOption = initCommand.options.find(opt => opt.long === '--json');
+      expect(jsonOption).toBeDefined();
+    });
+
+    it('outputs JSON when --json flag is provided', async () => {
+      const { initCommand } = await import('../commands/init.js');
+
+      await initCommand.parseAsync(['node', 'test', '--json']);
+
+      spies.assertNoStderr();
+      expect(spies.exitSpy).toHaveBeenCalledWith(0);
+
+      const jsonOutput = stdoutSpy.mock.calls.map(call => call[0]).join('');
+      const parsed = JSON.parse(jsonOutput);
+
+      expect(parsed.success).toBe(true);
+      expect(parsed.command).toBe('init');
+      expect(parsed.timestamp).toBeDefined();
+      expect(parsed.config).toBeDefined();
+      expect(parsed.configPath).toBe('srtd.config.json');
+    });
+
+    it('skips branding in JSON mode', async () => {
+      const { renderBranding } = await import('../ui/index.js');
+
+      const { initCommand } = await import('../commands/init.js');
+
+      await initCommand.parseAsync(['node', 'test', '--json']);
+
+      expect(renderBranding).not.toHaveBeenCalled();
+    });
+
+    it('outputs JSON error on failure', async () => {
+      const { ensureDirectories } = await import('../utils/ensureDirectories.js');
+      vi.mocked(ensureDirectories).mockRejectedValue(new Error('Permission denied'));
+
+      const { initCommand } = await import('../commands/init.js');
+
+      await initCommand.parseAsync(['node', 'test', '--json']);
+
+      expect(spies.exitSpy).toHaveBeenCalledWith(1);
+
+      const jsonOutput = stdoutSpy.mock.calls.map(call => call[0]).join('');
+      const parsed = JSON.parse(jsonOutput);
+
+      expect(parsed.success).toBe(false);
+      expect(parsed.error).toContain('Permission denied');
+    });
+
+    it('suppresses console output in JSON mode', async () => {
+      const { initCommand } = await import('../commands/init.js');
+
+      await initCommand.parseAsync(['node', 'test', '--json']);
+
+      spies.assertNoStderr();
+      // console.log should not be called for regular messages
+      const output = spies.consoleLogSpy.mock.calls.flat().join('\n');
+      expect(output).not.toContain('Initialization complete');
+    });
+  });
 });

@@ -229,4 +229,100 @@ describe('Promote Command', () => {
 
     Object.defineProperty(process.stdin, 'isTTY', { value: originalIsTTY, writable: true });
   });
+
+  describe('JSON output mode', () => {
+    let stdoutSpy: ReturnType<typeof vi.spyOn>;
+
+    beforeEach(() => {
+      stdoutSpy = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
+    });
+
+    afterEach(() => {
+      stdoutSpy.mockRestore();
+    });
+
+    it('supports --json option', async () => {
+      const { promoteCommand } = await import('../commands/promote.js');
+      const jsonOption = promoteCommand.options.find(opt => opt.long === '--json');
+      expect(jsonOption).toBeDefined();
+    });
+
+    it('outputs JSON when --json flag is provided with template', async () => {
+      const { glob } = await import('glob');
+      vi.mocked(glob).mockResolvedValue(['test.wip.sql']);
+
+      mockOrchestrator.promoteTemplate.mockClear();
+
+      const { promoteCommand } = await import('../commands/promote.js');
+
+      await promoteCommand.parseAsync(['node', 'test', '--json', 'test.wip.sql']);
+
+      spies.assertNoStderr();
+      expect(mockOrchestrator.promoteTemplate).toHaveBeenCalled();
+      expect(spies.exitSpy).toHaveBeenCalledWith(0);
+
+      const jsonOutput = stdoutSpy.mock.calls.map(call => call[0]).join('');
+      const parsed = JSON.parse(jsonOutput);
+
+      expect(parsed.success).toBe(true);
+      expect(parsed.command).toBe('promote');
+      expect(parsed.timestamp).toBeDefined();
+      expect(parsed.promoted).toBeDefined();
+      expect(parsed.promoted.from).toContain('test.wip.sql');
+      expect(parsed.promoted.to).toContain('test.sql');
+    });
+
+    it('skips branding in JSON mode', async () => {
+      const { glob } = await import('glob');
+      vi.mocked(glob).mockResolvedValue(['test.wip.sql']);
+
+      const { renderBranding } = await import('../ui/index.js');
+
+      const { promoteCommand } = await import('../commands/promote.js');
+
+      await promoteCommand.parseAsync(['node', 'test', '--json', 'test.wip.sql']);
+
+      expect(renderBranding).not.toHaveBeenCalled();
+    });
+
+    it('outputs JSON error when template not found', async () => {
+      const { glob } = await import('glob');
+      vi.mocked(glob).mockResolvedValue([]);
+
+      const { promoteCommand } = await import('../commands/promote.js');
+
+      await promoteCommand.parseAsync(['node', 'test', '--json', 'nonexistent.wip.sql']);
+
+      expect(spies.exitSpy).toHaveBeenCalledWith(1);
+
+      const jsonOutput = stdoutSpy.mock.calls.map(call => call[0]).join('');
+      const parsed = JSON.parse(jsonOutput);
+
+      expect(parsed.success).toBe(false);
+      expect(parsed.error).toBeDefined();
+    });
+
+    it('outputs JSON error when promotion fails', async () => {
+      const { glob } = await import('glob');
+      vi.mocked(glob).mockResolvedValue(['test.wip.sql']);
+
+      mockOrchestrator.promoteTemplate.mockRejectedValueOnce(new Error('Permission denied'));
+
+      const { promoteCommand } = await import('../commands/promote.js');
+
+      await promoteCommand.parseAsync(['node', 'test', '--json', 'test.wip.sql']);
+
+      expect(spies.exitSpy).toHaveBeenCalledWith(1);
+
+      const jsonOutput = stdoutSpy.mock.calls.map(call => call[0]).join('');
+      const parsed = JSON.parse(jsonOutput);
+
+      expect(parsed.success).toBe(false);
+      expect(parsed.error).toContain('Permission denied');
+
+      mockOrchestrator.promoteTemplate.mockImplementation((path: string) =>
+        Promise.resolve(path.replace('.wip', ''))
+      );
+    });
+  });
 });

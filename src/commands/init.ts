@@ -5,6 +5,8 @@ import chalk from 'chalk';
 import { Command } from 'commander';
 import figures from 'figures';
 import { CONFIG_FILE } from '../constants.js';
+import { type BaseJsonOutput, createBaseJsonOutput, writeJson } from '../output/index.js';
+import type { CLIConfig } from '../types.js';
 import { renderBranding } from '../ui/index.js';
 import { getConfig, saveConfig } from '../utils/config.js';
 import { createEmptyBuildLog } from '../utils/createEmptyBuildLog.js';
@@ -13,11 +15,31 @@ import { fileExists } from '../utils/fileExists.js';
 import { findProjectRoot } from '../utils/findProjectRoot.js';
 import { getErrorMessage } from '../utils/getErrorMessage.js';
 
+interface InitJsonOutput extends BaseJsonOutput<'init'> {
+  config?: CLIConfig;
+  configPath?: string;
+}
+
+function formatInitJsonOutput(
+  success: boolean,
+  config?: CLIConfig,
+  error?: string
+): InitJsonOutput {
+  return {
+    ...createBaseJsonOutput('init', success, error),
+    ...(config && { config, configPath: CONFIG_FILE }),
+  };
+}
+
 export const initCommand = new Command('init')
   .description('Initialize srtd in the current project')
-  .action(async () => {
+  .option('--json', 'Output results as JSON')
+  .action(async (options: { json?: boolean }) => {
     try {
-      await renderBranding({ subtitle: 'Initialize Project' });
+      // Skip branding in JSON mode
+      if (!options.json) {
+        await renderBranding({ subtitle: 'Initialize Project' });
+      }
 
       const baseDir = await findProjectRoot();
       const { config } = await getConfig(baseDir);
@@ -25,12 +47,16 @@ export const initCommand = new Command('init')
 
       // Check and create config file
       if (await fileExists(configPath)) {
-        console.log(chalk.cyan(`${figures.info} ${CONFIG_FILE} already exists`));
+        if (!options.json) {
+          console.log(chalk.cyan(`${figures.info} ${CONFIG_FILE} already exists`));
+        }
       } else {
         await saveConfig(baseDir, {});
-        console.log(
-          chalk.green(`${figures.tick} Created ${CONFIG_FILE} with default configuration`)
-        );
+        if (!options.json) {
+          console.log(
+            chalk.green(`${figures.tick} Created ${CONFIG_FILE} with default configuration`)
+          );
+        }
       }
 
       // Ensure directories exist
@@ -39,24 +65,26 @@ export const initCommand = new Command('init')
         migrationDir: config.migrationDir,
       });
 
-      if (dirs.templateDir) {
-        console.log(
-          chalk.green(`${figures.tick} Created template directory ${config.templateDir}`)
-        );
-      } else {
-        console.log(
-          chalk.cyan(`${figures.info} Template directory ${config.templateDir} already exists`)
-        );
-      }
+      if (!options.json) {
+        if (dirs.templateDir) {
+          console.log(
+            chalk.green(`${figures.tick} Created template directory ${config.templateDir}`)
+          );
+        } else {
+          console.log(
+            chalk.cyan(`${figures.info} Template directory ${config.templateDir} already exists`)
+          );
+        }
 
-      if (dirs.migrationDir) {
-        console.log(
-          chalk.green(`${figures.tick} Created migration directory ${config.migrationDir}`)
-        );
-      } else {
-        console.log(
-          chalk.cyan(`${figures.info} Migration directory ${config.migrationDir} already exists`)
-        );
+        if (dirs.migrationDir) {
+          console.log(
+            chalk.green(`${figures.tick} Created migration directory ${config.migrationDir}`)
+          );
+        } else {
+          console.log(
+            chalk.cyan(`${figures.info} Migration directory ${config.migrationDir} already exists`)
+          );
+        }
       }
 
       // Create build logs
@@ -65,20 +93,22 @@ export const initCommand = new Command('init')
         path.join(baseDir, config.localBuildLog)
       );
 
-      if (buildLogCreated) {
-        console.log(chalk.green(`${figures.tick} Created build log at ${config.buildLog}`));
-      } else {
-        console.log(chalk.cyan(`${figures.info} Build log already exists at ${config.buildLog}`));
-      }
+      if (!options.json) {
+        if (buildLogCreated) {
+          console.log(chalk.green(`${figures.tick} Created build log at ${config.buildLog}`));
+        } else {
+          console.log(chalk.cyan(`${figures.info} Build log already exists at ${config.buildLog}`));
+        }
 
-      if (localBuildLogCreated) {
-        console.log(
-          chalk.green(`${figures.tick} Created local build log at ${config.localBuildLog}`)
-        );
-      } else {
-        console.log(
-          chalk.cyan(`${figures.info} Local build log already exists at ${config.localBuildLog}`)
-        );
+        if (localBuildLogCreated) {
+          console.log(
+            chalk.green(`${figures.tick} Created local build log at ${config.localBuildLog}`)
+          );
+        } else {
+          console.log(
+            chalk.cyan(`${figures.info} Local build log already exists at ${config.localBuildLog}`)
+          );
+        }
       }
 
       // Update .gitignore
@@ -95,23 +125,38 @@ export const initCommand = new Command('init')
       if (!content.includes(ignoreEntry)) {
         content = `${content.trim()}\n\n# srtd's local logs should not be committed, as they're per-environment specific\n${ignoreEntry}\n`;
         await fs.writeFile(gitignorePath, content);
-        console.log(chalk.green(`${figures.tick} Added ${ignoreEntry} to .gitignore`));
+        if (!options.json) {
+          console.log(chalk.green(`${figures.tick} Added ${ignoreEntry} to .gitignore`));
+        }
       } else {
-        console.log(chalk.cyan(`${figures.info} .gitignore already contains ${ignoreEntry}`));
+        if (!options.json) {
+          console.log(chalk.cyan(`${figures.info} .gitignore already contains ${ignoreEntry}`));
+        }
       }
 
-      console.log();
-      console.log(chalk.green(`${figures.tick} Initialization complete!`));
-      console.log(
-        chalk.dim(
-          'Your project is ready to use srtd. Start by creating templates in the templates directory.'
-        )
-      );
+      if (options.json) {
+        const jsonOutput = formatInitJsonOutput(true, config);
+        writeJson(jsonOutput);
+      } else {
+        console.log();
+        console.log(chalk.green(`${figures.tick} Initialization complete!`));
+        console.log(
+          chalk.dim(
+            'Your project is ready to use srtd. Start by creating templates in the templates directory.'
+          )
+        );
+      }
 
       process.exit(0);
     } catch (error) {
-      console.log();
-      console.log(chalk.red(`${figures.cross} Failed to initialize: ${getErrorMessage(error)}`));
+      const errMsg = getErrorMessage(error);
+      if (options.json) {
+        const jsonOutput = formatInitJsonOutput(false, undefined, errMsg);
+        writeJson(jsonOutput);
+      } else {
+        console.log();
+        console.log(chalk.red(`${figures.cross} Failed to initialize: ${errMsg}`));
+      }
       process.exit(1);
     }
   });

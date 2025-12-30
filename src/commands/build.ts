@@ -2,26 +2,22 @@ import chalk from 'chalk';
 // src/commands/build.ts
 import { Command } from 'commander';
 import figures from 'figures';
+import { formatFatalError, output, writeJson } from '../output/index.js';
 import { Orchestrator } from '../services/Orchestrator.js';
 import type { ProcessedTemplateResult } from '../types.js';
 import { displayValidationWarnings } from '../ui/displayWarnings.js';
-import {
-  type ErrorItem,
-  renderBranding,
-  renderErrorDisplay,
-  renderResultsTable,
-  type TemplateResult,
-} from '../ui/index.js';
+import { type ErrorItem, renderBranding, renderErrorDisplay } from '../ui/index.js';
 import { getConfig } from '../utils/config.js';
 import { findProjectRoot } from '../utils/findProjectRoot.js';
 import { getErrorMessage } from '../utils/getErrorMessage.js';
-import { isWipTemplate } from '../utils/isWipTemplate.js';
+import { toTemplateResults } from '../utils/resultTransformer.js';
 
 interface BuildOptions {
   force?: boolean;
   apply?: boolean;
   bundle?: boolean;
   deps?: boolean;
+  json?: boolean;
 }
 
 export const buildCommand = new Command('build')
@@ -30,12 +26,13 @@ export const buildCommand = new Command('build')
   .option('-a, --apply', 'Apply the built templates')
   .option('-b, --bundle', 'Bundle all templates into a single migration')
   .option('--no-deps', 'Disable automatic dependency ordering')
+  .option('--json', 'Output results as JSON')
   .action(async (options: BuildOptions) => {
     let exitCode = 0;
 
     try {
-      // Render header only if not invoked from menu
-      if (!process.env.__SRTD_FROM_MENU__) {
+      // Render header only if not invoked from menu and not in JSON mode
+      if (!process.env.__SRTD_FROM_MENU__ && !options.json) {
         const parts: string[] = ['Build'];
         if (options.force) parts.push('(forced)');
         if (options.bundle) parts.push('(bundled)');
@@ -50,8 +47,10 @@ export const buildCommand = new Command('build')
         configWarnings,
       });
 
-      // Display validation warnings
-      displayValidationWarnings(orchestrator.getValidationWarnings());
+      // Display validation warnings (skip in JSON mode)
+      if (!options.json) {
+        displayValidationWarnings(orchestrator.getValidationWarnings());
+      }
 
       // Execute build operation
       const buildResult: ProcessedTemplateResult = await orchestrator.build({
@@ -79,46 +78,20 @@ export const buildCommand = new Command('build')
         };
       }
 
-      // Transform results to unified TemplateResult format
-      // Order: unchanged/skipped first, then newly built (newest at bottom, log-style)
-      const results: TemplateResult[] = [
-        // Skipped templates - either 'skipped' (WIP) or 'unchanged' (already built)
-        ...result.skipped.map(name => {
-          const info = orchestrator.getTemplateInfo(name);
-          const isWip = isWipTemplate(name, config.wipIndicator);
-          return {
-            template: name,
-            status: isWip ? ('skipped' as const) : ('unchanged' as const),
-            target: isWip ? undefined : info.migrationFile,
-            timestamp: info.lastDate ? new Date(info.lastDate) : undefined,
-          };
-        }),
-        // Built templates (success) - at the bottom as "newest"
-        ...result.built.map(name => {
-          const info = orchestrator.getTemplateInfo(name);
-          return {
-            template: name,
-            status: 'success' as const,
-            target: info.migrationFile,
-          };
-        }),
-        // Error templates - at the very bottom (most important to see)
-        ...result.errors.map(err => ({
-          template: err.file,
-          status: 'error' as const,
-          errorMessage: err.error,
-          errorHint: err.hint,
-        })),
-      ];
+      // Transform results to unified TemplateResult format using shared transformer
+      const context = { command: 'build' as const, forced: options.force, json: options.json };
+      const results = toTemplateResults(
+        result,
+        (name: string) => orchestrator.getTemplateInfo(name),
+        context,
+        { wipIndicator: config.wipIndicator }
+      );
 
-      // Render results table with unified format
-      renderResultsTable({
-        results,
-        context: { command: 'build', forced: options.force },
-      });
+      // Output results (JSON or human-readable based on context.json flag)
+      output({ results, context });
 
-      // Render errors if any
-      if (result.errors.length > 0) {
+      // Render errors if any (skip in JSON mode - errors are included in JSON output)
+      if (result.errors.length > 0 && !options.json) {
         const errorItems: ErrorItem[] = result.errors.map(err => ({
           template: err.file,
           message: err.error,
@@ -130,9 +103,13 @@ export const buildCommand = new Command('build')
       exitCode = result.errors.length > 0 ? 1 : 0;
       // Exit happens after using block completes (dispose runs)
     } catch (error) {
-      console.log();
-      console.log(chalk.red(`${figures.cross} Error building templates:`));
-      console.log(chalk.red(getErrorMessage(error)));
+      if (options.json) {
+        writeJson(formatFatalError('build', getErrorMessage(error)));
+      } else {
+        console.log();
+        console.log(chalk.red(`${figures.cross} Error building templates:`));
+        console.log(chalk.red(getErrorMessage(error)));
+      }
       exitCode = 1;
     }
 

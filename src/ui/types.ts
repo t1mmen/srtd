@@ -69,10 +69,13 @@ export interface TemplateResult {
  */
 export interface RenderContext {
   /** Which command is rendering */
-  command: 'build' | 'apply' | 'watch';
+  command: 'init' | 'build' | 'apply' | 'watch' | 'register' | 'promote' | 'clear';
 
   /** Whether the operation was forced (build --force) */
   forced?: boolean;
+
+  /** Output as JSON instead of human-readable format */
+  json?: boolean;
 }
 
 /**

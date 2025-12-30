@@ -3,6 +3,7 @@ import readline from 'node:readline';
 import chalk from 'chalk';
 import { Command } from 'commander';
 import figures from 'figures';
+import { ndjsonEvent } from '../output/ndjsonOutput.js';
 import { Orchestrator } from '../services/Orchestrator.js';
 import type { TemplateStatus } from '../types.js';
 import { displayValidationWarnings } from '../ui/displayWarnings.js';
@@ -187,17 +188,20 @@ export function renderScreen(options: RenderScreenOptions): void {
 
 export const watchCommand = new Command('watch')
   .description('Watch templates for changes and auto-apply')
-  .action(async () => {
+  .option('--json', 'Output events as NDJSON stream')
+  .action(async (options: { json?: boolean }) => {
+    const jsonMode = options.json ?? false;
     const exitCode = 0;
     let orchestrator: Orchestrator | null = null;
 
     try {
-      // Render header only if not invoked from menu
-      if (!process.env.__SRTD_FROM_MENU__) {
+      // Render header only if not invoked from menu and not in JSON mode
+      if (!process.env.__SRTD_FROM_MENU__ && !jsonMode) {
         renderBranding({ subtitle: 'Watch' });
       }
 
-      const spinner = createSpinner('').start();
+      // Skip spinner in JSON mode
+      const spinner = jsonMode ? null : createSpinner('').start();
 
       // Initialize Orchestrator
       const projectRoot = await findProjectRoot();
@@ -207,8 +211,10 @@ export const watchCommand = new Command('watch')
         configWarnings,
       });
 
-      // Display validation warnings
-      displayValidationWarnings(orchestrator.getValidationWarnings());
+      // Display validation warnings (skip in JSON mode)
+      if (!jsonMode) {
+        displayValidationWarnings(orchestrator.getValidationWarnings());
+      }
 
       // Load historic activity for initial display
       const historicActivity = orchestrator.getRecentActivity(MAX_HISTORY);
@@ -227,7 +233,10 @@ export const watchCommand = new Command('watch')
         }
       }
 
-      spinner.succeed(`Watching ${templates.length} template(s)`);
+      // Complete spinner if not in JSON mode
+      if (spinner) {
+        spinner.succeed(`Watching ${templates.length} template(s)`);
+      }
 
       // State for history tracking - now uses unified TemplateResult
       const recentUpdates: TemplateResult[] = [];
@@ -242,18 +251,34 @@ export const watchCommand = new Command('watch')
         if (reason) needsBuild.set(template.path, reason);
       }
 
-      // Initial render
-      renderScreen({
-        templates,
-        recentUpdates,
-        historicActivity,
-        errors,
-        showHistory,
-        needsBuild,
-      });
+      // In JSON mode, emit init event instead of rendering
+      if (jsonMode) {
+        ndjsonEvent('init', {
+          templates: templates.map(t => t.path),
+          needsBuild: Array.from(needsBuild.entries()).map(([template, reason]) => ({
+            template,
+            reason,
+          })),
+          errors: Array.from(errors.entries()).map(([template, message]) => ({
+            template,
+            message,
+          })),
+        });
+      } else {
+        // Initial render
+        renderScreen({
+          templates,
+          recentUpdates,
+          historicActivity,
+          errors,
+          showHistory,
+          needsBuild,
+        });
+      }
 
-      // Helper to call renderScreen with all current state
+      // Helper to call renderScreen with all current state (no-op in JSON mode)
       const doRender = () => {
+        if (jsonMode) return;
         renderScreen({
           templates,
           recentUpdates,
@@ -269,27 +294,35 @@ export const watchCommand = new Command('watch')
         // Check if this change invalidates a previous build
         const hadBuild = !!template.buildState.lastBuildHash;
 
-        recentUpdates.push({
+        const result: TemplateResult = {
           template: template.path,
           status: 'changed',
           timestamp: new Date(),
           buildOutdated: hadBuild,
-        });
+        };
+
+        recentUpdates.push(result);
         if (recentUpdates.length > MAX_HISTORY) recentUpdates.shift();
 
         // Update needsBuild tracking
         const reason = getBuildReason(template);
         if (reason) needsBuild.set(template.path, reason);
 
-        doRender();
+        if (jsonMode) {
+          ndjsonEvent('templateChanged', result);
+        } else {
+          doRender();
+        }
       });
 
       orchestrator.on('templateApplied', (template: TemplateStatus) => {
-        recentUpdates.push({
+        const result: TemplateResult = {
           template: template.path,
           status: 'success',
           timestamp: new Date(),
-        });
+        };
+
+        recentUpdates.push(result);
         if (recentUpdates.length > MAX_HISTORY) recentUpdates.shift();
 
         // Track as needing build if not already built with current hash
@@ -299,22 +332,33 @@ export const watchCommand = new Command('watch')
         // Clear any previous error for this template
         errors.delete(template.path);
 
-        doRender();
+        if (jsonMode) {
+          ndjsonEvent('templateApplied', result);
+        } else {
+          doRender();
+        }
       });
 
       orchestrator.on(
         'templateError',
         ({ template, error, hint }: { template: TemplateStatus; error: string; hint?: string }) => {
-          recentUpdates.push({
+          const result: TemplateResult = {
             template: template.path,
             status: 'error',
             timestamp: new Date(),
             errorMessage: error,
             errorHint: hint,
-          });
+          };
+
+          recentUpdates.push(result);
           if (recentUpdates.length > MAX_HISTORY) recentUpdates.shift();
           errors.set(template.path, error);
-          doRender();
+
+          if (jsonMode) {
+            ndjsonEvent('templateError', result);
+          } else {
+            doRender();
+          }
         }
       );
 
@@ -326,8 +370,10 @@ export const watchCommand = new Command('watch')
 
       // Cleanup function to properly dispose
       const cleanup = async () => {
-        console.log();
-        console.log(chalk.dim('Stopping watch mode...'));
+        if (!jsonMode) {
+          console.log();
+          console.log(chalk.dim('Stopping watch mode...'));
+        }
         await watcher.close();
         if (orchestrator) {
           await orchestrator.dispose();
@@ -419,8 +465,8 @@ export const watchCommand = new Command('watch')
         doRender();
       };
 
-      // Set up keyboard input handling for quit, toggle, and build
-      if (process.stdin.isTTY) {
+      // Set up keyboard input handling for quit, toggle, and build (skip in JSON mode)
+      if (process.stdin.isTTY && !jsonMode) {
         // Reset stdin state in case it was modified by previous prompts
         process.stdin.setRawMode(false);
         process.stdin.removeAllListeners('keypress');
@@ -457,9 +503,13 @@ export const watchCommand = new Command('watch')
         // The process will be terminated by the keyboard handler or SIGINT
       });
     } catch (error) {
-      console.log();
-      console.log(chalk.red(`${figures.cross} Error starting watch mode:`));
-      console.log(chalk.red(getErrorMessage(error)));
+      if (jsonMode) {
+        ndjsonEvent('error', { message: getErrorMessage(error) });
+      } else {
+        console.log();
+        console.log(chalk.red(`${figures.cross} Error starting watch mode:`));
+        console.log(chalk.red(getErrorMessage(error)));
+      }
       if (orchestrator) {
         await orchestrator.dispose();
       }

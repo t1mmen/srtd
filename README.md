@@ -9,7 +9,6 @@
 
 [![demo](./readme-demo.gif)](./readme-demo.gif)
 
-
 ## Why This Exists
 
 Two things drove me crazy while building [Timely](https://www.timely.com)'s [Memory Engine](https://www.timely.com/memory-app) on Supabase:
@@ -21,7 +20,6 @@ Edit in your IDE → copy to Supabase SQL editor → run → hit an error → fi
 Every function change showed up as a complete rewrite in git. Reviewers couldn't see what actually changed. `git blame` was worthless.
 
 After [searching](https://news.ycombinator.com/item?id=37755076) for [two years](https://news.ycombinator.com/item?id=36007640), I built `srtd`.
-
 
 ## How It Works
 
@@ -41,7 +39,6 @@ supabase/migrations-templates/
 ```
 Edit template → Instantly applies locally → Build migration → Deploy
 ```
-
 
 ## Quick Start
 
@@ -71,7 +68,6 @@ srtd build            # Creates supabase/migrations/20241226_srtd-hello.sql
 supabase migration up # Deploy with Supabase CLI
 ```
 
-
 ## The Diff Problem, Solved
 
 Without templates, changing one line in a function means your PR shows a complete rewrite—the old `DROP` + `CREATE` replaced by a new one. Reviewers have to read the whole thing to spot your change.
@@ -90,37 +86,46 @@ With templates, your PR shows what you actually changed:
 
 `git blame` works. Code reviews are useful. Your database logic is treated like real code.
 
-
 ## Commands
 
-| Command | What it does |
-|---------|--------------|
-| `srtd` | Interactive menu |
-| `srtd watch` | Live reload—applies templates on save |
-| `srtd build` | Generate migration files |
-| `srtd apply` | Apply all templates once (no watch) |
-| `srtd register` | Mark templates as already deployed |
-| `srtd promote` | Convert `.wip` template to buildable |
-| `srtd clear` | Reset build state |
+| Command         | What it does                          |
+| --------------- | ------------------------------------- |
+| `srtd`          | Interactive menu                      |
+| `srtd watch`    | Live reload—applies templates on save |
+| `srtd build`    | Generate migration files              |
+| `srtd apply`    | Apply all templates once (no watch)   |
+| `srtd register` | Mark templates as already deployed    |
+| `srtd promote`  | Convert `.wip` template to buildable  |
+| `srtd clear`    | Reset build state                     |
+| `srtd init`     | Initialize config file                |
 
-Options: `build --force` rebuilds all, `build --bundle` combines into single migration.
+Options: `build --force` rebuilds all, `build --bundle` combines into single migration, `--no-deps` disables dependency ordering.
 
+## JSON Output
+
+All commands support `--json` for machine-readable output (CI/CD, LLM integrations):
+
+```bash
+srtd build --json   # Single JSON object with results array and summary
+srtd watch --json   # NDJSON stream (one event per line)
+```
+
+Output includes `success`, `command`, `timestamp`, and command-specific fields. Errors use a top-level `error` field.
 
 ## What Works as Templates
 
 Templates need to be **idempotent**—safe to run multiple times. This works great for:
 
-| Object | Pattern |
-|--------|---------|
-| Functions | `DROP FUNCTION IF EXISTS` + `CREATE FUNCTION` |
-| Views | `CREATE OR REPLACE VIEW` |
-| RLS Policies | `DROP POLICY IF EXISTS` + `CREATE POLICY` |
-| Triggers | Drop + recreate trigger and function |
-| Roles | `REVOKE ALL` + `GRANT` |
-| Enums | `ADD VALUE IF NOT EXISTS` |
+| Object       | Pattern                                       |
+| ------------ | --------------------------------------------- |
+| Functions    | `DROP FUNCTION IF EXISTS` + `CREATE FUNCTION` |
+| Views        | `CREATE OR REPLACE VIEW`                      |
+| RLS Policies | `DROP POLICY IF EXISTS` + `CREATE POLICY`     |
+| Triggers     | Drop + recreate trigger and function          |
+| Roles        | `REVOKE ALL` + `GRANT`                        |
+| Enums        | `ADD VALUE IF NOT EXISTS`                     |
 
 **Not for templates:** Table structures, indexes, data modifications—use regular migrations for those.
-
 
 ## WIP Templates
 
@@ -131,7 +136,6 @@ my_experiment.wip.sql  → Applies locally, never builds to migration
 ```
 
 When it's ready: `srtd promote my_experiment.wip.sql`
-
 
 ## Template Dependencies
 
@@ -144,7 +148,6 @@ CREATE FUNCTION complex_calc() ...
 
 During `apply` and `build`, templates are sorted so dependencies run first. Circular dependencies are detected and reported. Use `--no-deps` to disable.
 
-
 ## Existing Projects
 
 Already have functions in your database? Create templates for them, then:
@@ -154,7 +157,6 @@ srtd register existing_function.sql another_one.sql
 ```
 
 This tells srtd "these are already deployed—don't generate migrations until they change."
-
 
 ## Configuration
 
@@ -172,44 +174,51 @@ Defaults work for standard Supabase projects. Optional `srtd.config.json`:
 }
 ```
 
-
 ## Custom Migration Paths
 
 The `migrationFilename` option lets you match your project's existing migration structure using template variables:
 
-| Variable | Description | Example |
-|----------|-------------|---------|
-| `$timestamp` | Build timestamp (YYYYMMDDHHmmss) | `20240315143022` |
-| `$migrationName` | Template name (without .sql) | `create_users` |
-| `$prefix` | Migration prefix with trailing dash | `srtd-` |
+| Variable         | Description                         | Example          |
+| ---------------- | ----------------------------------- | ---------------- |
+| `$timestamp`     | Build timestamp (YYYYMMDDHHmmss)    | `20240315143022` |
+| `$migrationName` | Template name (without .sql)        | `create_users`   |
+| `$prefix`        | Migration prefix with trailing dash | `srtd-`          |
 
 ### Examples
 
 **Default (Supabase-style):**
+
 ```jsonc
 { "migrationFilename": "$timestamp_$prefix$migrationName.sql" }
 // → migrations/20240315143022_srtd-create_users.sql
 ```
 
 **Directory per migration ([Prisma](https://prisma.io)-style):**
+
 ```jsonc
 { "migrationFilename": "$timestamp_$migrationName/migration.sql" }
 // → migrations/20240315143022_create_users/migration.sql
 ```
 
 **Folder-based ([Issue #41](https://github.com/t1mmen/srtd/issues/41) request):**
+
 ```jsonc
 { "migrationFilename": "$migrationName/migrate.sql", "migrationPrefix": "" }
 // → migrations/create_users/migrate.sql
 ```
 
 **Flyway-style (V prefix):**
+
 ```jsonc
-{ "migrationFilename": "V$timestamp__$migrationName.sql", "migrationPrefix": "" }
+{
+  "migrationFilename": "V$timestamp__$migrationName.sql",
+  "migrationPrefix": ""
+}
 // → migrations/V20240315143022__create_users.sql
 ```
 
 **Simple timestamp:**
+
 ```jsonc
 { "migrationFilename": "$timestamp.sql", "migrationPrefix": "" }
 // → migrations/20240315143022.sql
@@ -217,21 +226,18 @@ The `migrationFilename` option lets you match your project's existing migration 
 
 Nested directories are created automatically.
 
-
 ## State Tracking
 
-| File | Purpose | Git |
-|------|---------|-----|
-| `.buildlog.json` | What's been built to migrations | Commit |
+| File                   | Purpose                         | Git       |
+| ---------------------- | ------------------------------- | --------- |
+| `.buildlog.json`       | What's been built to migrations | Commit    |
 | `.buildlog.local.json` | What's applied to your local DB | Gitignore |
-
 
 ## Contributing
 
 Bug fixes, docs, and test coverage welcome. See [CONTRIBUTING.md](./CONTRIBUTING.md).
 
 For development: [CLAUDE.md](./CLAUDE.md).
-
 
 ## More
 

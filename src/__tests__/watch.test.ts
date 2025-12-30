@@ -11,6 +11,9 @@ import {
 // Mock all dependencies before importing the command
 vi.mock('../ui/index.js', () => createMockUiModule());
 vi.mock('../utils/findProjectRoot.js', () => createMockFindProjectRoot());
+vi.mock('../output/ndjsonOutput.js', () => ({
+  ndjsonEvent: vi.fn(),
+}));
 
 vi.mock('../utils/config.js', () => ({
   getConfig: vi.fn().mockResolvedValue({
@@ -227,6 +230,38 @@ describe('Watch Command', () => {
     expect(spies.exitSpy).toHaveBeenCalledWith(1);
   });
 
+  it('outputs JSON error when fatal error occurs with --json flag', async () => {
+    const Orchestrator = (await import('../services/Orchestrator.js')).Orchestrator;
+    vi.mocked(Orchestrator.create).mockRejectedValue(new Error('DB connection failed'));
+    const ndjsonOutput = await import('../output/ndjsonOutput.js');
+
+    const { watchCommand } = await import('../commands/watch.js');
+
+    await watchCommand.parseAsync(['node', 'test', '--json']);
+
+    // Should call ndjsonEvent with error type
+    expect(ndjsonOutput.ndjsonEvent).toHaveBeenCalledWith('error', {
+      message: 'DB connection failed',
+    });
+
+    expect(spies.exitSpy).toHaveBeenCalledWith(1);
+  });
+
+  it('outputs human-readable error when fatal error occurs without --json flag', async () => {
+    const Orchestrator = (await import('../services/Orchestrator.js')).Orchestrator;
+    vi.mocked(Orchestrator.create).mockRejectedValue(new Error('DB connection failed'));
+
+    const { watchCommand } = await import('../commands/watch.js');
+
+    await watchCommand.parseAsync(['node', 'test']);
+
+    // Should use console.log with chalk.red for human-readable error
+    const output = spies.consoleLogSpy.mock.calls.flat().join('\n');
+    expect(output).toContain('Error starting watch mode');
+    expect(output).toContain('DB connection failed');
+    expect(spies.exitSpy).toHaveBeenCalledWith(1);
+  });
+
   it('handles template loading errors', async () => {
     mockOrchestrator.getTemplateStatusExternal.mockRejectedValue(new Error('Template error'));
 
@@ -235,6 +270,74 @@ describe('Watch Command', () => {
     // This should not throw - errors are collected, but we don't assert on stderr
     // because template errors are expected and handled internally
     await expect(watchCommand.parseAsync(['node', 'test'])).resolves.not.toThrow();
+  });
+
+  it('has --json option', async () => {
+    const { watchCommand } = await import('../commands/watch.js');
+
+    const jsonOption = watchCommand.options.find(opt => opt.long === '--json');
+    expect(jsonOption).toBeDefined();
+    expect(jsonOption?.description).toContain('JSON');
+  });
+});
+
+describe('Watch Command --json mode', () => {
+  let spies: ReturnType<typeof setupCommandTestSpies>;
+  let consoleClearSpy: ReturnType<typeof vi.spyOn>;
+  let originalIsTTY: boolean | undefined;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.resetModules();
+    spies = setupCommandTestSpies();
+    consoleClearSpy = mockConsoleClear();
+    originalIsTTY = process.stdin.isTTY;
+    // Mock stdin as non-TTY to avoid setting up raw mode in tests
+    Object.defineProperty(process.stdin, 'isTTY', { value: false, writable: true });
+  });
+
+  afterEach(() => {
+    spies.cleanup();
+    consoleClearSpy.mockRestore();
+    Object.defineProperty(process.stdin, 'isTTY', { value: originalIsTTY, writable: true });
+  });
+
+  // Note: These tests use a race with setTimeout to avoid the infinite loop
+  // in watch mode. The watch command waits forever, so we race against it.
+  // Tests for ndjsonEvent calls are in ndjsonOutput.test.ts which tests the
+  // actual output function in isolation.
+
+  it('does not call console.clear in JSON mode', async () => {
+    const { watchCommand } = await import('../commands/watch.js');
+
+    const watchPromise = watchCommand.parseAsync(['node', 'test', '--json']);
+    await new Promise(resolve => setTimeout(resolve, 50));
+
+    expect(consoleClearSpy).not.toHaveBeenCalled();
+    void watchPromise;
+  });
+
+  it('does not call renderScreen in JSON mode', async () => {
+    const ui = await import('../ui/index.js');
+    const { watchCommand } = await import('../commands/watch.js');
+
+    const watchPromise = watchCommand.parseAsync(['node', 'test', '--json']);
+    await new Promise(resolve => setTimeout(resolve, 50));
+
+    expect(ui.renderBranding).not.toHaveBeenCalled();
+    expect(ui.renderWatchFooter).not.toHaveBeenCalled();
+    void watchPromise;
+  });
+
+  it('does not use spinner in JSON mode', async () => {
+    const ui = await import('../ui/index.js');
+    const { watchCommand } = await import('../commands/watch.js');
+
+    const watchPromise = watchCommand.parseAsync(['node', 'test', '--json']);
+    await new Promise(resolve => setTimeout(resolve, 50));
+
+    expect(ui.createSpinner).not.toHaveBeenCalled();
+    void watchPromise;
   });
 });
 

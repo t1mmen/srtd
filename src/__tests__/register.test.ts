@@ -157,4 +157,122 @@ describe('Register Command', () => {
 
     Object.defineProperty(process.stdin, 'isTTY', { value: originalIsTTY, writable: true });
   });
+
+  describe('JSON output mode', () => {
+    let stdoutSpy: ReturnType<typeof vi.spyOn>;
+
+    beforeEach(() => {
+      stdoutSpy = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
+    });
+
+    afterEach(() => {
+      stdoutSpy.mockRestore();
+    });
+
+    it('supports --json option', async () => {
+      const { registerCommand } = await import('../commands/register.js');
+      const jsonOption = registerCommand.options.find(opt => opt.long === '--json');
+      expect(jsonOption).toBeDefined();
+    });
+
+    it('outputs JSON when --json flag is provided with templates', async () => {
+      mockOrchestrator.registerTemplate.mockClear();
+
+      const { registerCommand } = await import('../commands/register.js');
+
+      await registerCommand.parseAsync([
+        'node',
+        'test',
+        '--json',
+        'template1.sql',
+        'template2.sql',
+      ]);
+
+      spies.assertNoStderr();
+      expect(mockOrchestrator.registerTemplate).toHaveBeenCalledTimes(2);
+      expect(spies.exitSpy).toHaveBeenCalledWith(0);
+
+      // Verify JSON output was written
+      const jsonOutput = stdoutSpy.mock.calls.map(call => call[0]).join('');
+      const parsed = JSON.parse(jsonOutput);
+
+      expect(parsed.success).toBe(true);
+      expect(parsed.command).toBe('register');
+      expect(parsed.timestamp).toBeDefined();
+      expect(parsed.registered).toHaveLength(2);
+    });
+
+    it('skips branding in JSON mode', async () => {
+      const { renderBranding } = await import('../ui/index.js');
+
+      const { registerCommand } = await import('../commands/register.js');
+
+      await registerCommand.parseAsync(['node', 'test', '--json', 'template1.sql']);
+
+      expect(renderBranding).not.toHaveBeenCalled();
+    });
+
+    it('includes failed templates in JSON output', async () => {
+      mockOrchestrator.registerTemplate
+        .mockResolvedValueOnce(undefined)
+        .mockRejectedValueOnce(new Error('File not found'));
+
+      const { registerCommand } = await import('../commands/register.js');
+
+      await registerCommand.parseAsync(['node', 'test', '--json', 'good.sql', 'bad.sql']);
+
+      expect(spies.exitSpy).toHaveBeenCalledWith(1);
+
+      const jsonOutput = stdoutSpy.mock.calls.map(call => call[0]).join('');
+      const parsed = JSON.parse(jsonOutput);
+
+      expect(parsed.success).toBe(false);
+      expect(parsed.registered).toHaveLength(1);
+      expect(parsed.failed).toHaveLength(1);
+      expect(parsed.failed[0].error).toContain('File not found');
+
+      mockOrchestrator.registerTemplate.mockResolvedValue(undefined);
+    });
+
+    it('outputs JSON with empty registered array when no templates provided', async () => {
+      mockOrchestrator.findTemplates.mockResolvedValue([]);
+
+      const { registerCommand } = await import('../commands/register.js');
+
+      await registerCommand.parseAsync(['node', 'test', '--json']);
+
+      expect(spies.exitSpy).toHaveBeenCalledWith(0);
+
+      const jsonOutput = stdoutSpy.mock.calls.map(call => call[0]).join('');
+      const parsed = JSON.parse(jsonOutput);
+
+      expect(parsed.success).toBe(true);
+      expect(parsed.registered).toHaveLength(0);
+    });
+
+    it('outputs JSON with top-level error field for fatal errors', async () => {
+      // Import and get reference to Orchestrator mock
+      const { Orchestrator } = await import('../services/Orchestrator.js');
+      vi.mocked(Orchestrator.create).mockRejectedValueOnce(new Error('Database connection failed'));
+
+      const { registerCommand } = await import('../commands/register.js');
+
+      await registerCommand.parseAsync(['node', 'test', '--json', 'template.sql']);
+
+      expect(spies.exitSpy).toHaveBeenCalledWith(1);
+
+      const jsonOutput = stdoutSpy.mock.calls.map(call => call[0]).join('');
+      const parsed = JSON.parse(jsonOutput);
+
+      // Fatal errors should use top-level error field, not failed array
+      expect(parsed.success).toBe(false);
+      expect(parsed.command).toBe('register');
+      expect(parsed.error).toBe('Database connection failed');
+      expect(parsed.registered).toHaveLength(0);
+      expect(parsed.failed).toHaveLength(0);
+
+      // Reset mock for other tests
+      vi.mocked(Orchestrator.create).mockResolvedValue(mockOrchestrator);
+    });
+  });
 });
