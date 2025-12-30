@@ -25,9 +25,10 @@ Sleep 1.5s
 
 Type "# The problem: every function change = new migration file"
 Enter
+Enter
 Sleep 2s
 
-Type "ls supabase/migrations/"
+Type "ls -1 supabase/migrations/"
 Enter
 Sleep 2s
 
@@ -41,9 +42,10 @@ Sleep 500ms
 
 Type "# With srtd: templates are the single source of truth"
 Enter
+Enter
 Sleep 2s
 
-Type "ls supabase/migrations-templates/"
+Type "ls -1 supabase/migrations-templates/"
 Enter
 Sleep 2s
 
@@ -67,6 +69,7 @@ Sleep 500ms
 
 Type "# apply = instant reload to local database"
 Enter
+Enter
 Sleep 1.5s
 
 Type "srtd apply"
@@ -75,6 +78,7 @@ Sleep 2.5s
 
 Type "# build = generate migration when ready to deploy"
 Enter
+Enter
 Sleep 1.5s
 
 Type "srtd build"
@@ -82,7 +86,7 @@ Enter
 Sleep 2.5s
 
 # Show new migration appeared
-Type "ls supabase/migrations/"
+Type "ls -1 supabase/migrations/"
 Enter
 Sleep 2.5s
 

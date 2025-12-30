@@ -25,6 +25,7 @@ Sleep 1.5s
 
 Type "# .wip.sql templates: experiment safely without affecting builds"
 Enter
+Enter
 Sleep 2s
 
 # Create a WIP template
@@ -44,6 +45,7 @@ Sleep 500ms
 
 Type "# apply works - test your changes instantly"
 Enter
+Enter
 Sleep 1.5s
 
 Type "srtd apply"
@@ -55,6 +57,7 @@ Sleep 2.5s
 # ============================================================
 
 Type "# build excludes WIP - won't accidentally ship experiments"
+Enter
 Enter
 Sleep 1.5s
 
@@ -68,6 +71,7 @@ Sleep 2.5s
 
 Type "# happy with it? promote to make it buildable"
 Enter
+Enter
 Sleep 1.5s
 
 Type "srtd promote experiment.wip.sql"
@@ -80,6 +84,7 @@ Sleep 2.5s
 
 Type "# now build generates the migration"
 Enter
+Enter
 Sleep 1.5s
 
 Type "srtd build"
@@ -87,7 +92,7 @@ Enter
 Sleep 2.5s
 
 # Show the new migration
-Type "ls supabase/migrations/"
+Type "ls -1 supabase/migrations/"
 Enter
 Sleep 2.5s
 
