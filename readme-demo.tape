@@ -49,7 +49,8 @@ Enter
 Sleep 500ms
 
 # Show ONLY the change with git diff (the money shot)
-Type "git diff --color supabase/migrations-templates/"
+# Use --no-pager to avoid the pager blocking
+Type "git --no-pager diff --color supabase/migrations-templates/"
 Enter
 Sleep 3.5s
 

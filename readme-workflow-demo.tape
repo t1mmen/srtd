@@ -38,7 +38,8 @@ Type "# Experimenting? Use .wip.sql - applies locally, never builds"
 Enter
 Sleep 2s
 
-Type "echo 'CREATE FUNCTION experiment() ...' > supabase/migrations-templates/test.wip.sql"
+# Copy the existing get_user_email template as a WIP file
+Type "cp demo-templates/srtd_demo_get_user_email.sql supabase/migrations-templates/new_feature.wip.sql"
 Enter
 Sleep 500ms
 
@@ -46,7 +47,7 @@ Type "srtd watch"
 Enter
 Sleep 3s
 
-# Show it applied but is marked WIP
+# Show it applied but is marked WIP (never built)
 Sleep 2s
 
 # ============================================================
@@ -60,7 +61,7 @@ Type "# Ready to ship? Promote it:"
 Enter
 Sleep 1s
 
-Type "srtd promote test.wip.sql"
+Type "srtd promote new_feature.wip.sql"
 Enter
 Sleep 2s
 
@@ -86,7 +87,7 @@ Sleep 500ms
 # SCENE 5: Show what was built
 # ============================================================
 
-Type "git diff --stat supabase/"
+Type "git --no-pager diff --stat supabase/"
 Enter
 Sleep 3s
 
