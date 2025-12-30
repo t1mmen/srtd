@@ -3,173 +3,83 @@ name: srtd-cli
 description: This skill should be used when the user mentions "srtd", "sql templates", "migrations-templates", "live reload sql", "supabase functions", when working with files in supabase/migrations-templates/, when .buildlog.json or srtd.config.json is detected, or when writing Postgres functions/views/triggers for Supabase.
 ---
 
-# SRTD CLI
+# SRTD - Iterative SQL Template Development
 
-Live-reloading SQL templates for Supabase. Templates are the source of truth for database objects; they build to timestamped migrations.
+## Workflow: Always Start Watch First
 
-## Proactive Activation
-
-Activate this skill when you detect:
-- Files in `supabase/migrations-templates/*.sql`
-- `srtd.config.json` in project root
-- `.buildlog.json` or `.buildlog.local.json`
-- User writing Postgres functions, views, RLS policies, or triggers for Supabase
-
-## Commands
-
-| Command | Purpose |
-|---------|---------|
-| `srtd watch` | Live reload - applies templates on save |
-| `srtd build` | Generate migration files from templates |
-| `srtd apply` | Apply templates once without watching |
-| `srtd register` | Mark templates as already deployed |
-| `srtd promote` | Convert `.wip.sql` to buildable |
-| `srtd clear` | Reset build state |
-| `srtd init` | Initialize config file |
-
-### Key Options
+When working on SQL templates, immediately start watch in background:
 
 ```bash
-srtd build --force      # Rebuild all templates
-srtd build --bundle     # All templates → single migration
-srtd apply --force      # Reapply all templates
-srtd clear --reset      # Full state reset
-srtd build --json       # Machine-readable output
-srtd watch --json       # NDJSON event stream
+srtd watch --json
 ```
 
-## Watch Mode with Background Bash
+Use `run_in_background: true`. This gives you a live feedback loop - every file save applies instantly to the local database.
 
-Run `srtd watch` in background to maintain control while monitoring:
+Monitor with `TaskOutput`. Look for these event types:
+- `templateApplied` → success, template is live in database
+- `templateError` → failed, check `errorMessage` and `errorHint`, fix the file
 
-```bash
-# Start in background
-srtd watch &
+## Writing Templates
 
-# Or with run_in_background parameter in Claude Code
-# Use TaskOutput to retrieve buffered output
-```
+Templates live in `supabase/migrations-templates/*.sql`. They must be idempotent.
 
-Press `q` to quit, `u` to toggle history. Errors show immediately with file path.
-
-## Template Patterns
-
-Templates must be idempotent (safe to run multiple times).
-
-### Functions
-
+**Functions** - use `CREATE OR REPLACE`:
 ```sql
--- CREATE OR REPLACE works for most changes
-CREATE OR REPLACE FUNCTION public.my_function(param uuid)
+CREATE OR REPLACE FUNCTION public.my_func()
 RETURNS text AS $$
 BEGIN
   RETURN 'result';
 END;
 $$ LANGUAGE plpgsql;
-
--- Use DROP only when changing signature (params/return type)
--- DROP FUNCTION IF EXISTS public.my_function;
--- CREATE FUNCTION public.my_function(new_param text) ...
 ```
 
-### Views
+Only use `DROP FUNCTION IF EXISTS` when changing the function signature (parameters or return type).
 
-```sql
-CREATE OR REPLACE VIEW public.my_view AS
-SELECT id, name FROM users WHERE active = true;
-```
-
-### RLS Policies
-
+**Policies** - must drop first:
 ```sql
 DROP POLICY IF EXISTS "policy_name" ON table_name;
-CREATE POLICY "policy_name" ON table_name
-  USING (auth.uid() = user_id);
+CREATE POLICY "policy_name" ON table_name USING (auth.uid() = user_id);
 ```
 
-### Triggers
-
+**Triggers** - drop both trigger and function:
 ```sql
 DROP TRIGGER IF EXISTS trigger_name ON table_name;
-DROP FUNCTION IF EXISTS trigger_function;
-CREATE FUNCTION trigger_function() RETURNS trigger AS $$
-BEGIN
-  -- logic
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-CREATE TRIGGER trigger_name
-  AFTER INSERT ON table_name
-  FOR EACH ROW EXECUTE FUNCTION trigger_function();
+DROP FUNCTION IF EXISTS trigger_func;
+CREATE FUNCTION trigger_func() RETURNS trigger AS $$ ... $$ LANGUAGE plpgsql SECURITY DEFINER;
+CREATE TRIGGER trigger_name AFTER INSERT ON table_name FOR EACH ROW EXECUTE FUNCTION trigger_func();
 ```
 
-## Dependencies
-
-Declare with `@depends-on` comment:
-
+**Dependencies** - if one template needs another:
 ```sql
 -- @depends-on: helper.sql
-CREATE FUNCTION uses_helper() ...
 ```
-
-Templates sort automatically. Circular dependencies detected.
 
 ## WIP Templates
 
-Use `.wip.sql` suffix for work-in-progress:
-- Applies locally during watch
-- Never builds to migration
-- Promote when ready: `srtd promote file.wip.sql`
+Use `.wip.sql` suffix for experiments. They apply locally but never build to migrations.
 
-## JSON Output
+## When Done Iterating
 
-All commands support `--json` for CI/CD and LLM integrations:
+Only after templates are working and tested:
 
 ```bash
-srtd build --json   # Single JSON object
-srtd watch --json   # NDJSON stream (one event per line)
+srtd build          # Generate migration files
+srtd build --bundle # All templates → single migration (optional)
 ```
 
-Output structure:
-```json
-{"success": true, "command": "build", "results": [...], "summary": {...}}
-```
+Then commit and create PR. The migration files show real diffs for review.
 
-Errors use `{"success": false, "error": {...}}` format.
+## Error Recovery
 
-## Configuration
-
-`srtd.config.json` (optional):
-
-```json
-{
-  "templateDir": "supabase/migrations-templates",
-  "migrationDir": "supabase/migrations",
-  "pgConnection": "postgresql://postgres:postgres@localhost:54322/postgres"
-}
-```
+When `templateError` appears in watch output:
+1. Read the `errorMessage` and `errorHint`
+2. Fix the template file
+3. Save - watch automatically re-applies
+4. Check for `templateApplied` to confirm fix
 
 ## State Files
 
-| File | Purpose | Git |
-|------|---------|-----|
-| `.buildlog.json` | Tracks built migrations | Commit |
-| `.buildlog.local.json` | Tracks local DB state | Gitignore |
+- `.buildlog.json` - tracks built migrations (commit this)
+- `.buildlog.local.json` - tracks local DB state (gitignored)
 
-## What SRTD Is For
-
-**Use SRTD for** (idempotent):
-- Functions, Views, RLS policies, Triggers, Roles, Enum extensions
-
-**Use regular migrations for** (stateful):
-- Table structures, Indexes, Data modifications, Column alterations
-
-## Troubleshooting
-
-| Issue | Solution |
-|-------|----------|
-| "Could not find project root" | Run from directory with `supabase/` folder |
-| Database connection failed | Check config, run `supabase start` |
-| Template not applying | Check SQL syntax, use `DROP IF EXISTS`, try `--force` |
-| State out of sync | `srtd clear --reset` then `srtd watch` |
-| "Interactive mode requires TTY" | Use flags: `srtd clear --local` not `srtd clear` |
+If state gets confused: `srtd clear --reset` then restart watch.
