@@ -5,103 +5,36 @@ description: This skill should be used when the user mentions "srtd", "sql templ
 
 # SRTD - Iterative SQL Template Development
 
-## Workflow: Always Start Watch First
+## Workflow
 
-When working on SQL templates, immediately start watch in background:
-
+Start watch in background immediately:
 ```bash
 srtd watch --json
 ```
+Use `run_in_background: true`. Monitor with `TaskOutput` for events: `templateApplied` (success), `templateError` (check `errorMessage`/`errorHint`).
 
-Use `run_in_background: true`. This gives you a live feedback loop - every file save applies instantly to the local database.
+## Templates
 
-Monitor with `TaskOutput`. Event types:
-- `init` → watch started, lists templates found
-- `templateChanged` → file saved, processing
-- `templateApplied` → success, template is live in database
-- `templateError` → failed, check `errorMessage` and `errorHint`
-- `error` → system error (database connection, etc.)
+Location: `supabase/migrations-templates/*.sql`. Must be idempotent.
 
-## Writing Templates
+**Idempotency patterns:**
+- Functions/Views: `CREATE OR REPLACE` (use `DROP` only when changing signature)
+- Policies: `DROP POLICY IF EXISTS` then `CREATE POLICY` (not replaceable)
+- Triggers: Drop BOTH trigger AND function first
 
-Templates live in `supabase/migrations-templates/*.sql`. Must be idempotent.
+**Dependencies:** `-- @depends-on: other.sql` at top
 
-**Functions** - `CREATE OR REPLACE` works for body changes:
-```sql
-CREATE OR REPLACE FUNCTION public.my_func()
-RETURNS text AS $$
-BEGIN
-  RETURN 'result';
-END;
-$$ LANGUAGE plpgsql;
-```
-Use `DROP FUNCTION IF EXISTS` only when changing signature (params/return type).
+**WIP:** `.wip.sql` suffix → applies locally, never builds
 
-**Policies** - must drop first:
-```sql
-DROP POLICY IF EXISTS "policy_name" ON table_name;
-CREATE POLICY "policy_name" ON table_name USING (auth.uid() = user_id);
-```
-
-**Triggers** - drop both trigger and function:
-```sql
-DROP TRIGGER IF EXISTS trigger_name ON table_name;
-DROP FUNCTION IF EXISTS trigger_func;
-CREATE FUNCTION trigger_func() RETURNS trigger AS $$
-BEGIN
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-CREATE TRIGGER trigger_name AFTER INSERT ON table_name
-  FOR EACH ROW EXECUTE FUNCTION trigger_func();
-```
-
-**Dependencies** - declare at top of file:
-```sql
--- @depends-on: helper.sql
-```
-
-**Common mistakes:**
-- Missing `IF EXISTS` in DROP statements
-- Changing function signature without DROP (fails with `CREATE OR REPLACE`)
-- Not dropping both trigger AND function for trigger changes
-
-## WIP Templates
-
-Use `.wip.sql` suffix for experiments. They apply locally but never build to migrations.
-
-## Alternative: One-off Apply
-
-If watch mode isn't needed (CI/CD, quick test):
+## Commands
 
 ```bash
-srtd apply          # Apply all templates once
-srtd apply --force  # Reapply all, even unchanged
+srtd apply [--force]     # One-off apply
+srtd build [--bundle]    # Generate migrations when done
+srtd clear --reset       # Reset state if confused
 ```
 
-## When Done Iterating
+## State
 
-Only after templates are working and tested:
-
-```bash
-srtd build              # Generate migration files
-srtd build --bundle     # All templates → single migration
-srtd build --force      # Rebuild all, ignore cache
-```
-
-Then commit and create PR. The migration files show real diffs for review.
-
-## Error Recovery
-
-When `templateError` appears in watch output:
-1. Read the `errorMessage` and `errorHint`
-2. Fix the template file
-3. Save - watch automatically re-applies
-4. Check for `templateApplied` to confirm fix
-
-## State Files
-
-- `.buildlog.json` - tracks built migrations (commit this)
-- `.buildlog.local.json` - tracks local DB state (gitignored)
-
-If state gets confused: `srtd clear --reset` then restart watch.
+- `.buildlog.json` → commit (tracks built migrations)
+- `.buildlog.local.json` → gitignored (local DB state)
