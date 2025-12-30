@@ -247,6 +247,9 @@ export async function checkLocalBuildLogValid(
 
 /**
  * Check 9: Database connection works
+ *
+ * Uses Promise.race for timeout but ensures proper cleanup by waiting for
+ * the connection promise to settle before disposing, preventing resource leaks.
  */
 export async function checkDatabaseConnection(
   config: CLIConfig,
@@ -254,6 +257,7 @@ export async function checkDatabaseConnection(
 ): Promise<DoctorCheckResult> {
   const db = DatabaseService.fromConfig(config);
   let timeoutId: NodeJS.Timeout | undefined;
+  let connectionPromise: Promise<boolean> | undefined;
 
   try {
     // Race between testConnection and timeout
@@ -262,7 +266,7 @@ export async function checkDatabaseConnection(
       timeoutId = setTimeout(() => resolve('timeout'), timeoutMs);
     });
 
-    const connectionPromise = db.testConnection();
+    connectionPromise = db.testConnection();
 
     const result = await Promise.race([connectionPromise, timeoutPromise]);
 
@@ -302,10 +306,20 @@ export async function checkDatabaseConnection(
       hint: 'Run `supabase start` or verify pgConnection in srtd.config.json',
     };
   } finally {
-    // Always clean up: clear timer and dispose database connection
+    // Always clean up: clear timer first
     if (timeoutId) {
       clearTimeout(timeoutId);
     }
+
+    // Wait for the connection promise to settle before disposing to prevent
+    // race condition where dispose() runs while connection is still in progress.
+    // This ensures pool.end() doesn't race with pool.connect().
+    if (connectionPromise) {
+      await connectionPromise.catch(() => {
+        // Ignore errors - we just need to wait for it to settle
+      });
+    }
+
     await db.dispose();
   }
 }
