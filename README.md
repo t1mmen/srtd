@@ -133,6 +133,18 @@ my_experiment.wip.sql  → Applies locally, never builds to migration
 When it's ready: `srtd promote my_experiment.wip.sql`
 
 
+## Template Dependencies
+
+Declare dependencies between templates with `@depends-on` comments:
+
+```sql
+-- @depends-on: helper_functions.sql
+CREATE FUNCTION complex_calc() ...
+```
+
+During `apply` and `build`, templates are sorted so dependencies run first. Circular dependencies are detected and reported. Use `--no-deps` to disable.
+
+
 ## Existing Projects
 
 Already have functions in your database? Create templates for them, then:

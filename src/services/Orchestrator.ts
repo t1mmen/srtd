@@ -7,6 +7,7 @@
 import EventEmitter from 'node:events';
 import path from 'node:path';
 import type { CLIConfig, ProcessedTemplateResult, TemplateStatus } from '../types.js';
+import { buildDependencyGraph, detectCycles, topologicalSort } from '../utils/dependencyGraph.js';
 import { isWipTemplate } from '../utils/isWipTemplate.js';
 import type { ValidationWarning } from '../utils/schemas.js';
 import { DatabaseService } from './DatabaseService.js';
@@ -33,6 +34,8 @@ export interface ApplyOptions {
   force?: boolean;
   templatePaths?: string[];
   silent?: boolean;
+  /** Sort templates by dependencies before processing (default: true) */
+  respectDependencies?: boolean;
 }
 
 export interface BuildOptions {
@@ -40,6 +43,8 @@ export interface BuildOptions {
   bundle?: boolean;
   templatePaths?: string[];
   silent?: boolean;
+  /** Sort templates by dependencies before processing (default: true) */
+  respectDependencies?: boolean;
 }
 
 export interface WatchOptions {
@@ -428,8 +433,13 @@ export class Orchestrator extends EventEmitter implements Disposable {
    * Command handler: Apply templates to database
    */
   async apply(options: ApplyOptions = {}): Promise<ProcessedTemplateResult> {
-    const templates = options.templatePaths || (await this.fileSystemService.findTemplates());
+    let templates = options.templatePaths || (await this.fileSystemService.findTemplates());
     const result: ProcessedTemplateResult = { errors: [], applied: [], built: [], skipped: [] };
+
+    // Sort templates by dependencies (default: true)
+    if (options.respectDependencies !== false) {
+      templates = await this.sortByDependencies(templates);
+    }
 
     this.log('\\n');
     const action = options.force ? 'Force applying' : 'Applying';
@@ -474,7 +484,12 @@ export class Orchestrator extends EventEmitter implements Disposable {
    * Command handler: Build migration files from templates
    */
   async build(options: BuildOptions = {}): Promise<ProcessedTemplateResult> {
-    const templates = options.templatePaths || (await this.fileSystemService.findTemplates());
+    let templates = options.templatePaths || (await this.fileSystemService.findTemplates());
+
+    // Sort templates by dependencies (default: true)
+    if (options.respectDependencies !== false) {
+      templates = await this.sortByDependencies(templates);
+    }
 
     this.log('\\n');
 
@@ -819,6 +834,50 @@ export class Orchestrator extends EventEmitter implements Disposable {
     target?: string;
   }> {
     return this.stateService.getRecentActivity(limit);
+  }
+
+  /**
+   * Sort templates by their SQL dependencies
+   * Reads all templates, builds a dependency graph, and returns topologically sorted paths
+   */
+  private async sortByDependencies(templatePaths: string[]): Promise<string[]> {
+    if (templatePaths.length <= 1) {
+      return templatePaths;
+    }
+
+    // Read all templates in parallel to analyze dependencies
+    const templates = await Promise.all(
+      templatePaths.map(async templatePath => {
+        try {
+          const file = await this.fileSystemService.readTemplate(templatePath);
+          return { path: templatePath, content: file.content };
+        } catch (error) {
+          // Log warning but include with empty content so it still appears in sorted output
+          const fileName = path.basename(templatePath);
+          const errorMsg = error instanceof Error ? error.message : String(error);
+          this.log(`Warning: Could not read ${fileName}: ${errorMsg}`, 'warn');
+          return { path: templatePath, content: '' };
+        }
+      })
+    );
+
+    // Build dependency graph and detect cycles
+    const graph = buildDependencyGraph(templates);
+    const cycles = detectCycles(graph);
+
+    // Warn about circular dependencies
+    if (cycles.length > 0) {
+      this.log('Warning: Circular dependencies detected:', 'warn');
+      for (const cycle of cycles) {
+        const firstNode = cycle[0];
+        if (!firstNode) continue;
+        const cycleStr = [...cycle, firstNode].map(p => path.basename(p)).join(' → ');
+        this.log(`  ${cycleStr}`, 'warn');
+      }
+    }
+
+    // Return topologically sorted templates
+    return topologicalSort(graph);
   }
 
   /**

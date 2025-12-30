@@ -89,6 +89,7 @@ describe('Apply Command', () => {
     expect(mockOrchestrator.apply).toHaveBeenCalledWith({
       force: undefined,
       silent: true,
+      respectDependencies: true,
     });
     expect(spies.exitSpy).toHaveBeenCalledWith(0);
   });
@@ -109,6 +110,7 @@ describe('Apply Command', () => {
     expect(mockOrchestrator.apply).toHaveBeenCalledWith({
       force: true,
       silent: true,
+      respectDependencies: true,
     });
   });
 
