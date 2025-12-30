@@ -339,11 +339,12 @@ export async function checkTemplateCount(
       message: `No SQL templates found in ${config.templateDir}`,
       hint: 'Add .sql template files or run `srtd init` to create examples',
     };
-  } catch {
+  } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : 'Unknown error';
     return {
       name: 'Template count',
       passed: false,
-      message: `Cannot read template directory: ${config.templateDir}`,
+      message: `Cannot read template directory: ${errorMsg}`,
       hint: 'Check directory permissions or ensure it exists',
     };
   }
