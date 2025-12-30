@@ -84,6 +84,12 @@ function getTargetDisplay(result: TemplateResult, context: RenderContext): strin
 /**
  * Render a single result row for watch mode (streaming log format).
  * Format: HH:MM:SS  ✔ template.sql applied
+ *
+ * Color semantics:
+ * - success/built: GREEN (just acted on) - icon, path, AND label
+ * - unchanged: DIM (no action)
+ * - changed: path colored, label uncolored (pending action)
+ * - error: RED (problem)
  */
 function renderWatchRow(result: TemplateResult): void {
   const time = result.timestamp ? formatTime.time(result.timestamp) : '';
@@ -92,16 +98,17 @@ function renderWatchRow(result: TemplateResult): void {
   const truncatedPath = formatPath.truncatePath(result.template);
 
   // Use displayOverride if provided (for stacked events like "changed, applied")
-  let statusLabel = result.displayOverride || getStatusLabel(result.status);
+  // displayOverride is pre-colored by watch.ts stackResults()
+  let statusLabel = result.displayOverride || color(getStatusLabel(result.status));
 
   // Add build outdated annotation for changed status
   if (result.status === 'changed' && result.buildOutdated) {
     statusLabel += chalk.yellow(' (build outdated)');
   }
 
-  // Add arrow for built status with target
+  // Add arrow for built status with target (target is also green for "just acted on")
   if (result.status === 'built' && result.target) {
-    statusLabel += ` ${chalk.dim('→')} ${result.target}`;
+    statusLabel += ` ${chalk.dim('→')} ${color(result.target)}`;
   }
 
   // Build the main line: "16:45:02  ✓ .../file.sql applied"
@@ -124,15 +131,19 @@ function renderWatchRow(result: TemplateResult): void {
 /**
  * Render a single result row for build/apply mode (table format).
  * Format: ✔ template.sql → target
+ *
+ * Color semantics:
+ * - success/built: GREEN (just acted on)
+ * - unchanged/skipped: DIM (no action taken)
+ * - error: RED (problem)
  */
 function renderTableRow(result: TemplateResult, context: RenderContext): void {
   const icon = getStatusIcon(result.status);
+  const color = getStatusColor(result.status);
   const templateName = formatPath.ensureSqlExtension(result.template);
-  const isDimmed = result.status === 'unchanged' || result.status === 'skipped';
 
-  const templateDisplay = isDimmed
-    ? chalk.dim(templateName.padEnd(COL_TEMPLATE))
-    : templateName.padEnd(COL_TEMPLATE);
+  // Apply consistent coloring to template name based on status
+  const templateDisplay = color(templateName.padEnd(COL_TEMPLATE));
 
   // For errors, don't show arrow (nothing was created/applied)
   if (result.status === 'error') {
@@ -150,13 +161,13 @@ function renderTableRow(result: TemplateResult, context: RenderContext): void {
   const targetText = getTargetDisplay(result, context);
 
   if (result.status === 'unchanged') {
-    // Unchanged: show target and relative time
+    // Unchanged: dim everything including target and time
     const targetDisplay = chalk.dim(targetText.padEnd(COL_TARGET));
     const timeDisplay = result.timestamp ? chalk.dim(formatTime.relative(result.timestamp)) : '';
     console.log(`${icon} ${templateDisplay} ${arrow} ${targetDisplay} ${timeDisplay}`);
   } else {
-    // Success: just show target
-    console.log(`${icon} ${templateDisplay} ${arrow} ${targetText}`);
+    // Success/built: color the target to match (green = just acted on)
+    console.log(`${icon} ${templateDisplay} ${arrow} ${color(targetText)}`);
   }
 }
 
@@ -174,12 +185,18 @@ export function renderResultRow(result: TemplateResult, context: RenderContext):
 /**
  * Render summary footer with consistent icon format.
  * Pattern: [icon] [message]
+ *
+ * Color semantics: summary uses same colors as results
+ * - Success/built count: GREEN
+ * - Error count: RED
+ * - No changes: DIM
  */
 function renderSummary(results: TemplateResult[], context: RenderContext): void {
   // No summary for watch mode - it's streaming
   if (context.command === 'watch') return;
 
-  const successCount = results.filter(r => r.status === 'success').length;
+  // Count both 'success' (applied) and 'built' as successful actions
+  const successCount = results.filter(r => r.status === 'success' || r.status === 'built').length;
   const errorCount = results.filter(r => r.status === 'error').length;
   const unchangedCount = results.filter(r => r.status === 'unchanged').length;
 
