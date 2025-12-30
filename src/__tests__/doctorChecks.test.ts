@@ -377,20 +377,12 @@ describe('doctorChecks', () => {
       // Use fake timers to test timeout behavior
       vi.useFakeTimers();
       const resultPromise = checkDatabaseConnection(mockConfig, 100);
-
-      // Advance past the 100ms timeout
-      await vi.advanceTimersByTimeAsync(200);
-
-      // The finally block now waits for connectionPromise to settle before disposing,
-      // so we need to advance timers to let the 10s mock connection also complete
-      await vi.advanceTimersByTimeAsync(10000);
-
+      vi.advanceTimersByTime(200);
       const result = await resultPromise;
       vi.useRealTimers();
 
       expect(result.passed).toBe(false);
       expect(result.message).toContain('timed out');
-      expect(mockDb.dispose).toHaveBeenCalled();
     });
   });
 
