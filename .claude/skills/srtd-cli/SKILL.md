@@ -15,56 +15,43 @@ srtd watch --json
 
 Use `run_in_background: true`. This gives you a live feedback loop - every file save applies instantly to the local database.
 
-Monitor with `TaskOutput`. Look for these event types:
+Monitor with `TaskOutput`. Event types:
+- `init` → watch started, lists templates found
+- `templateChanged` → file saved, processing
 - `templateApplied` → success, template is live in database
-- `templateError` → failed, check `errorMessage` and `errorHint`, fix the file
+- `templateError` → failed, check `errorMessage` and `errorHint`
+- `error` → system error (database connection, etc.)
 
 ## Writing Templates
 
-Templates live in `supabase/migrations-templates/*.sql`. They must be idempotent.
+Templates live in `supabase/migrations-templates/*.sql`. They must be idempotent (safe to run multiple times).
 
-**Functions** - use `CREATE OR REPLACE`:
-```sql
-CREATE OR REPLACE FUNCTION public.my_func()
-RETURNS text AS $$
-BEGIN
-  RETURN 'result';
-END;
-$$ LANGUAGE plpgsql;
-```
-
-Only use `DROP FUNCTION IF EXISTS` when changing the function signature (parameters or return type).
-
-**Policies** - must drop first:
-```sql
-DROP POLICY IF EXISTS "policy_name" ON table_name;
-CREATE POLICY "policy_name" ON table_name USING (auth.uid() = user_id);
-```
-
-**Triggers** - drop both trigger and function:
-```sql
-DROP TRIGGER IF EXISTS trigger_name ON table_name;
-DROP FUNCTION IF EXISTS trigger_func;
-CREATE FUNCTION trigger_func() RETURNS trigger AS $$ ... $$ LANGUAGE plpgsql SECURITY DEFINER;
-CREATE TRIGGER trigger_name AFTER INSERT ON table_name FOR EACH ROW EXECUTE FUNCTION trigger_func();
-```
-
-**Dependencies** - if one template needs another:
-```sql
--- @depends-on: helper.sql
-```
+See the SRTD rule (injected when editing templates) for SQL patterns. Key points:
+- Functions: `CREATE OR REPLACE` works; use `DROP` only when changing signature
+- Policies/Triggers: Must `DROP IF EXISTS` first
+- Dependencies: `-- @depends-on: helper.sql` comment at top
 
 ## WIP Templates
 
 Use `.wip.sql` suffix for experiments. They apply locally but never build to migrations.
+
+## Alternative: One-off Apply
+
+If watch mode isn't needed (CI/CD, quick test):
+
+```bash
+srtd apply          # Apply all templates once
+srtd apply --force  # Reapply all, even unchanged
+```
 
 ## When Done Iterating
 
 Only after templates are working and tested:
 
 ```bash
-srtd build          # Generate migration files
-srtd build --bundle # All templates → single migration (optional)
+srtd build              # Generate migration files
+srtd build --bundle     # All templates → single migration
+srtd build --force      # Rebuild all, ignore cache
 ```
 
 Then commit and create PR. The migration files show real diffs for review.

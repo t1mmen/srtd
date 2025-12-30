@@ -1,7 +1,6 @@
 ---
 paths:
-  - "supabase/migrations-templates/**/*.sql"
-  - "**/migrations-templates/**/*.sql"
+  - "**/supabase/migrations-templates/**/*.sql"
 ---
 
 # SRTD Template Rules
@@ -12,10 +11,43 @@ You are editing an SRTD template file. These templates are the source of truth f
 
 All templates MUST be idempotent. Use these patterns:
 
-**Functions**: `CREATE OR REPLACE FUNCTION name...` (use `DROP FUNCTION IF EXISTS` only when changing signature)
-**Views**: `CREATE OR REPLACE VIEW name AS...`
-**Policies**: `DROP POLICY IF EXISTS "name" ON table; CREATE POLICY...`
-**Triggers**: Drop trigger AND function first, then recreate both
+**Functions** - `CREATE OR REPLACE` works for body changes:
+```sql
+CREATE OR REPLACE FUNCTION public.my_func()
+RETURNS text AS $$
+BEGIN
+  RETURN 'result';
+END;
+$$ LANGUAGE plpgsql;
+```
+
+Use `DROP FUNCTION IF EXISTS` only when changing signature (params/return type).
+
+**Views** - always replaceable:
+```sql
+CREATE OR REPLACE VIEW public.my_view AS
+SELECT id, name FROM users WHERE active = true;
+```
+
+**Policies** - must drop first:
+```sql
+DROP POLICY IF EXISTS "policy_name" ON table_name;
+CREATE POLICY "policy_name" ON table_name USING (auth.uid() = user_id);
+```
+
+**Triggers** - drop both trigger and function:
+```sql
+DROP TRIGGER IF EXISTS trigger_name ON table_name;
+DROP FUNCTION IF EXISTS trigger_func;
+CREATE FUNCTION trigger_func() RETURNS trigger AS $$
+BEGIN
+  -- logic
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+CREATE TRIGGER trigger_name AFTER INSERT ON table_name
+  FOR EACH ROW EXECUTE FUNCTION trigger_func();
+```
 
 ## Template Dependencies
 
@@ -31,14 +63,6 @@ Files ending in `.wip.sql`:
 - Apply locally during `srtd watch`
 - Never build to migrations
 - Promote when ready: `srtd promote filename.wip.sql`
-
-## Testing Workflow
-
-1. Run `srtd watch` in background (use `run_in_background` or `&`)
-2. Edit template, save
-3. Check watch output for errors
-4. Test in Supabase Studio or psql
-5. When ready: `srtd build`
 
 ## Common Mistakes
 
