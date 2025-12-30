@@ -233,6 +233,18 @@ Nested directories are created automatically.
 | `.buildlog.json`       | What's been built to migrations | Commit    |
 | `.buildlog.local.json` | What's applied to your local DB | Gitignore |
 
+## Claude Code Integration
+
+SRTD includes a skill and rule for [Claude Code](https://claude.ai/code) users:
+
+```bash
+# Copy to your project's .claude directory
+cp -r node_modules/@t1mmen/srtd/.claude/skills/srtd-cli .claude/skills/
+cp -r node_modules/@t1mmen/srtd/.claude/rules/srtd.md .claude/rules/
+```
+
+The skill activates when working with SQL templates. The rule provides inline guidance for template files.
+
 ## Contributing
 
 Bug fixes, docs, and test coverage welcome. See [CONTRIBUTING.md](./CONTRIBUTING.md).
