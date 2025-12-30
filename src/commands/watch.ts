@@ -503,9 +503,13 @@ export const watchCommand = new Command('watch')
         // The process will be terminated by the keyboard handler or SIGINT
       });
     } catch (error) {
-      console.log();
-      console.log(chalk.red(`${figures.cross} Error starting watch mode:`));
-      console.log(chalk.red(getErrorMessage(error)));
+      if (jsonMode) {
+        ndjsonEvent('error', { message: getErrorMessage(error) });
+      } else {
+        console.log();
+        console.log(chalk.red(`${figures.cross} Error starting watch mode:`));
+        console.log(chalk.red(getErrorMessage(error)));
+      }
       if (orchestrator) {
         await orchestrator.dispose();
       }

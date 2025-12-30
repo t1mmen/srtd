@@ -326,5 +326,53 @@ describe('Apply Command', () => {
         context: { command: 'apply', forced: undefined, json: undefined },
       });
     });
+
+    it('outputs JSON error when fatal error occurs with --json flag', async () => {
+      const { applyCommand } = await import('../commands/apply.js');
+
+      // Capture stdout output
+      const outputs: string[] = [];
+      const stdoutSpy = vi.spyOn(process.stdout, 'write').mockImplementation((chunk: unknown) => {
+        if (typeof chunk === 'string') {
+          outputs.push(chunk);
+        }
+        return true;
+      });
+
+      mockOrchestrator.apply.mockRejectedValue(new Error('Database connection failed'));
+
+      await applyCommand.parseAsync(['node', 'test', '--json']);
+
+      // Find JSON error output (includes space due to pretty-printing)
+      const jsonOutputStr = outputs.find(o => o.includes('"success": false'));
+      expect(jsonOutputStr).toBeDefined();
+
+      const jsonOutput = JSON.parse(jsonOutputStr!);
+      expect(jsonOutput).toMatchObject({
+        success: false,
+        command: 'apply',
+        error: 'Database connection failed',
+        results: [],
+        summary: { total: 0, success: 0, error: 1, unchanged: 0, skipped: 0 },
+      });
+      expect(jsonOutput.timestamp).toBeDefined();
+
+      expect(spies.exitSpy).toHaveBeenCalledWith(1);
+      stdoutSpy.mockRestore();
+    });
+
+    it('outputs human-readable error when fatal error occurs without --json flag', async () => {
+      const { applyCommand } = await import('../commands/apply.js');
+
+      mockOrchestrator.apply.mockRejectedValue(new Error('Database connection failed'));
+
+      await applyCommand.parseAsync(['node', 'test']);
+
+      // Should use console.log with chalk.red for human-readable error
+      const output = spies.consoleLogSpy.mock.calls.flat().join('\n');
+      expect(output).toContain('Error applying templates');
+      expect(output).toContain('Database connection failed');
+      expect(spies.exitSpy).toHaveBeenCalledWith(1);
+    });
   });
 });

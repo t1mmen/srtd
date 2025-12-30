@@ -508,5 +508,53 @@ describe('Build Command', () => {
       });
       expect(spies.exitSpy).toHaveBeenCalledWith(1);
     });
+
+    it('outputs JSON error when fatal error occurs with --json flag', async () => {
+      const { buildCommand } = await import('../commands/build.js');
+
+      // Capture stdout output
+      const outputs: string[] = [];
+      const stdoutSpy = vi.spyOn(process.stdout, 'write').mockImplementation((chunk: unknown) => {
+        if (typeof chunk === 'string') {
+          outputs.push(chunk);
+        }
+        return true;
+      });
+
+      mockOrchestrator.build.mockRejectedValue(new Error('File system error'));
+
+      await buildCommand.parseAsync(['node', 'test', '--json']);
+
+      // Find JSON error output (includes space due to pretty-printing)
+      const jsonOutputStr = outputs.find(o => o.includes('"success": false'));
+      expect(jsonOutputStr).toBeDefined();
+
+      const jsonOutput = JSON.parse(jsonOutputStr!);
+      expect(jsonOutput).toMatchObject({
+        success: false,
+        command: 'build',
+        error: 'File system error',
+        results: [],
+        summary: { total: 0, success: 0, error: 1, unchanged: 0, skipped: 0 },
+      });
+      expect(jsonOutput.timestamp).toBeDefined();
+
+      expect(spies.exitSpy).toHaveBeenCalledWith(1);
+      stdoutSpy.mockRestore();
+    });
+
+    it('outputs human-readable error when fatal error occurs without --json flag', async () => {
+      const { buildCommand } = await import('../commands/build.js');
+
+      mockOrchestrator.build.mockRejectedValue(new Error('File system error'));
+
+      await buildCommand.parseAsync(['node', 'test']);
+
+      // Should use console.log with chalk.red for human-readable error
+      const output = spies.consoleLogSpy.mock.calls.flat().join('\n');
+      expect(output).toContain('Error building templates');
+      expect(output).toContain('File system error');
+      expect(spies.exitSpy).toHaveBeenCalledWith(1);
+    });
   });
 });

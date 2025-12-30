@@ -6,7 +6,8 @@ export type StreamEventType =
   | 'templateApplied'
   | 'templateError'
   | 'templateBuilt'
-  | 'buildComplete';
+  | 'buildComplete'
+  | 'error';
 
 export interface StreamEvent {
   type: StreamEventType;

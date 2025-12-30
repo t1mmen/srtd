@@ -103,9 +103,26 @@ export const buildCommand = new Command('build')
       exitCode = result.errors.length > 0 ? 1 : 0;
       // Exit happens after using block completes (dispose runs)
     } catch (error) {
-      console.log();
-      console.log(chalk.red(`${figures.cross} Error building templates:`));
-      console.log(chalk.red(getErrorMessage(error)));
+      if (options.json) {
+        process.stdout.write(
+          `${JSON.stringify(
+            {
+              success: false,
+              command: 'build',
+              timestamp: new Date().toISOString(),
+              error: getErrorMessage(error),
+              results: [],
+              summary: { total: 0, success: 0, error: 1, unchanged: 0, skipped: 0 },
+            },
+            null,
+            2
+          )}\n`
+        );
+      } else {
+        console.log();
+        console.log(chalk.red(`${figures.cross} Error building templates:`));
+        console.log(chalk.red(getErrorMessage(error)));
+      }
       exitCode = 1;
     }
 

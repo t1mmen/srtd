@@ -230,6 +230,38 @@ describe('Watch Command', () => {
     expect(spies.exitSpy).toHaveBeenCalledWith(1);
   });
 
+  it('outputs JSON error when fatal error occurs with --json flag', async () => {
+    const Orchestrator = (await import('../services/Orchestrator.js')).Orchestrator;
+    vi.mocked(Orchestrator.create).mockRejectedValue(new Error('DB connection failed'));
+    const ndjsonOutput = await import('../output/ndjsonOutput.js');
+
+    const { watchCommand } = await import('../commands/watch.js');
+
+    await watchCommand.parseAsync(['node', 'test', '--json']);
+
+    // Should call ndjsonEvent with error type
+    expect(ndjsonOutput.ndjsonEvent).toHaveBeenCalledWith('error', {
+      message: 'DB connection failed',
+    });
+
+    expect(spies.exitSpy).toHaveBeenCalledWith(1);
+  });
+
+  it('outputs human-readable error when fatal error occurs without --json flag', async () => {
+    const Orchestrator = (await import('../services/Orchestrator.js')).Orchestrator;
+    vi.mocked(Orchestrator.create).mockRejectedValue(new Error('DB connection failed'));
+
+    const { watchCommand } = await import('../commands/watch.js');
+
+    await watchCommand.parseAsync(['node', 'test']);
+
+    // Should use console.log with chalk.red for human-readable error
+    const output = spies.consoleLogSpy.mock.calls.flat().join('\n');
+    expect(output).toContain('Error starting watch mode');
+    expect(output).toContain('DB connection failed');
+    expect(spies.exitSpy).toHaveBeenCalledWith(1);
+  });
+
   it('handles template loading errors', async () => {
     mockOrchestrator.getTemplateStatusExternal.mockRejectedValue(new Error('Template error'));
 
