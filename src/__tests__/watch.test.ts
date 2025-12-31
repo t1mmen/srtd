@@ -149,15 +149,16 @@ describe('stackResults', () => {
     expect(stacked[0].template).toBe('/test.sql');
   });
 
-  it('stacks consecutive events for same template', () => {
+  it('stacks consecutive events for same template, showing only applied', () => {
     const results = [
       { template: '/test.sql', status: 'changed' as const, timestamp: new Date() },
       { template: '/test.sql', status: 'success' as const, timestamp: new Date() },
     ];
     const stacked = stackResults(results);
     expect(stacked).toHaveLength(1);
-    expect(stacked[0].displayOverride).toContain('changed');
-    expect(stacked[0].displayOverride).toContain('applied');
+    // When changed→applied, we only show applied (the meaningful action)
+    expect(stacked[0].status).toBe('success');
+    expect(stacked[0].displayOverride).toBeUndefined();
   });
 
   it('does not stack when error is involved', () => {
@@ -611,11 +612,11 @@ describe('renderScreen', () => {
 
     // Should only call renderResultRow once (stacked)
     expect(ui.renderResultRow).toHaveBeenCalledTimes(1);
-    // The stacked result should have displayOverride with both states
+    // The stacked result should show success status (applied wins over changed)
     expect(ui.renderResultRow).toHaveBeenCalledWith(
       expect.objectContaining({
         template: '/templates/test.sql',
-        displayOverride: expect.stringContaining('applied'),
+        status: 'success',
       }),
       { command: 'watch' }
     );

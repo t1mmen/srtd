@@ -82,17 +82,39 @@ function getTargetDisplay(result: TemplateResult, context: RenderContext): strin
 }
 
 /**
+ * Check if a timestamp is recent (within the last minute).
+ */
+function isRecent(timestamp: Date | undefined): boolean {
+  if (!timestamp) return false;
+  const ONE_MINUTE = 60 * 1000;
+  return Date.now() - timestamp.getTime() < ONE_MINUTE;
+}
+
+/**
  * Render a single result row for watch mode (streaming log format).
  * Format: HH:MM:SS  ✔ template.sql applied
+ *
+ * Color semantics:
+ * - Recent success/built (< 1min): GREEN (just acted on)
+ * - Old success/built (> 1min): DIM (historic, no longer "fresh")
+ * - unchanged: DIM (no action)
+ * - changed: DIM icon, normal text (pending action)
+ * - error: RED (problem)
  */
 function renderWatchRow(result: TemplateResult): void {
   const time = result.timestamp ? formatTime.time(result.timestamp) : '';
-  const icon = getStatusIcon(result.status);
-  const color = getStatusColor(result.status);
   const truncatedPath = formatPath.truncatePath(result.template);
 
-  // Use displayOverride if provided (for stacked events like "changed, applied")
-  let statusLabel = result.displayOverride || getStatusLabel(result.status);
+  // For success/built, check if recent - old entries should be dim
+  const recent = isRecent(result.timestamp);
+  const isSuccessType = result.status === 'success' || result.status === 'built';
+
+  // Determine effective color based on recency
+  const color = isSuccessType && !recent ? chalk.dim : getStatusColor(result.status);
+  const icon = isSuccessType && !recent ? chalk.dim(figures.tick) : getStatusIcon(result.status);
+
+  // Use displayOverride if provided, otherwise color the label
+  let statusLabel = result.displayOverride || color(getStatusLabel(result.status));
 
   // Add build outdated annotation for changed status
   if (result.status === 'changed' && result.buildOutdated) {
@@ -101,7 +123,7 @@ function renderWatchRow(result: TemplateResult): void {
 
   // Add arrow for built status with target
   if (result.status === 'built' && result.target) {
-    statusLabel += ` ${chalk.dim('→')} ${result.target}`;
+    statusLabel += ` ${chalk.dim('→')} ${color(result.target)}`;
   }
 
   // Build the main line: "16:45:02  ✓ .../file.sql applied"
@@ -124,15 +146,19 @@ function renderWatchRow(result: TemplateResult): void {
 /**
  * Render a single result row for build/apply mode (table format).
  * Format: ✔ template.sql → target
+ *
+ * Color semantics:
+ * - success/built: GREEN (just acted on)
+ * - unchanged/skipped: DIM (no action taken)
+ * - error: RED (problem)
  */
 function renderTableRow(result: TemplateResult, context: RenderContext): void {
   const icon = getStatusIcon(result.status);
+  const color = getStatusColor(result.status);
   const templateName = formatPath.ensureSqlExtension(result.template);
-  const isDimmed = result.status === 'unchanged' || result.status === 'skipped';
 
-  const templateDisplay = isDimmed
-    ? chalk.dim(templateName.padEnd(COL_TEMPLATE))
-    : templateName.padEnd(COL_TEMPLATE);
+  // Apply consistent coloring to template name based on status
+  const templateDisplay = color(templateName.padEnd(COL_TEMPLATE));
 
   // For errors, don't show arrow (nothing was created/applied)
   if (result.status === 'error') {
@@ -140,9 +166,11 @@ function renderTableRow(result: TemplateResult, context: RenderContext): void {
     return;
   }
 
-  // For skipped (WIP templates), show label instead of target
+  // For skipped (WIP templates), show hint to promote
   if (result.status === 'skipped') {
-    console.log(`${icon} ${templateDisplay} ${chalk.yellow('(wip)')}`);
+    console.log(
+      `${icon} ${templateDisplay} ${chalk.yellow('(wip)')} ${chalk.dim.italic('promote to build')}`
+    );
     return;
   }
 
@@ -150,13 +178,13 @@ function renderTableRow(result: TemplateResult, context: RenderContext): void {
   const targetText = getTargetDisplay(result, context);
 
   if (result.status === 'unchanged') {
-    // Unchanged: show target and relative time
+    // Unchanged: dim everything including target and time
     const targetDisplay = chalk.dim(targetText.padEnd(COL_TARGET));
     const timeDisplay = result.timestamp ? chalk.dim(formatTime.relative(result.timestamp)) : '';
     console.log(`${icon} ${templateDisplay} ${arrow} ${targetDisplay} ${timeDisplay}`);
   } else {
-    // Success: just show target
-    console.log(`${icon} ${templateDisplay} ${arrow} ${targetText}`);
+    // Success/built: color the target to match (green = just acted on)
+    console.log(`${icon} ${templateDisplay} ${arrow} ${color(targetText)}`);
   }
 }
 
@@ -174,12 +202,18 @@ export function renderResultRow(result: TemplateResult, context: RenderContext):
 /**
  * Render summary footer with consistent icon format.
  * Pattern: [icon] [message]
+ *
+ * Color semantics: summary uses same colors as results
+ * - Success/built count: GREEN
+ * - Error count: RED
+ * - No changes: DIM
  */
 function renderSummary(results: TemplateResult[], context: RenderContext): void {
   // No summary for watch mode - it's streaming
   if (context.command === 'watch') return;
 
-  const successCount = results.filter(r => r.status === 'success').length;
+  // Count both 'success' (applied) and 'built' as successful actions
+  const successCount = results.filter(r => r.status === 'success' || r.status === 'built').length;
   const errorCount = results.filter(r => r.status === 'error').length;
   const unchangedCount = results.filter(r => r.status === 'unchanged').length;
 
@@ -223,9 +257,18 @@ function renderSummary(results: TemplateResult[], context: RenderContext): void 
 export function renderResultsTable(options: RenderResultsOptions): void {
   const { results, context } = options;
 
-  // Preserve order for all commands - no sorting
-  // This ensures consistent "oldest at top, newest at bottom" log-style ordering
-  for (const result of results) {
+  // For build command, sort skipped (WIP) templates to bottom
+  // This keeps focus on what will actually be built
+  const sortedResults =
+    context.command === 'build'
+      ? [...results].sort((a, b) => {
+          if (a.status === 'skipped' && b.status !== 'skipped') return 1;
+          if (a.status !== 'skipped' && b.status === 'skipped') return -1;
+          return 0;
+        })
+      : results;
+
+  for (const result of sortedResults) {
     renderResultRow(result, context);
   }
 

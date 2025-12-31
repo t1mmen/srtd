@@ -1,11 +1,26 @@
 {
   "version": "1.0",
-  "lastTimestamp": "20251225224707",
+  "lastTimestamp": "20251231023406",
   "templates": {
-    "supabase/migrations-templates/test.sql": {
-      "lastBuildHash": "a4f9d397c92386bd2ad51d7c5859e8ef",
-      "lastBuildDate": "2025-12-25T22:47:07.825Z",
-      "lastMigrationFile": "20251225224707_srtd-test.sql"
+    "supabase/migrations-templates/srtd_demo_audit.sql": {
+      "lastBuildHash": "89817c1f3b79bc135d269fb85a06a4ef",
+      "lastBuildDate": "2025-12-30T19:11:56.585Z",
+      "lastMigrationFile": "20251230191156_srtd-srtd_demo_audit.sql"
+    },
+    "supabase/migrations-templates/srtd_demo_greet.sql": {
+      "lastBuildHash": "398240467d16b9c2e1ba89aae483491d",
+      "lastBuildDate": "2025-12-30T19:11:56.585Z",
+      "lastMigrationFile": "20251230191157_srtd-srtd_demo_greet.sql"
+    },
+    "supabase/migrations-templates/srtd_demo_rls.sql": {
+      "lastBuildHash": "ddcdde275141fabaef97a1aacb19aebd",
+      "lastBuildDate": "2025-12-30T19:11:56.586Z",
+      "lastMigrationFile": "20251230191158_srtd-srtd_demo_rls.sql"
+    },
+    "supabase/migrations-templates/experiment.sql": {
+      "lastBuildHash": "4c9f307fef43509072acf4d6f18285d0",
+      "lastBuildDate": "2025-12-31T02:34:06.990Z",
+      "lastMigrationFile": "20251231023406_srtd-experiment.sql"
     }
   }
 }

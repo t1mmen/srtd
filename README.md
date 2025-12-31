@@ -1,46 +1,109 @@
-# `srtd` — Live-Reloading SQL Templates for Postgres
-
-> Edit `my_function.sql` → save → it's running on your local database. No migration dance, no restart. When you're ready to ship, build to migrations that show real diffs in PRs.
+# `srtd` — Live-Reloading, declarative, SQL migration templates for Supabase and Postgres
 
 [![NPM Version](https://img.shields.io/npm/v/%40t1mmen%2Fsrtd)](https://www.npmjs.com/package/@t1mmen/srtd)
 [![Downloads](https://img.shields.io/npm/dt/%40t1mmen%2Fsrtd)](https://www.npmjs.com/package/@t1mmen/srtd)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![CI/CD](https://github.com/t1mmen/srtd/actions/workflows/ci.yml/badge.svg)](https://github.com/t1mmen/srtd/actions/workflows/ci.yml)
 
-[![demo](./readme-demo.gif)](./readme-demo.gif)
+> **The workflow of Vite or Nodemon—but for SQL**.
+> Hot-reload SQL while you iterate. Build as migrations when it's time to ship.
 
-## Why This Exists
 
-Two things drove me crazy while building [Timely](https://www.timely.com)'s [Memory Engine](https://www.timely.com/memory-app) on Supabase:
 
-**1. Iterating on database logic was painfully slow.**
-Edit in your IDE → copy to Supabase SQL editor → run → hit an error → fix in IDE → copy again → repeat. Or: create migration → apply → error → create another migration → apply. Either way, more ceremony than actual coding.
+![demo](./assets/demo.gif)
 
-**2. Code reviews for database changes were useless.**
-Every function change showed up as a complete rewrite in git. Reviewers couldn't see what actually changed. `git blame` was worthless.
+---
 
-After [searching](https://news.ycombinator.com/item?id=37755076) for [two years](https://news.ycombinator.com/item?id=36007640), I built `srtd`.
+### Why srtd exists
 
-## How It Works
+Database development usually has a slow, frustrating feedback loop:
 
-Your functions, views, RLS policies, and triggers live in **template files**—plain SQL that's the source of truth.
+- Edit SQL in your IDE
+- Copy to SQL editor or create migration
+- Run it
+  - Hit an error? Fix in IDE, copy again, run again
+  - Works? Back to your IDE, until the next change
+- Repeat
 
+Code reviews aren't much better. Changing a single line in a function often shows up as a full rewrite in Git, making it hard to see what actually changed.
+
+**srtd exists to fix both problems:**
+
+- **Fast local iteration** with live reload
+- **Clean, reviewable diffs** for database logic
+- **Real migrations** for production safety
+
+After [searching](https://news.ycombinator.com/item?id=37755076) for [two years](https://news.ycombinator.com/item?id=36007640) while building [Timely](https://www.timely.com)'s [Memory Engine](https://www.timely.com/memory-app) on Supabase, the itch needed to be scratched.
+
+---
+
+### The core idea
+
+srtd intentionally separates **iteration**, **review**, and **execution**.
+
+#### Templates are for humans
+
+- Plain SQL files
+- Concise and readable
+- The primary thing you review in Git
+
+#### Migrations are for databases
+
+- Generated from templates
+- Explicit and deterministic
+- Safe to deploy in CI and production
+
+Templates evolve over time. Migrations are the execution record.
+
+---
+
+### The diff problem—solved
+
+Without templates, changing one line in a function means your PR shows a complete rewrite—the old `DROP` + `CREATE` replaced by a new one. Reviewers have to read the whole thing, _and_ manually compare it to the _last_ migration to touch the function to spot changes. Talk about friction!
+
+With srtd, your PR shows what you actually changed;
+
+<table>
+<tr>
+<td valign="top">
+
+**Without srtd**
+
+```diff
++ DROP FUNCTION IF EXISTS calculate_total;
++ CREATE FUNCTION calculate_total(order_id uuid)
++ RETURNS numeric AS $fn$
++ BEGIN
++   RETURN (SELECT SUM(price * quantity) FROM order_items);
++ END;
++ $fn$ LANGUAGE plpgsql;
 ```
-supabase/migrations-templates/
-├── notify_changes.sql
-├── user_policies.sql
-└── active_subscriptions.sql
+
+</td>
+<td  valign="top">
+
+**With srtd**
+
+```diff
+  CREATE FUNCTION calculate_total(order_id uuid)
+  RETURNS numeric AS $fn$
+  BEGIN
+-   RETURN (SELECT SUM(price) FROM order_items);
++   RETURN (SELECT SUM(price * quantity) FROM order_items);
+  END;
+  $fn$ LANGUAGE plpgsql;
 ```
 
-**During development:** `srtd watch` monitors your templates. Save a file, it applies to your local database instantly. Like hot reload, but for Postgres.
+</td>
+</tr>
+</table>
 
-**When you're ready to ship:** `srtd build` generates timestamped migrations from your templates.
+`git blame` works. Code reviews are useful. Your database logic is treated like real code.
 
-```
-Edit template → Instantly applies locally → Build migration → Deploy
-```
 
-## Quick Start
+## How To Use It
+
+### Quick start
 
 ```bash
 npm install -g @t1mmen/srtd
@@ -59,7 +122,7 @@ EOF
 srtd watch
 ```
 
-Edit `hello.sql`, save, and it's live on your local database. No migration file, no restart, no waiting.
+Edit `hello.sql`, save—it's live on your local database. No migration file, no restart, no waiting.
 
 When ready to deploy:
 
@@ -68,51 +131,70 @@ srtd build            # Creates supabase/migrations/20241226_srtd-hello.sql
 supabase migration up # Deploy with Supabase CLI
 ```
 
-## The Diff Problem, Solved
-
-Without templates, changing one line in a function means your PR shows a complete rewrite—the old `DROP` + `CREATE` replaced by a new one. Reviewers have to read the whole thing to spot your change.
-
-With templates, your PR shows what you actually changed:
-
-```diff
-  CREATE FUNCTION calculate_total(order_id uuid)
-  RETURNS numeric AS $$
-  BEGIN
--   RETURN (SELECT SUM(price) FROM order_items WHERE order_id = $1);
-+   RETURN (SELECT SUM(price * quantity) FROM order_items WHERE order_id = $1);
-  END;
-  $$ LANGUAGE plpgsql;
-```
-
-`git blame` works. Code reviews are useful. Your database logic is treated like real code.
-
-## Commands
-
-| Command         | What it does                          |
-| --------------- | ------------------------------------- |
-| `srtd`          | Interactive menu                      |
-| `srtd watch`    | Live reload—applies templates on save |
-| `srtd build`    | Generate migration files              |
-| `srtd apply`    | Apply all templates once (no watch)   |
-| `srtd register` | Mark templates as already deployed    |
-| `srtd promote`  | Convert `.wip` template to buildable  |
-| `srtd clear`    | Reset build state                     |
-| `srtd init`     | Initialize config file                |
-
-Options: `build --force` rebuilds all, `build --bundle` combines into single migration, `--no-deps` disables dependency ordering.
-
-## JSON Output
-
-All commands support `--json` for machine-readable output (CI/CD, LLM integrations):
+Already have functions deployed? Create templates for them, then register so srtd knows they're not new:
 
 ```bash
-srtd build --json   # Single JSON object with results array and summary
-srtd watch --json   # NDJSON stream (one event per line)
+srtd register existing_function.sql  # Won't rebuild until the template actually changes
 ```
 
-Output includes `success`, `command`, `timestamp`, and command-specific fields. Errors use a top-level `error` field.
+---
 
-## What Works as Templates
+### Development loop (watch mode)
+
+```bash
+srtd watch   # Edit template → auto-applied to local DB
+```
+
+Hot reload is a **DX feature**. It exists to make iteration smooth and fast.
+
+![Watch mode demo](./assets/watch-demo.gif)
+
+---
+
+### Shipping to production (generate migrations)
+
+
+```bash
+srtd build            # → migrations/20250109123456_srtd-template-name.sql
+supabase migration up # Deploy via Supabase CLI
+```
+
+Generated migrations fully redefine objects—databases prefer explicit redefinition, humans prefer small diffs. srtd optimizes for both in different layers.
+
+---
+
+### WIP templates
+
+Use `.wip.sql` files for experiments:
+
+```
+my_experiment.wip.sql  → Applies locally, never builds to migration
+```
+
+- Applied during `watch` and `apply`
+- Excluded from `build`
+- Safe to experiment without affecting production
+
+When ready: `srtd promote my_experiment.wip.sql`
+
+![WIP workflow demo](./assets/workflow-demo.gif)
+
+---
+
+### Template dependencies
+
+Declare dependencies between templates with `@depends-on` comments:
+
+```sql
+-- @depends-on: helper_functions.sql
+CREATE FUNCTION complex_calc() ...
+```
+
+During `apply` and `build`, templates are sorted so dependencies run first. Circular dependencies are detected and reported. Use `--no-deps` to disable.
+
+---
+
+### What works as templates
 
 Templates need to be **idempotent**—safe to run multiple times. This works great for:
 
@@ -127,38 +209,59 @@ Templates need to be **idempotent**—safe to run multiple times. This works gre
 
 **Not for templates:** Table structures, indexes, data modifications—use regular migrations for those.
 
-## WIP Templates
+---
 
-Experimenting? Add `.wip.sql` extension:
-
-```
-my_experiment.wip.sql  → Applies locally, never builds to migration
-```
-
-When it's ready: `srtd promote my_experiment.wip.sql`
-
-## Template Dependencies
-
-Declare dependencies between templates with `@depends-on` comments:
-
-```sql
--- @depends-on: helper_functions.sql
-CREATE FUNCTION complex_calc() ...
-```
-
-During `apply` and `build`, templates are sorted so dependencies run first. Circular dependencies are detected and reported. Use `--no-deps` to disable.
-
-## Existing Projects
-
-Already have functions in your database? Create templates for them, then:
+### Commands
 
 ```bash
-srtd register existing_function.sql another_one.sql
+srtd                     # Interactive menu
+srtd watch               # Live reload—applies templates on save
+srtd build               # Generate migration files
+srtd apply               # Apply all templates once (no watch)
+srtd register            # Mark templates as already deployed
+srtd promote             # Convert .wip template to buildable
+srtd clear               # Reset build state
+srtd init                # Initialize config file
+srtd doctor              # Validate setup and diagnose issues
+
+# Build options
+srtd build --force       # Rebuild all templates
+srtd build --apply       # Apply immediately after building
+srtd build --bundle      # Combine all into single migration
+srtd build --no-deps     # Disable dependency ordering
+
+# Apply options
+srtd apply --force       # Force apply all templates
+srtd apply --no-deps     # Disable dependency ordering
+
+# Clear options
+srtd clear --local       # Clear local build log only
+srtd clear --shared      # Clear shared build log only
+srtd clear --reset       # Reset everything to defaults
+
+# Global options (all commands)
+--json                   # Machine-readable output
+--non-interactive        # Disable prompts (for scripts)
 ```
 
-This tells srtd "these are already deployed—don't generate migrations until they change."
+---
 
-## Configuration
+### JSON output
+
+All commands support `--json` for machine-readable output (CI/CD, LLM integrations):
+
+```bash
+srtd build --json   # Single JSON object with results array and summary
+srtd watch --json   # NDJSON stream (one event per line)
+```
+
+Output includes `success`, `command`, `timestamp`, and command-specific fields. Errors use a top-level `error` field.
+
+Works great with [Claude Code](https://claude.ai/code) background tasks—pair with the [srtd-cli skill](./.claude/skills/srtd-cli.md) and [srtd rule](./.claude/rules/srtd.md) for SQL template guidance.
+
+---
+
+### Configuration
 
 Defaults work for standard Supabase projects. Optional `srtd.config.json`:
 
@@ -170,13 +273,20 @@ Defaults work for standard Supabase projects. Optional `srtd.config.json`:
   "migrationPrefix": "srtd",
   "migrationFilename": "$timestamp_$prefix$migrationName.sql",
   "wipIndicator": ".wip",
-  "wrapInTransaction": true
+  "wrapInTransaction": true,
+  "filter": "**/*.sql",
+  "banner": "/* Auto-generated by srtd. Edit the template, not this file. */",
+  "footer": ""
 }
 ```
 
-## Custom Migration Paths
+Run `srtd doctor` to validate your configuration and diagnose setup issues.
 
-The `migrationFilename` option lets you match your project's existing migration structure using template variables:
+---
+
+### Custom migration paths
+
+The `migrationFilename` option lets you match your project's existing migration structure:
 
 | Variable         | Description                         | Example          |
 | ---------------- | ----------------------------------- | ---------------- |
@@ -184,7 +294,7 @@ The `migrationFilename` option lets you match your project's existing migration 
 | `$migrationName` | Template name (without .sql)        | `create_users`   |
 | `$prefix`        | Migration prefix with trailing dash | `srtd-`          |
 
-### Examples
+#### Examples
 
 **Default (Supabase-style):**
 
@@ -193,18 +303,11 @@ The `migrationFilename` option lets you match your project's existing migration 
 // → migrations/20240315143022_srtd-create_users.sql
 ```
 
-**Directory per migration ([Prisma](https://prisma.io)-style):**
+**Directory per migration (Prisma-style):**
 
 ```jsonc
 { "migrationFilename": "$timestamp_$migrationName/migration.sql" }
 // → migrations/20240315143022_create_users/migration.sql
-```
-
-**Folder-based ([Issue #41](https://github.com/t1mmen/srtd/issues/41) request):**
-
-```jsonc
-{ "migrationFilename": "$migrationName/migrate.sql", "migrationPrefix": "" }
-// → migrations/create_users/migrate.sql
 ```
 
 **Flyway-style (V prefix):**
@@ -217,42 +320,56 @@ The `migrationFilename` option lets you match your project's existing migration 
 // → migrations/V20240315143022__create_users.sql
 ```
 
-**Simple timestamp:**
-
-```jsonc
-{ "migrationFilename": "$timestamp.sql", "migrationPrefix": "" }
-// → migrations/20240315143022.sql
-```
-
 Nested directories are created automatically.
 
-## State Tracking
+---
+
+### State tracking
 
 | File                   | Purpose                         | Git       |
 | ---------------------- | ------------------------------- | --------- |
 | `.buildlog.json`       | What's been built to migrations | Commit    |
 | `.buildlog.local.json` | What's applied to your local DB | Gitignore |
 
-## Claude Code Integration
+---
 
-SRTD includes a skill and rule for [Claude Code](https://claude.ai/code) users:
+### FAQ
 
-```bash
-# Copy to your project's .claude directory
-mkdir -p .claude/skills .claude/rules
-cp -r node_modules/@t1mmen/srtd/.claude/skills/srtd-cli .claude/skills/
-cp node_modules/@t1mmen/srtd/.claude/rules/srtd.md .claude/rules/
-```
+<details>
+<summary><strong>Why do generated migrations redefine entire objects?</strong></summary>
 
-The skill activates when working with SQL templates, migrations-templates directories, or `.buildlog.json` files. The rule provides inline guidance for template files.
+Full redefinitions ensure deterministic, idempotent execution across environments. Templates encode intent; migrations encode execution.
+</details>
 
-## Contributing
+<details>
+<summary><strong>Can I use hot reload in production?</strong></summary>
+
+No. Hot reload is strictly a local development feature. Production deploys always use generated migrations.
+</details>
+
+<details>
+<summary><strong>Why plain SQL instead of a DSL?</strong></summary>
+
+SQL is already the right language. srtd adds workflow improvements, not syntax.
+</details>
+
+<details>
+<summary><strong>What does "srtd" stand for?</strong></summary>
+
+Supabase Repeatable Template Definitions—but then general Postgres support happened, and... naming things is hard.
+</details>
+
+---
+
+### Contributing
 
 Bug fixes, docs, and test coverage welcome. See [CONTRIBUTING.md](./CONTRIBUTING.md).
 
 For development: [CLAUDE.md](./CLAUDE.md).
 
-## More
+---
+
+### More
 
 - [Blog post](https://timm.stokke.me/blog/srtd-live-reloading-and-sql-templates-for-supabase)
 - [MIT License](./LICENSE)
