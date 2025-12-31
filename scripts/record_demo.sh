@@ -53,6 +53,11 @@ rm -rf supabase/migrations-templates/*
 rm -rf supabase/migrations/*
 rm -f srtd.config.json
 
+# CRITICAL: Clean up buildlog files to ensure fresh state
+# Without this, SRTD may not detect template changes from previous runs
+rm -f supabase/migrations-templates/.srtd.buildlog.json
+rm -f supabase/migrations-templates/.srtd.buildlog.local.json
+
 # Copy demo templates
 echo "📝 Setting up demo templates..."
 mkdir -p supabase/migrations-templates

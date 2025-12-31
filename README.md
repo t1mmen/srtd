@@ -239,11 +239,12 @@ SRTD includes a skill and rule for [Claude Code](https://claude.ai/code) users:
 
 ```bash
 # Copy to your project's .claude directory
+mkdir -p .claude/skills .claude/rules
 cp -r node_modules/@t1mmen/srtd/.claude/skills/srtd-cli .claude/skills/
-cp -r node_modules/@t1mmen/srtd/.claude/rules/srtd.md .claude/rules/
+cp node_modules/@t1mmen/srtd/.claude/rules/srtd.md .claude/rules/
 ```
 
-The skill activates when working with SQL templates. The rule provides inline guidance for template files.
+The skill activates when working with SQL templates, migrations-templates directories, or `.buildlog.json` files. The rule provides inline guidance for template files.
 
 ## Contributing
 
