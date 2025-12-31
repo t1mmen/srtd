@@ -1,7 +1,7 @@
 # SRTD Workflow Demo - WIP Templates Flow
 # Shows: WIP templates for experimentation, promote when ready
 
-Output readme-workflow-demo.gif
+Output assets/workflow-demo.gif
 
 Require srtd
 
@@ -28,12 +28,12 @@ Enter
 Enter
 Sleep 2s
 
-# Create a WIP template
+# Create a WIP template (faster typing for SQL)
 Type "cat > supabase/migrations-templates/experiment.wip.sql << 'EOF'"
 Enter
-Type "CREATE OR REPLACE FUNCTION public.my_experiment()"
+Type@15ms "CREATE OR REPLACE FUNCTION public.my_experiment()"
 Enter
-Type "RETURNS text LANGUAGE sql AS $$ SELECT 'testing'; $$;"
+Type@15ms "RETURNS text LANGUAGE sql AS $$ SELECT 'testing'; $$;"
 Enter
 Type "EOF"
 Enter

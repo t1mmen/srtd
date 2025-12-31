@@ -1,7 +1,7 @@
 # SRTD Hero Demo
 # Storytelling approach: Pain → Discovery → Delight
 
-Output readme-demo.gif
+Output assets/demo.gif
 
 Require srtd
 
