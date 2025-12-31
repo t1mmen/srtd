@@ -68,8 +68,11 @@ echo "📦 Verifying shipped state..."
 echo "  Templates: $(ls supabase/migrations-templates/*.sql | wc -l | tr -d ' ')"
 echo "  Migrations: $(ls supabase/migrations/*.sql | wc -l | tr -d ' ')"
 
-# Record the demo
-echo "🎥 Recording demo..."
-vhs readme-demo.tape
+# Record all demos
+echo "🎥 Recording demos..."
+for tape in scripts/*.tape; do
+    echo "  Recording $(basename "$tape")..."
+    vhs "$tape"
+done
 
-echo "✨ Demo recorded! Check readme-demo.gif"
+echo "✨ All demos recorded! Check assets/*.gif"
