@@ -51,6 +51,9 @@ echo "🧹 Resetting to clean git state..."
 git checkout -- "${DEMO_PATHS[@]}" 2>/dev/null || true
 git clean -fd supabase/migrations-templates supabase/migrations 2>/dev/null || true
 rm -f srtd.config.json
+
+# CRITICAL: Clean up buildlog files to ensure fresh state
+# Without this, SRTD may not detect template changes from previous runs
 rm -f supabase/migrations-templates/.srtd.buildlog.local.json
 
 # Build CLI
@@ -65,8 +68,11 @@ echo "📦 Verifying shipped state..."
 echo "  Templates: $(ls supabase/migrations-templates/*.sql | wc -l | tr -d ' ')"
 echo "  Migrations: $(ls supabase/migrations/*.sql | wc -l | tr -d ' ')"
 
-# Record the demo
-echo "🎥 Recording demo..."
-vhs readme-demo.tape
+# Record all demos
+echo "🎥 Recording demos..."
+for tape in scripts/*.tape; do
+    echo "  Recording $(basename "$tape")..."
+    vhs "$tape"
+done
 
-echo "✨ Demo recorded! Check readme-demo.gif"
+echo "✨ All demos recorded! Check assets/*.gif"
