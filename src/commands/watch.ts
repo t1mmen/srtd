@@ -26,7 +26,7 @@ type WatchEventType = 'changed' | 'applied' | 'error';
 
 /**
  * Stack consecutive events for the same template (unless error).
- * e.g., [changed, applied] for same file becomes one stacked entry.
+ * When changed→applied happens, we only show "applied" (the meaningful action).
  */
 export function stackResults(results: TemplateResult[]): TemplateResult[] {
   const stacked: Array<{ result: TemplateResult; types: WatchEventType[] }> = [];
@@ -46,6 +46,8 @@ export function stackResults(results: TemplateResult[]): TemplateResult[] {
       if (!last.types.includes(type)) {
         last.types.push(type);
       }
+      // Update result to latest (so we get the applied result, not changed)
+      last.result = { ...result };
     } else {
       stacked.push({
         result: { ...result },
@@ -54,21 +56,14 @@ export function stackResults(results: TemplateResult[]): TemplateResult[] {
     }
   }
 
-  // Convert back to TemplateResult with displayOverride for stacked events
+  // Convert back to TemplateResult
+  // When we have both changed and applied, just show applied (the action that matters)
   return stacked.map(({ result, types }) => {
-    if (types.length > 1) {
-      // For stacked events, show comma-separated states with consistent coloring:
-      // - 'changed' = dim (no action, just detected change)
-      // - 'applied' = green (action taken)
-      // - 'error' = red (problem)
-      const typeLabels = types.map(t => {
-        if (t === 'changed') return chalk.dim(t);
-        if (t === 'applied') return chalk.green(t);
-        if (t === 'error') return chalk.red(t);
-        return t;
-      });
-      return { ...result, displayOverride: typeLabels.join(', ') };
+    // If we have applied, that's the important one - show it as success
+    if (types.includes('applied')) {
+      return { ...result, status: 'success' };
     }
+    // If only changed, keep it as changed
     return result;
   });
 }

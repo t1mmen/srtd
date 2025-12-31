@@ -82,23 +82,38 @@ function getTargetDisplay(result: TemplateResult, context: RenderContext): strin
 }
 
 /**
+ * Check if a timestamp is recent (within the last minute).
+ */
+function isRecent(timestamp: Date | undefined): boolean {
+  if (!timestamp) return false;
+  const ONE_MINUTE = 60 * 1000;
+  return Date.now() - timestamp.getTime() < ONE_MINUTE;
+}
+
+/**
  * Render a single result row for watch mode (streaming log format).
  * Format: HH:MM:SS  ✔ template.sql applied
  *
  * Color semantics:
- * - success/built: GREEN (just acted on) - icon, path, AND label
+ * - Recent success/built (< 1min): GREEN (just acted on)
+ * - Old success/built (> 1min): DIM (historic, no longer "fresh")
  * - unchanged: DIM (no action)
- * - changed: path colored, label uncolored (pending action)
+ * - changed: DIM icon, normal text (pending action)
  * - error: RED (problem)
  */
 function renderWatchRow(result: TemplateResult): void {
   const time = result.timestamp ? formatTime.time(result.timestamp) : '';
-  const icon = getStatusIcon(result.status);
-  const color = getStatusColor(result.status);
   const truncatedPath = formatPath.truncatePath(result.template);
 
-  // Use displayOverride if provided (for stacked events like "changed, applied")
-  // displayOverride is pre-colored by watch.ts stackResults()
+  // For success/built, check if recent - old entries should be dim
+  const recent = isRecent(result.timestamp);
+  const isSuccessType = result.status === 'success' || result.status === 'built';
+
+  // Determine effective color based on recency
+  const color = isSuccessType && !recent ? chalk.dim : getStatusColor(result.status);
+  const icon = isSuccessType && !recent ? chalk.dim(figures.tick) : getStatusIcon(result.status);
+
+  // Use displayOverride if provided, otherwise color the label
   let statusLabel = result.displayOverride || color(getStatusLabel(result.status));
 
   // Add build outdated annotation for changed status
@@ -106,7 +121,7 @@ function renderWatchRow(result: TemplateResult): void {
     statusLabel += chalk.yellow(' (build outdated)');
   }
 
-  // Add arrow for built status with target (target is also green for "just acted on")
+  // Add arrow for built status with target
   if (result.status === 'built' && result.target) {
     statusLabel += ` ${chalk.dim('→')} ${color(result.target)}`;
   }
@@ -151,9 +166,11 @@ function renderTableRow(result: TemplateResult, context: RenderContext): void {
     return;
   }
 
-  // For skipped (WIP templates), show label instead of target
+  // For skipped (WIP templates), show hint to promote
   if (result.status === 'skipped') {
-    console.log(`${icon} ${templateDisplay} ${chalk.yellow('(wip)')}`);
+    console.log(
+      `${icon} ${templateDisplay} ${chalk.yellow('(wip)')} ${chalk.dim.italic('promote to build')}`
+    );
     return;
   }
 
@@ -240,9 +257,18 @@ function renderSummary(results: TemplateResult[], context: RenderContext): void 
 export function renderResultsTable(options: RenderResultsOptions): void {
   const { results, context } = options;
 
-  // Preserve order for all commands - no sorting
-  // This ensures consistent "oldest at top, newest at bottom" log-style ordering
-  for (const result of results) {
+  // For build command, sort skipped (WIP) templates to bottom
+  // This keeps focus on what will actually be built
+  const sortedResults =
+    context.command === 'build'
+      ? [...results].sort((a, b) => {
+          if (a.status === 'skipped' && b.status !== 'skipped') return 1;
+          if (a.status !== 'skipped' && b.status === 'skipped') return -1;
+          return 0;
+        })
+      : results;
+
+  for (const result of sortedResults) {
     renderResultRow(result, context);
   }
 

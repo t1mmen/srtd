@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "lastTimestamp": "20251230191158",
+  "lastTimestamp": "20251231023406",
   "templates": {
     "supabase/migrations-templates/srtd_demo_audit.sql": {
       "lastBuildHash": "89817c1f3b79bc135d269fb85a06a4ef",
@@ -16,6 +16,11 @@
       "lastBuildHash": "ddcdde275141fabaef97a1aacb19aebd",
       "lastBuildDate": "2025-12-30T19:11:56.586Z",
       "lastMigrationFile": "20251230191158_srtd-srtd_demo_rls.sql"
+    },
+    "supabase/migrations-templates/experiment.sql": {
+      "lastBuildHash": "4c9f307fef43509072acf4d6f18285d0",
+      "lastBuildDate": "2025-12-31T02:34:06.990Z",
+      "lastMigrationFile": "20251231023406_srtd-experiment.sql"
     }
   }
 }
