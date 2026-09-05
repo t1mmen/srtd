@@ -1,9 +1,11 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { glob } from 'glob';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock dependencies
 vi.mock('node:fs/promises');
+vi.mock('glob');
 vi.mock('../utils/fileExists.js', () => ({
   fileExists: vi.fn(),
 }));
@@ -388,36 +390,35 @@ describe('doctorChecks', () => {
 
   describe('checkTemplateCount', () => {
     it('returns passed when at least one .sql template exists', async () => {
-      vi.mocked(fs.readdir).mockResolvedValue([
-        'template1.sql',
-        'template2.sql',
-      ] as unknown as Awaited<ReturnType<typeof fs.readdir>>);
+      vi.mocked(glob).mockResolvedValue([
+        '/test/project/supabase/migrations-templates/template1.sql',
+        '/test/project/supabase/migrations-templates/template2.sql',
+      ]);
 
       const result = await checkTemplateCount(projectRoot, mockConfig);
 
       expect(result.name).toBe('Template count');
       expect(result.passed).toBe(true);
+      expect(result.message).toContain('2 SQL templates');
     });
 
     it('returns failed when no .sql templates exist', async () => {
-      vi.mocked(fs.readdir).mockResolvedValue(['readme.md'] as unknown as Awaited<
-        ReturnType<typeof fs.readdir>
-      >);
+      vi.mocked(glob).mockResolvedValue([]);
 
       const result = await checkTemplateCount(projectRoot, mockConfig);
 
       expect(result.passed).toBe(false);
       expect(result.message).toContain('No SQL templates found');
+      expect(result.hint).toContain('**/*.sql');
     });
 
-    it('returns failed when template directory is empty', async () => {
-      vi.mocked(fs.readdir).mockResolvedValue(
-        [] as unknown as Awaited<ReturnType<typeof fs.readdir>>
-      );
+    it('returns failed when template discovery throws', async () => {
+      vi.mocked(glob).mockRejectedValue(new Error('Permission denied'));
 
       const result = await checkTemplateCount(projectRoot, mockConfig);
 
       expect(result.passed).toBe(false);
+      expect(result.message).toContain('Failed to discover templates: Permission denied');
     });
   });
 
@@ -428,6 +429,9 @@ describe('doctorChecks', () => {
       vi.mocked(fs.readdir).mockResolvedValue(['template.sql'] as unknown as Awaited<
         ReturnType<typeof fs.readdir>
       >);
+      vi.mocked(glob).mockResolvedValue([
+        '/test/project/supabase/migrations-templates/template.sql',
+      ]);
       vi.mocked(fs.writeFile).mockResolvedValue(undefined);
       vi.mocked(fs.unlink).mockResolvedValue(undefined);
       vi.mocked(fs.readFile).mockRejectedValue(

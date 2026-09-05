@@ -7,6 +7,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { CONFIG_FILE } from '../constants.js';
 import { DatabaseService } from '../services/DatabaseService.js';
+import { FileSystemService } from '../services/FileSystemService.js';
 import type { CLIConfig } from '../types.js';
 import { fileExists } from './fileExists.js';
 import { type ValidationWarning, validateBuildLog } from './schemas.js';
@@ -320,16 +321,20 @@ export async function checkTemplateCount(
   projectRoot: string,
   config: CLIConfig
 ): Promise<DoctorCheckResult> {
-  const templatePath = path.join(projectRoot, config.templateDir);
-
   try {
-    const files = await fs.readdir(templatePath);
-    const sqlFiles = files.filter(f => f.endsWith('.sql'));
+    const fileSystem = new FileSystemService({
+      baseDir: projectRoot,
+      templateDir: config.templateDir,
+      migrationDir: config.migrationDir,
+      filter: config.filter,
+    });
+    const templates = await fileSystem.findTemplates();
 
-    if (sqlFiles.length >= 1) {
+    if (templates.length >= 1) {
       return {
         name: 'Template count',
         passed: true,
+        message: `Found ${templates.length} SQL template${templates.length === 1 ? '' : 's'}`,
       };
     }
 
@@ -337,15 +342,15 @@ export async function checkTemplateCount(
       name: 'Template count',
       passed: false,
       message: `No SQL templates found in ${config.templateDir}`,
-      hint: 'Add .sql template files or run `srtd init` to create examples',
+      hint: `Add templates matching "${config.filter}" under ${config.templateDir}`,
     };
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : 'Unknown error';
     return {
       name: 'Template count',
       passed: false,
-      message: `Cannot read template directory: ${errorMsg}`,
-      hint: 'Check directory permissions or ensure it exists',
+      message: `Failed to discover templates: ${errorMsg}`,
+      hint: 'Check the template directory, filter, and permissions',
     };
   }
 }
