@@ -8,7 +8,7 @@
   },
   "type": "module",
   "engines": {
-    "node": ">=20"
+    "node": ">=20.19.0"
   },
   "scripts": {
     "clean": "rm -rf dist; rm -rf build; rm -rf coverage; npm run supabase:stop",
@@ -75,31 +75,28 @@
     "supabase-cli"
   ],
   "dependencies": {
-    "@inquirer/prompts": "^8.1.0",
-    "chalk": "^5.4.1",
+    "@inquirer/prompts": "^8.7.5",
+    "chalk": "^5.6.2",
     "chokidar": "^5.0.0",
-    "commander": "^14.0.2",
+    "commander": "^14.0.3",
     "figures": "^6.1.0",
-    "glob": "^13.0.0",
-    "ora": "^9.0.0",
-    "pg": "^8.13.1",
+    "glob": "^14.0.3",
+    "ora": "^9.4.1",
+    "pg": "^8.23.1",
     "update-notifier": "^7.3.1",
-    "zod": "^4.2.1"
-  },
-  "optionalDependencies": {
-    "@rollup/rollup-linux-x64-gnu": "4.34.8"
+    "zod": "^4.6.7"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.3.10",
-    "@changesets/cli": "^2.27.11",
-    "@sindresorhus/tsconfig": "^7.0.0",
-    "@types/node": "^20.17.10",
-    "@types/pg": "^8.11.10",
-    "@types/update-notifier": "^6.0.8",
-    "@vitest/coverage-v8": "^4.0.16",
-    "lefthook": "^1.10.1",
-    "tsx": "^4.19.2",
-    "typescript": "^5.7.2",
-    "vitest": "^4.0.16"
+    "@biomejs/biome": "^2.6.4",
+    "@changesets/cli": "^2.31.1",
+    "@sindresorhus/tsconfig": "^8.1.0",
+    "@types/node": "^20.19.43",
+    "@types/pg": "^8.23.1",
+    "@types/update-notifier": "^6.0.9",
+    "@vitest/coverage-v8": "^4.1.12",
+    "lefthook": "^2.2.2",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.12"
   }
 }

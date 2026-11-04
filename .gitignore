@@ -33,8 +33,6 @@ node_modules/
 *.sw?
 # OS specific
 
-.vscode
-
 # Task files
 # tasks.json
 # tasks/ 
