@@ -141,6 +141,28 @@ describe('config file operations', () => {
     }
   });
 
+  it.each([
+    ['is not valid JSON', '{ "pgConnection": '],
+    [
+      'fails validation',
+      JSON.stringify({ pgConnection: 'postgresql://localhost:54322/postgres', wipIndicator: 42 }),
+    ],
+  ])('should use POSTGRES_URL when the config file %s', async (_case, content) => {
+    const url = 'postgresql://postgres:postgres@127.0.0.1:40122/postgres';
+    await fs.writeFile(path.join(tempDir, 'srtd.config.json'), content);
+    vi.stubEnv('POSTGRES_URL', url);
+    try {
+      const { getConfig } = await import('./config.js');
+      const { config, warnings } = await getConfig(tempDir);
+      expect(config.pgConnection).toBe(url);
+      expect(warnings.map(w => w.type)).toContain(
+        content.startsWith('{ "') ? 'parse' : 'validation'
+      );
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
   it('should keep the config file or default pgConnection when POSTGRES_URL is unset or blank', async () => {
     const fromFile = 'postgresql://postgres:postgres@localhost:55555/postgres';
     await fs.writeFile(
