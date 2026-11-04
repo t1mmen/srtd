@@ -67,30 +67,29 @@ export async function getConfig(dir: string = process.cwd()): Promise<ConfigResu
         message: errorMsg,
         path: configPath,
       });
-      config = { ...defaultConfig };
-      const result = { config, warnings };
-      configCache.set(resolvedDir, result);
-      return result;
     }
 
-    // Merge with defaults first, then validate the merged result
-    const merged = { ...defaultConfig, ...(parsed as Record<string, unknown>) };
-
-    // Validate the merged config
-    const validationResult = CLIConfigSchema.safeParse(merged);
-
-    if (!validationResult.success) {
-      const errorMsg = `Invalid config schema: ${formatZodErrors(validationResult.error)}`;
-      logger.warn(errorMsg);
-      warnings.push({
-        source: 'config',
-        type: 'validation',
-        message: errorMsg,
-        path: configPath,
-      });
+    if (parsed === undefined) {
+      // Defaults, as for an invalid schema; POSTGRES_URL below still applies.
       config = { ...defaultConfig };
     } else {
-      config = validationResult.data as CLIConfig;
+      // Merge with defaults first, then validate the merged result
+      const merged = { ...defaultConfig, ...(parsed as Record<string, unknown>) };
+      const validationResult = CLIConfigSchema.safeParse(merged);
+
+      if (!validationResult.success) {
+        const errorMsg = `Invalid config schema: ${formatZodErrors(validationResult.error)}`;
+        logger.warn(errorMsg);
+        warnings.push({
+          source: 'config',
+          type: 'validation',
+          message: errorMsg,
+          path: configPath,
+        });
+        config = { ...defaultConfig };
+      } else {
+        config = validationResult.data as CLIConfig;
+      }
     }
   } catch {
     // File not found or other read error - use defaults silently
