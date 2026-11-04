@@ -97,6 +97,11 @@ export async function getConfig(dir: string = process.cwd()): Promise<ConfigResu
     config = { ...defaultConfig };
   }
 
+  // POSTGRES_URL wins over the file: `srtd init` writes the default pgConnection into it, and the variable is how
+  // one machine or process (a second local Supabase, CI) points srtd at its own database.
+  const envConnection = process.env.POSTGRES_URL?.trim();
+  if (envConnection) config = { ...config, pgConnection: envConnection };
+
   // Check if template directory exists
   const templateDirPath = path.join(resolvedDir, config.templateDir);
   const templateDirExists = await fileExists(templateDirPath);
