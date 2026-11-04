@@ -1,5 +1,13 @@
 # srtd
 
+## 1.0.1
+
+### Patch Changes
+
+- fa41d00: Update dependencies. `zod` 4.6 and `glob` 14 (with `minimatch` 11) clear every advisory `npm audit` reported against srtd's runtime dependencies (GHSA-mrhx-c7xc-m3w5, GHSA-3g3m-2fjr-6pw4, and the `minimatch` ReDoS advisories). Installing srtd on Linux x64 no longer pulls in an unused Rollup binary. `engines` now says Node `>=20.19.0`, the minimum `chokidar` 5 already required.
+- 94b5c57: Make `srtd doctor` honor the configured template filter when counting nested templates.
+- 8eb6e6e: Honor `POSTGRES_URL`: when set, it overrides `pgConnection` from `srtd.config.json` and the default, as the default's own comment already promised.
+
 ## 1.0.0
 
 ### Major Changes
