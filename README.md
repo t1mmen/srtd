@@ -280,6 +280,8 @@ Defaults work for standard Supabase projects. Optional `srtd.config.json`:
 }
 ```
 
+`POSTGRES_URL`, when set, overrides `pgConnection`: point one shell or process at another database without editing the file.
+
 Run `srtd doctor` to validate your configuration and diagnose setup issues.
 
 ---

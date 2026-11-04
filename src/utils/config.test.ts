@@ -126,5 +126,35 @@ describe('config file operations', () => {
     expect(config.wipIndicator).toBe('.wip');
   });
 
+  it('should use POSTGRES_URL over the config file and the default', async () => {
+    const url = 'postgresql://postgres:postgres@127.0.0.1:40122/postgres';
+    await fs.writeFile(
+      path.join(tempDir, 'srtd.config.json'),
+      JSON.stringify({ pgConnection: 'postgresql://postgres:postgres@localhost:54322/postgres' })
+    );
+    vi.stubEnv('POSTGRES_URL', url);
+    try {
+      const { getConfig } = await import('./config.js');
+      expect((await getConfig(tempDir)).config.pgConnection).toBe(url);
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
+  it('should keep the config file or default pgConnection when POSTGRES_URL is unset or blank', async () => {
+    const fromFile = 'postgresql://postgres:postgres@localhost:55555/postgres';
+    await fs.writeFile(
+      path.join(tempDir, 'srtd.config.json'),
+      JSON.stringify({ pgConnection: fromFile })
+    );
+    vi.stubEnv('POSTGRES_URL', ' ');
+    try {
+      const { getConfig } = await import('./config.js');
+      expect((await getConfig(tempDir)).config.pgConnection).toBe(fromFile);
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
   // Note: Template directory validation tests are in src/utils/__tests__/config.test.ts
 });
