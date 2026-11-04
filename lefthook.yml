@@ -1,7 +1,3 @@
-source_env:
-  - ~/.zshrc
-  - ~/.nvm/nvm.sh
-
 pre-commit:
   parallel: false
   commands:
